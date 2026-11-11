@@ -1,6 +1,6 @@
 # Bevve backend starter
 
-A backend foundation for the BarHop plan: database schema, access rules, database functions, and TypeScript services. No UI, Expo project, or web server is included. This is a starter to connect and validate against your own Supabase project.
+A backend foundation for the bevve plan: database schema, access rules, database functions, and TypeScript services. No UI, Expo project, or web server is included. This is a starter to connect and validate against your own Supabase project.
 
 ## Files to start with
 
