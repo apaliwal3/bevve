@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -10,44 +11,45 @@ import { BevveTheme as theme } from '@/constants/theme';
 import { welcomeMock as welcome } from '@/fixtures/welcome';
 
 export default function WelcomeScreen() {
+  const { t } = useTranslation();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const notice = 'UI demo · Backend authentication is not connected';
+  const notice = t('UI demo · Backend authentication is not connected');
 
   return (
     <ScreenContainer edges={['left', 'right']} style={styles.screen}>
       <View style={[styles.hero, { minHeight: Math.max(height * 0.68, 460 + insets.top) }]}>
         <Image
           source={welcome.image}
-          accessibilityLabel={welcome.imageDescription}
+          accessibilityLabel={t('Friends socializing on a city street at night')}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
         />
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.shade]} />
         <View style={[styles.brand, { paddingTop: Math.max(72, insets.top + theme.spacing.lg) }]}>
           <Logo size={31} />
-          <Text style={styles.city}>{welcome.cityLabel}</Text>
+          <Text style={styles.city}>{t('MILANO AFTER DARK')}</Text>
         </View>
         <View style={styles.copy}>
           <View style={styles.kickerPill}>
-            <Text style={styles.kicker}>{welcome.kicker}</Text>
+            <Text style={styles.kicker}>{t('Continue as a local')}</Text>
           </View>
           <Text accessibilityRole="header" style={styles.title}>
-            {welcome.title}
+            {t('Find your next spot')}
           </Text>
-          <Text style={styles.description}>{welcome.description}</Text>
+          <Text style={styles.description}>{t('Real-time crowd, prices and honest local details for better nights out.')}</Text>
         </View>
       </View>
       <View style={[styles.actions, { paddingBottom: Math.max(theme.spacing.xxl, insets.bottom) }]}>
         <Link href="/login" asChild>
-          <PrimaryButton label="Sign In" />
+          <PrimaryButton label={t("Sign In")} />
         </Link>
         <Link href="/signup" asChild>
-          <PrimaryButton label="Create Account" variant="secondary" />
+          <PrimaryButton label={t("Create Account")} variant="secondary" />
         </Link>
         <Link href="/explore" asChild>
-          <Pressable style={styles.demoLink} accessibilityHint="Browse sample venues without signing in">
-            <Text style={styles.demoLinkLabel}>Explore demo →</Text>
+          <Pressable style={styles.demoLink} accessibilityHint={t("Browse sample venues without signing in")}>
+            <Text style={styles.demoLinkLabel}>{t("Explore demo →")}</Text>
           </Pressable>
         </Link>
         <Text accessibilityLiveRegion="polite" style={styles.notice}>

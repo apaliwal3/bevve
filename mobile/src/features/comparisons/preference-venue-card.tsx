@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -17,13 +18,14 @@ type PreferenceVenueCardProps = {
 };
 
 export function PreferenceVenueCard({ venue, otherName, selected, faded, disabled, onChoose, onView }: PreferenceVenueCardProps) {
+  const { t, describe } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   return (
     <View style={[styles.card, selected && styles.selected, faded && styles.faded]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={'Prefer ' + venue.name + ' over ' + otherName}
-        accessibilityHint="Save your personal preference and show the next pair"
+        accessibilityLabel={t('Prefer {name} over {other}', { name: venue.name, other: otherName })}
+        accessibilityHint={t("Save your personal preference and show the next pair")}
         accessibilityState={{ selected, disabled }}
         disabled={disabled}
         onPress={onChoose}
@@ -33,7 +35,7 @@ export function PreferenceVenueCard({ venue, otherName, selected, faded, disable
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.placeholder]}>
             <AppIcon name="photo" size={28} />
-            <Text style={styles.vibe}>Photo unavailable</Text>
+            <Text style={styles.vibe}>{t("Photo unavailable")}</Text>
           </View>
         )}
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.shade]} />
@@ -41,18 +43,18 @@ export function PreferenceVenueCard({ venue, otherName, selected, faded, disable
         <View style={styles.copy}>
           <Text style={styles.area}>{venue.area.toUpperCase()}</Text>
           <Text style={styles.name}>{venue.name}</Text>
-          <Text style={styles.vibe}>{venue.vibe}</Text>
+          <Text style={styles.vibe}>{describe(venue.vibe)}</Text>
         </View>
       </Pressable>
       {/* Sibling controls: opening details must never bubble into a preference vote. */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={'View details for ' + venue.name}
+        accessibilityLabel={t('View details for {name}', { name: venue.name })}
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onView}
         style={({ pressed }) => [styles.viewBar, pressed && styles.pressed]}>
-        <Text style={styles.viewLabel}>View bar</Text>
+        <Text style={styles.viewLabel}>{t("View bar")}</Text>
         <AppIcon name="chevron" size={12} color={theme.colors.purpleLight} />
       </Pressable>
     </View>

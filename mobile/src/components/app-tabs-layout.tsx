@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Link, usePathname } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -30,25 +31,26 @@ function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps)
 }
 
 export default function AppTabsLayout() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView edges={['left', 'right']} style={styles.root}>
       <View
-        accessibilityLabel="Main navigation"
+        accessibilityLabel={t("Main navigation")}
         style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, theme.spacing.sm) }]}>
         <Link href="/explore" asChild>
-          <NavButton label="Explore" icon="explore" isFocused={pathname === '/explore'} />
+          <NavButton label={t("Explore")} icon="explore" isFocused={pathname === '/explore'} />
         </Link>
         <Link href="/compare" asChild>
-          <NavButton label="Compare" icon="compare" isFocused={pathname === '/compare'} />
+          <NavButton label={t("Compare")} icon="compare" isFocused={pathname === '/compare'} />
         </Link>
         <Link href="/rankings" asChild>
-          <NavButton label="Rankings" icon="rankings" isFocused={pathname === '/rankings'} />
+          <NavButton label={t("Rankings")} icon="rankings" isFocused={pathname === '/rankings'} />
         </Link>
         <Link href="/profile" asChild>
-          <NavButton label="Profile" icon="profile" isFocused={pathname === '/profile'} />
+          <NavButton label={t("Profile")} icon="profile" isFocused={pathname === '/profile'} />
         </Link>
       </View>
     </SafeAreaView>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -13,24 +14,23 @@ import { CrowdMeter } from './crowd-meter';
 type VenueCardProps = { venue: Venue; onPress?: () => void };
 
 export function VenueCard({ venue, onPress }: VenueCardProps) {
+  const { t, format, describe } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const { communityRating: rating } = useVenueRating(venue);
   const { ownCrowdReport, crowdSummary, bathroomSummary } = useVenueContributions(venue.id);
   const { startingPriceCents } = useVenueExtras(venue.id);
   const crowdLevel = ownCrowdReport ? (crowdSummary.classification ? crowdSummary.score : null) : venue.crowd?.level;
   const crowdLabel = ownCrowdReport
-    ? (crowdSummary.classification ? crowdClassificationLabels[crowdSummary.classification] : 'Not enough recent reports')
-    : venue.crowd?.label ?? 'No reports yet';
+    ? (crowdSummary.classification ? describe(crowdClassificationLabels[crowdSummary.classification]) : t('Not enough recent reports'))
+    : venue.crowd?.label ? describe(venue.crowd.label) : t('No reports yet');
   const bathroomCleanliness = bathroomSummary?.cleanliness.average ?? null;
   const ratingLabel = rating && rating.count > 0
-    ? `★ ${rating.average.toFixed(1)}/5`
-    : 'No ratings yet';
+    ? '★ ' + format.decimal(rating.average) + '/5'
+    : t('No ratings yet');
   const priceLabel =
     startingPriceCents === null
-      ? 'No prices yet'
-      : new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(
-          startingPriceCents / 100,
-        );
+      ? t('No prices yet')
+      : format.currency(startingPriceCents);
   const content = (
     <>
       <View style={styles.photo}>
@@ -45,7 +45,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.photoPlaceholder]}>
             <AppIcon name="photo" size={28} />
-            <Text style={styles.metricLabel}>Photo unavailable</Text>
+            <Text style={styles.metricLabel}>{t("Photo unavailable")}</Text>
           </View>
         )}
         <View style={styles.badges}>
@@ -55,8 +55,8 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
           </View>
           <Text
             accessibilityLabel={rating && rating.count > 0
-              ? `Community bar rating: ${rating.average.toFixed(1)} out of 5, ${rating.count} ratings`
-              : 'No community bar ratings yet'}
+              ? t('Community bar rating: {rating} out of 5, {count} ratings', { rating: format.decimal(rating.average), count: rating.count })
+              : t("No community bar ratings yet")}
             style={[styles.badge, styles.rating]}>
             {ratingLabel}
           </Text>
@@ -66,7 +66,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
             <Text style={styles.name}>{venue.name}</Text>
-            <Text style={styles.subtitle}>{venue.vibe} · {venue.distanceLabel ?? 'Distance unavailable'}</Text>
+            <Text style={styles.subtitle}>{describe(venue.vibe)} · {venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
           </View>
           {onPress && (
             <Text style={styles.arrow} accessible={false}>›</Text>
@@ -78,7 +78,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
               <AppIcon name="crowd" size={15} color={theme.colors.purpleLight} />
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>{ownCrowdReport ? 'Session crowd' : 'Demo crowd'}</Text>
+              <Text style={styles.metricLabel}>{ownCrowdReport ? t("Session crowd") : t("Demo crowd")}</Text>
               <Text style={styles.metricValue}>{crowdLabel}</Text>
               {crowdLevel !== null && crowdLevel !== undefined && <CrowdMeter level={crowdLevel} />}
             </View>
@@ -88,9 +88,9 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
               <Text style={styles.currencyIcon} accessible={false}>€</Text>
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>Community prices from</Text>
+              <Text style={styles.metricLabel}>{t("Community prices from")}</Text>
               <Text style={styles.metricValue}>{priceLabel}</Text>
-              <Text style={styles.metricLabel}>Not verified</Text>
+              <Text style={styles.metricLabel}>{t("Not verified")}</Text>
             </View>
           </View>
           <View style={styles.metric}>
@@ -98,13 +98,13 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
               <AppIcon name="bathroom" size={15} color={theme.colors.purpleLight} />
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>Bathrooms</Text>
+              <Text style={styles.metricLabel}>{t("Bathrooms")}</Text>
               <Text style={styles.metricValue}>
                 {bathroomCleanliness === null
-                  ? 'No reviews yet'
-                  : `${bathroomCleanliness.toFixed(1)} ★`}
+                  ? t("No reviews yet")
+                  : format.decimal(bathroomCleanliness) + ' ★'}
               </Text>
-              {bathroomCleanliness !== null && <Text style={styles.metricLabel}>Cleanliness</Text>}
+              {bathroomCleanliness !== null && <Text style={styles.metricLabel}>{t("Cleanliness")}</Text>}
             </View>
           </View>
         </View>
@@ -117,7 +117,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${venue.name}, ${venue.area}, ${ratingLabel}. View venue`}
+      accessibilityLabel={t('{name}, {area}, {rating}. View venue', { name: venue.name, area: venue.area, rating: ratingLabel })}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       {content}

@@ -1,21 +1,21 @@
-import { useState } from 'react';
+import { useTranslation } from '@/localization/language-provider';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
 import AppTabs from '@/components/app-tabs';
 import { CrowdMeter } from '@/components/crowd-meter';
 import { Logo } from '@/components/logo';
-import { PreviewNotice } from '@/components/preview-notice';
 import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import type { UUID } from '@/features/comparisons/comparison-state';
 import { usePersonalRankings } from '@/features/comparisons/personal-comparisons-provider';
-import { formatEuroCents } from '@/features/prices/price-comparison';
+import { languages } from '@/localization/translation';
 import { useProfileContributions } from '@/features/ratings/venue-ratings-provider';
 import { exploreMockUser } from '@/fixtures/venues';
 
 import { ProfileActivityRow, ProfileActivitySection } from './profile-activity-components';
+import { languagePreferenceFeedback } from './language-preference-feedback';
 
 type ProfileScreenProps = {
   onOpenVenue: (venueId: UUID) => void;
@@ -23,91 +23,99 @@ type ProfileScreenProps = {
   onRankings: () => void;
   onWelcome: () => void;
 };
-const reportDate = (time: string) => new Date(time).toLocaleString();
 
 export function ProfileScreen({ onOpenVenue, onCompare, onRankings, onWelcome }: ProfileScreenProps) {
+  const { t, format, language, setLanguage, persistent, saving, error } = useTranslation();
   const activity = useProfileContributions();
   const personal = usePersonalRankings();
-  const [languageNotice, setLanguageNotice] = useState(false);
 
   return (
     <View style={styles.screen}>
       <ScreenContainer edges={['top', 'left', 'right']} contentContainerStyle={styles.content}>
-        <View style={styles.header}><Logo /><Text style={styles.pill}>MY ACTIVITY</Text></View>
+        <View style={styles.header}><Logo /><Text style={styles.pill}>{t("MY ACTIVITY")}</Text></View>
         <View style={styles.hero}>
-          <View accessibilityLabel="Demo avatar" style={styles.avatar}><Text style={styles.initials}>{exploreMockUser.initials}</Text></View>
-          <Text accessibilityRole="header" style={styles.name}>Demo profile</Text>
-          <Text style={styles.pill}>DEMO SESSION</Text>
-          <Text style={styles.description}>No authenticated account or email is connected.</Text>
+          <View accessibilityLabel={t("Demo avatar")} style={styles.avatar}><Text style={styles.initials}>{exploreMockUser.initials}</Text></View>
+          <Text accessibilityRole="header" style={styles.name}>{t("Demo profile")}</Text>
+          <Text style={styles.pill}>{t("DEMO SESSION")}</Text>
+          <Text style={styles.description}>{t("No authenticated account or email is connected.")}</Text>
           <View style={styles.stats}>
-            <ProfileStat value={activity.counts.ratings} label="Ratings" />
-            <ProfileStat value={activity.updatesCount} label="Updates" />
-            <ProfileStat value={personal.completedCount} label="Comparisons" />
+            <ProfileStat value={activity.counts.ratings} label={t("Ratings")} />
+            <ProfileStat value={activity.updatesCount} label={t("Updates")} />
+            <ProfileStat value={personal.completedCount} label={t("Comparisons")} />
           </View>
-          <Text style={styles.note}>Updates include crowd reports, bathroom reviews and price observations.</Text>
+          <Text style={styles.note}>{t("Updates include crowd reports, bathroom reviews and price observations.")}</Text>
         </View>
 
-        <ProfileActivitySection title="My overall bar ratings" count={activity.counts.ratings} icon="star" emptyHint="Open a venue and use + to rate your overall experience.">
+        <ProfileActivitySection title={t("My overall bar ratings")} count={activity.counts.ratings} icon="star" emptyHint={t("Open a venue and use + to rate your overall experience.")}>
           {activity.ratings.map((entry) => (
-            <ProfileActivityRow key={entry.venue.id} venue={entry.venue} summary={entry.venue.area + ' · Your overall rating: ' + entry.rating + '/5'}
+            <ProfileActivityRow key={entry.venue.id} venue={entry.venue} summary={t('{area} · Your overall rating: {rating}/5', { area: entry.venue.available ? entry.venue.area : t('Neighborhood unavailable'), rating: entry.rating })}
               trailing={<Text style={styles.stars}>{'★'.repeat(entry.rating)}{'☆'.repeat(5 - entry.rating)}</Text>}
               onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <ProfileActivitySection title="My crowd reports" count={activity.counts.crowdReports} icon="crowd"
-          hint="All your session submissions, including earlier reports. These are not a live crowd consensus."
-          emptyHint="Report a crowd level from a venue’s + overlay.">
+        <ProfileActivitySection title={t("My crowd reports")} count={activity.counts.crowdReports} icon="crowd"
+          hint={t("All your session submissions, including earlier reports. These are not a live crowd consensus.")}
+          emptyHint={t("Report a crowd level from a venue’s + overlay.")}>
           {activity.crowds.map((entry) => (
-            <ProfileActivityRow key={entry.id} venue={entry.venue} summary={'Reported crowd level ' + entry.level + '/5 · ' + reportDate(entry.submittedAt)}
+            <ProfileActivityRow key={entry.id} venue={entry.venue} summary={t('Reported crowd level {level}/5 · {date}', { level: entry.level, date: format.dateTime(entry.submittedAt) })}
               trailing={<CrowdMeter level={entry.level} />} onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <ProfileActivitySection title="My bathroom reviews" count={activity.counts.bathroomReviews} icon="bathroom"
-          hint="One editable review per venue. A waiting-time score of 5 means a shorter wait."
-          emptyHint="Rate cleanliness, accessibility and waiting time in a venue’s + overlay.">
+        <ProfileActivitySection title={t("My bathroom reviews")} count={activity.counts.bathroomReviews} icon="bathroom"
+          hint={t("One editable review per venue. A waiting-time score of 5 means a shorter wait.")}
+          emptyHint={t("Rate cleanliness, accessibility and waiting time in a venue’s + overlay.")}>
           {activity.bathrooms.map((entry) => (
             <ProfileActivityRow key={entry.venue.id} venue={entry.venue}
-              summary={'Cleanliness ' + entry.cleanliness + '/5 · Accessibility ' + entry.accessibility + '/5 · Waiting time ' + entry.waitTime + '/5 · Updated ' + reportDate(entry.updatedAt)}
+              summary={t('Cleanliness {clean}/5 · Accessibility {access}/5 · Waiting time {wait}/5 · Updated {date}', { clean: entry.cleanliness, access: entry.accessibility, wait: entry.waitTime, date: format.dateTime(entry.updatedAt) })}
               onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <ProfileActivitySection title="My price observations" count={activity.counts.priceObservations} icon="euro"
-          hint="Community-reported, not verified. Corrections retain earlier observations."
-          emptyHint="Submit a catalog drink price from a venue’s + overlay.">
+        <ProfileActivitySection title={t("My price observations")} count={activity.counts.priceObservations} icon="euro"
+          hint={t("Community-reported, not verified. Corrections retain earlier observations.")}
+          emptyHint={t("Submit a catalog drink price from a venue’s + overlay.")}>
           {activity.prices.map((entry) => (
             <ProfileActivityRow key={entry.id} venue={entry.venue}
-              summary={entry.drinkName + (entry.servingMl === null ? '' : ' · ' + entry.servingMl + ' ml') + ' · ' + formatEuroCents(entry.priceCents) + ' · ' + reportDate(entry.observedAt)}
+              summary={(entry.servingMl === null ? t('Drink unavailable') : entry.drinkName) + (entry.servingMl === null ? '' : ' · ' + entry.servingMl + ' ml') + ' · ' + format.currency(entry.priceCents) + ' · ' + format.dateTime(entry.observedAt)}
               onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <ProfileActivitySection title="My personal rankings" count={personal.entries.length} icon="rankings"
-          hint={personal.completedCount + ' personal comparisons completed. Skips do not count. Ordering is separate from community ratings.'}
-          emptyHint="Choose the bar you prefer in Compare to start your personal ranking.">
+        <ProfileActivitySection title={t("My personal rankings")} count={personal.entries.length} icon="rankings"
+          hint={t('{count} personal comparisons completed. Skips do not count. Ordering is separate from community ratings.', { count: personal.completedCount })}
+          emptyHint={t("Choose the bar you prefer in Compare to start your personal ranking.")}>
           {personal.entries.map((entry) => (
-            <ProfileActivityRow key={entry.venue.id} venue={{ ...entry.venue, available: true }} summary={entry.venue.area + ' · Personal position #' + entry.position}
+            <ProfileActivityRow key={entry.venue.id} venue={{ ...entry.venue, available: true }} summary={t('{area} · Personal position #{position}', { area: entry.venue.area, position: entry.position })}
               trailing={<Text style={styles.ordinal}>#{entry.position}</Text>} onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <PrimaryButton label="Continue comparing" onPress={onCompare} />
-        <PrimaryButton label="View My Rankings" variant="secondary" onPress={onRankings} />
+        <PrimaryButton label={t("Continue comparing")} onPress={onCompare} />
+        <PrimaryButton label={t("View My Rankings")} variant="secondary" onPress={onRankings} />
 
         <View style={styles.settings}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Settings</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="App language, English" accessibilityHint="English and Italian switching is planned for Stage 7C"
-            onPress={() => setLanguageNotice(true)} style={({ pressed }) => [styles.languageRow, pressed && styles.pressed]}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Settings")}</Text>
+          <View style={styles.languageRow}>
             <AppIcon name="languages" size={21} color={theme.colors.purpleLight} />
             <View style={styles.languageCopy}>
-              <Text style={styles.settingLabel}>App language</Text>
-              <Text style={styles.note}>Separate from languages spoken at bars.</Text>
-              <Text style={styles.note}>English / Italian switching · Stage 7C</Text>
+              <Text style={styles.settingLabel}>{t("App language")}</Text>
+              <Text style={styles.note}>{t("Separate from languages spoken at bars.")}</Text>
             </View>
-            <Text style={styles.languageValue}>English</Text>
-          </Pressable>
-          {languageNotice && <PreviewNotice message="Language switching is coming in Stage 7C. The app remains in English." onDismiss={() => setLanguageNotice(false)} />}
-          <PrimaryButton label="Return to Welcome" variant="secondary" onPress={onWelcome} />
-          <Text style={styles.note}>Returning to Welcome keeps demo activity for this app session. A full reload may clear it.</Text>
+          </View>
+          <View accessibilityRole="radiogroup" accessibilityLabel={t('Interface language')} style={styles.languageChoices}>
+            {languages.map((item) => (
+              <Pressable key={item.code} accessibilityRole="radio" accessibilityLabel={item.label}
+                accessibilityState={{ checked: language === item.code }}
+                onPress={() => { void setLanguage(item.code); }}
+                style={({ pressed }) => [styles.languageChoice, language === item.code && styles.languageSelected, pressed && styles.pressed]}>
+                <Text style={styles.languageValue}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={styles.note}>
+            {t(languagePreferenceFeedback({ error, saving, persistent }))}
+          </Text>
+          <PrimaryButton label={t("Return to Welcome")} variant="secondary" onPress={onWelcome} />
+          <Text style={styles.note}>{t("Returning to Welcome keeps demo activity for this app session. A full reload may clear it.")}</Text>
         </View>
-        <Text style={styles.note}>Pending language suggestions and private incident reports are not included in these activity summaries.</Text>
+        <Text style={styles.note}>{t("Pending language suggestions and private incident reports are not included in these activity summaries.")}</Text>
       </ScreenContainer>
       <AppTabs />
     </View>
@@ -115,7 +123,8 @@ export function ProfileScreen({ onOpenVenue, onCompare, onRankings, onWelcome }:
 }
 
 function ProfileStat({ value, label }: { value: number; label: string }) {
-  return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>;
+  const { format } = useTranslation();
+  return <View style={styles.stat}><Text style={styles.statValue}>{format.number(value)}</Text><Text style={styles.statLabel}>{label}</Text></View>;
 }
 
 const styles = StyleSheet.create({
@@ -254,6 +263,9 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.bodyBold,
     fontSize: 12
   },
+  languageChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  languageChoice: { flexGrow: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.radii.md, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceRaised },
+  languageSelected: { borderColor: theme.colors.purpleLight, backgroundColor: theme.colors.purpleTint },
   pressed: {
     opacity: 0.75
   }

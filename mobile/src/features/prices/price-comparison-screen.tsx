@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from '@/localization/language-provider';
 
 import { AppIcon } from '@/components/app-icon';
 import { FlowHeader } from '@/components/flow-header';
@@ -21,12 +22,13 @@ type PriceComparisonScreenProps = PriceComparison & {
 };
 
 export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, backLabel, onBack, onSelectDrink, onOpenVenue }: PriceComparisonScreenProps) {
+  const { t } = useTranslation();
   const lowest = rows[0];
   const highest = rows[rows.length - 1];
 
   return (
     <ScreenContainer contentContainerStyle={styles.content}>
-      <FlowHeader eyebrow="SMARTER NIGHTS" title="Drink prices" backLabel={backLabel} onBack={onBack} />
+      <FlowHeader eyebrow={t('SMARTER NIGHTS')} title={t('Drink prices')} backLabel={backLabel} onBack={onBack} />
       <View style={styles.intro}>
         <Text accessibilityRole="header" style={styles.title}>What are you drinking?</Text>
         <Text style={styles.description}>Community-reported prices from bars across Milan.</Text>

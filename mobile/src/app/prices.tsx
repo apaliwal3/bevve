@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
@@ -8,6 +9,7 @@ import { mockDrinkCatalog } from '@/fixtures/contribution-catalog';
 import { mockVenues } from '@/fixtures/venues';
 
 export default function PricesRoute() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<PriceRouteParams>();
   const { drinkId: preferredDrinkId, selectDrink } = usePriceComparisonSelection();
   // A background price screen keeps its own selection when another instance is opened.
@@ -22,12 +24,12 @@ export default function PricesRoute() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Compare drink prices across Milan' }} />
+      <Stack.Screen options={{ title: t("Compare drink prices across Milan") }} />
       <PriceComparisonScreen
         {...comparison}
         catalog={mockDrinkCatalog}
         drink={drink}
-        backLabel={sourceVenue ? `Back to ${sourceVenue.name}` : 'Back to Explore'}
+        backLabel={sourceVenue ? t('Back to {name}', { name: sourceVenue.name }) : t('Back to Explore')}
         onBack={goBack}
         onSelectDrink={(selected) => {
           selectDrink(selected.id);

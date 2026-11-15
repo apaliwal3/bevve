@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
@@ -14,6 +15,7 @@ import { RankedVenueRow } from './ranked-venue-row';
 type PersonalRankingsScreenProps = { onCompare: () => void; onOpenVenue: (venue: RankedVenue) => void; onProfile: () => void };
 
 export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: PersonalRankingsScreenProps) {
+  const { t } = useTranslation();
   const { entries, completedCount } = usePersonalRankings();
   const hasRankings = entries.length > 0;
 
@@ -22,31 +24,31 @@ export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: Pe
       <ScreenContainer edges={['top', 'left', 'right']} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={styles.kicker}>YOUR TASTE</Text>
-            <Text accessibilityRole="header" style={styles.title}>My Rankings</Text>
+            <Text style={styles.kicker}>{t("YOUR TASTE")}</Text>
+            <Text accessibilityRole="header" style={styles.title}>{t("My Rankings")}</Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open demo profile" onPress={onProfile} style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Open demo profile")} onPress={onProfile} style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}>
             <View style={styles.avatar}><Text style={styles.initials}>{exploreMockUser.initials}</Text></View>
           </Pressable>
         </View>
 
         <View style={styles.tasteCard}>
-          <View accessibilityLabel={entries.length + ' bars ranked'} style={styles.orb}>
+          <View accessibilityLabel={t('{count} bars ranked', { count: entries.length })} style={styles.orb}>
             <Text style={styles.orbCount}>{entries.length}</Text>
-            <Text style={styles.orbLabel}>RANKED</Text>
+            <Text style={styles.orbLabel}>{t("RANKED")}</Text>
           </View>
           <View style={styles.tasteCopy}>
-            <Text style={styles.sectionLabel}>YOUR NIGHTLIFE DNA</Text>
-            <Text style={styles.cardTitle}>{hasRankings ? 'Your personal order' : 'Make it personal'}</Text>
-            <Text style={styles.description}>Ranked by your head-to-head picks. Order updates immediately as you compare.</Text>
+            <Text style={styles.sectionLabel}>{t("YOUR NIGHTLIFE DNA")}</Text>
+            <Text style={styles.cardTitle}>{hasRankings ? t("Your personal order") : t("Make it personal")}</Text>
+            <Text style={styles.description}>{t("Ranked by your head-to-head picks. Order updates immediately as you compare.")}</Text>
           </View>
         </View>
-        <Text style={styles.description}>Your preferences, separate from community star ratings and bathroom reviews.</Text>
-        <Text accessibilityLiveRegion="polite" style={styles.completed}>{completedCount} personal {completedCount === 1 ? 'comparison' : 'comparisons'} completed</Text>
+        <Text style={styles.description}>{t("Your preferences, separate from community star ratings and bathroom reviews.")}</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.completed}>{t('{count} personal comparisons completed', { count: completedCount })}</Text>
 
         <View style={styles.rankingHeading}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Your top bars</Text>
-          <Text style={styles.meta}>Personal ranking</Text>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Your top bars")}</Text>
+          <Text style={styles.meta}>{t("Personal ranking")}</Text>
         </View>
         {hasRankings ? (
           <View style={styles.list}>
@@ -59,13 +61,13 @@ export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: Pe
         ) : (
           <View style={styles.empty}>
             <AppIcon name="rankings" size={32} color={theme.colors.purpleLight} />
-            <Text style={styles.emptyTitle}>Your ranking starts with a choice</Text>
-            <Text style={styles.description}>Compare two bars and pick the one you prefer. Your personal order will appear here.</Text>
+            <Text style={styles.emptyTitle}>{t("Your ranking starts with a choice")}</Text>
+            <Text style={styles.description}>{t("Compare two bars and pick the one you prefer. Your personal order will appear here.")}</Text>
           </View>
         )}
-        <PrimaryButton label={hasRankings ? 'Compare more bars' : 'Start comparing'} onPress={onCompare} />
-        <Text style={styles.note}>Only bars you have compared appear here. Every choice helps refine your personal order.</Text>
-        <Text style={styles.note}>DEMO SESSION · Rankings reset on a full app reload.</Text>
+        <PrimaryButton label={hasRankings ? t("Compare more bars") : t("Start comparing")} onPress={onCompare} />
+        <Text style={styles.note}>{t("Only bars you have compared appear here. Every choice helps refine your personal order.")}</Text>
+        <Text style={styles.note}>{t("DEMO SESSION · Rankings reset on a full app reload.")}</Text>
       </ScreenContainer>
       <AppTabs />
     </View>

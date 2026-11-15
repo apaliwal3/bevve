@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from '@/localization/language-provider';
 
 import { BarDetailsScreen, MissingVenueScreen } from '@/features/venues/bar-details-screen';
 import { resolveVenueById } from '@/features/venues/venue-details';
@@ -9,6 +10,7 @@ import { usePriceComparisonSelection } from '@/features/ratings/venue-ratings-pr
 import { navigateBackFromBarDetails, resolveBarDetailsBack } from '@/features/venues/bar-details-navigation';
 
 export default function BarDetailsRoute() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<PriceRouteParams & { barId?: string | string[]; returnTo?: string | string[] }>();
   const { barId } = params;
   const { drinkId: preferredDrinkId } = usePriceComparisonSelection();
@@ -28,7 +30,7 @@ export default function BarDetailsRoute() {
       venue={result.venue}
       details={mockVenueDetails[result.venue.id]}
       onBack={goBack}
-      backLabel={backPlan.label}
+      backLabel={t(backPlan.label)}
       onComparePrices={() => router.push(priceComparisonHref(drink?.id ?? preferredDrinkId, result.venue.id))}
     />
   );

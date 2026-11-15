@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Link, router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -14,6 +15,7 @@ import { usePriceComparisonSelection, useVenuePriceCatalog } from '@/features/ra
 import { priceComparisonHref } from '@/features/prices/price-navigation';
 
 export default function ExploreScreen() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VenueFilter>('All');
   const { drinkId } = usePriceComparisonSelection();
@@ -33,7 +35,7 @@ export default function ExploreScreen() {
         <Logo />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Open demo profile"
+          accessibilityLabel={t("Open demo profile")}
           onPress={() => router.navigate('/profile')}
           style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}>
           <View style={styles.avatar}>
@@ -43,19 +45,18 @@ export default function ExploreScreen() {
       </View>
 
       <View style={styles.hero}>
-        <Text style={styles.eyebrow}>TONIGHT IN MILAN</Text>
-        <Text accessibilityRole="header" style={styles.title}>
-          Where to <Text style={styles.titleAccent}>tonight?</Text>
+        <Text style={styles.eyebrow}>{t("TONIGHT IN MILAN")}</Text>
+        <Text accessibilityRole="header" style={styles.title}>{t("Where to") + ' '}<Text style={styles.titleAccent}>{t("tonight?")}</Text>
         </Text>
-        <Text style={styles.subtitle}>Real talk from people already there.</Text>
-        <Text style={styles.demoLabel}>Demo venues · Sample prices, ratings and distances</Text>
+        <Text style={styles.subtitle}>{t("Real talk from people already there.")}</Text>
+        <Text style={styles.demoLabel}>{t("Demo venues · Sample prices, ratings and distances")}</Text>
       </View>
 
       <View style={styles.search}>
         <AppIcon name="explore" size={21} />
         <TextInput
-          accessibilityLabel="Search bars or neighborhoods"
-          placeholder="Search bars or neighborhoods"
+          accessibilityLabel={t("Search bars or neighborhoods")}
+          placeholder={t("Search bars or neighborhoods")}
           placeholderTextColor={theme.colors.textMuted}
           selectionColor={theme.colors.purpleLight}
           value={query}
@@ -67,7 +68,7 @@ export default function ExploreScreen() {
           style={styles.searchInput}
         />
         {query.length > 0 && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} style={styles.clearSearch}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Clear search")} onPress={() => setQuery('')} style={styles.clearSearch}>
             <AppIcon name="close" size={16} />
           </Pressable>
         )}
@@ -87,33 +88,33 @@ export default function ExploreScreen() {
             onPress={() => setFilter(item)}
             style={({ pressed }) => [styles.chip, filter === item && styles.selectedChip, pressed && styles.pressed]}>
             {item === 'Nearby' && <View style={styles.nearbyDot} />}
-            <Text style={[styles.chipLabel, filter === item && styles.selectedChipLabel]}>{item}</Text>
+            <Text style={[styles.chipLabel, filter === item && styles.selectedChipLabel]}>{t(item)}</Text>
           </Pressable>
         ))}
       </ScrollView>
-      {filter === 'Nearby' && <Text style={styles.filterHint}>Within 1 km · Demo distances</Text>}
+      {filter === 'Nearby' && <Text style={styles.filterHint}>{t("Within 1 km · Demo distances")}</Text>}
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Compare drink prices"
-        accessibilityHint="View community-reported prices across Milan"
+        accessibilityLabel={t("Compare drink prices")}
+        accessibilityHint={t("View community-reported prices across Milan")}
         onPress={() => router.push(priceComparisonHref(drinkId))}
         style={({ pressed }) => [styles.priceCard, pressed && styles.pressed]}>
         <View style={styles.euroBadge}><Text style={styles.euro}>€</Text></View>
         <View style={styles.priceCopy}>
-          <Text style={styles.priceTitle}>Compare drink prices</Text>
-          <Text style={styles.priceSubtitle}>Find the cheapest pour nearby</Text>
+          <Text style={styles.priceTitle}>{t("Compare drink prices")}</Text>
+          <Text style={styles.priceSubtitle}>{t("Find the cheapest pour nearby")}</Text>
         </View>
         <AppIcon name="chevron" size={18} color={theme.colors.purpleLight} />
       </Pressable>
 
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>{filter === 'All' ? 'Happening now' : filter}</Text>
-          <Text accessibilityLiveRegion="polite" style={styles.resultCount}>{venues.length} {venues.length === 1 ? 'place' : 'places'} for your night</Text>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{filter === 'All' ? t("Happening now") : t(filter)}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.resultCount}>{t('{count} places for your night', { count: venues.length })}</Text>
         </View>
         <Pressable accessibilityRole="button" onPress={resetFilters} style={styles.viewAll}>
-          <Text style={styles.viewAllLabel}>View all</Text>
+          <Text style={styles.viewAllLabel}>{t("View all")}</Text>
         </Pressable>
       </View>
 
@@ -128,16 +129,16 @@ export default function ExploreScreen() {
         {venues.length === 0 && (
           <View style={styles.empty}>
             <AppIcon name="explore" size={28} color={theme.colors.purpleLight} />
-            <Text style={styles.emptyTitle}>No bars found</Text>
-            <Text style={styles.emptyCopy}>Try another neighborhood or filter.</Text>
+            <Text style={styles.emptyTitle}>{t("No bars found")}</Text>
+            <Text style={styles.emptyCopy}>{t("Try another neighborhood or filter.")}</Text>
             <Pressable accessibilityRole="button" onPress={resetFilters} style={styles.viewAll}>
-              <Text style={styles.viewAllLabel}>Clear search and filters</Text>
+              <Text style={styles.viewAllLabel}>{t("Clear search and filters")}</Text>
             </Pressable>
           </View>
         )}
       </View>
       <Link href="/" asChild>
-        <Pressable style={styles.backLink}><Text style={styles.viewAllLabel}>Back to Welcome</Text></Pressable>
+        <Pressable style={styles.backLink}><Text style={styles.viewAllLabel}>{t("Back to Welcome")}</Text></Pressable>
       </Link>
     </ScreenContainer>
     <AppTabs />

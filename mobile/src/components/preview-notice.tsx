@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
@@ -5,10 +6,11 @@ import { BevveTheme as theme } from '@/constants/theme';
 import { AppIcon } from './app-icon';
 
 export function PreviewNotice({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.notice}>
       <Text accessibilityLiveRegion="polite" style={styles.message}>{message}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Dismiss notice" onPress={onDismiss} style={styles.close}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Dismiss notice")} onPress={onDismiss} style={styles.close}>
         <AppIcon name="close" size={16} color={theme.colors.purpleLight} />
       </Pressable>
     </View>

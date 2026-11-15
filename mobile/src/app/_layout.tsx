@@ -7,10 +7,16 @@ import { useEffect } from 'react';
 import { BevveTheme as theme } from '@/constants/theme';
 import { VenueRatingsProvider } from '@/features/ratings/venue-ratings-provider';
 import { PersonalComparisonsProvider } from '@/features/comparisons/personal-comparisons-provider';
+import { LanguageProvider, useTranslation } from '@/localization/language-provider';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
+  return <LanguageProvider><AppLayout /></LanguageProvider>;
+}
+
+function AppLayout() {
+  const { ready } = useTranslation();
   const [fontsLoaded, fontError] = useFonts({
     [theme.fonts.body]: require('@/assets/fonts/DMSans-Regular.ttf'),
     [theme.fonts.bodyBold]: require('@/assets/fonts/DMSans-Bold.ttf'),
@@ -19,11 +25,11 @@ export default function TabLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
+    if (ready && (fontsLoaded || fontError)) SplashScreen.hideAsync();
+  }, [fontsLoaded, fontError, ready]);
 
   if (fontError) throw fontError;
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !ready) return null;
 
   return (
     <ThemeProvider

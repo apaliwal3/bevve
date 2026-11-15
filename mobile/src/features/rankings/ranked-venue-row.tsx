@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,6 +11,7 @@ import type { PersonalRankingEntry } from './personal-rankings';
 type RankedVenueRowProps = { entry: PersonalRankingEntry; onPress: () => void };
 
 export function RankedVenueRow({ entry, onPress }: RankedVenueRowProps) {
+  const { t, describe } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const { venue, position, comparisonCount } = entry;
   const ordinal = '#' + position;
@@ -18,7 +20,7 @@ export function RankedVenueRow({ entry, onPress }: RankedVenueRowProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={'Personal rank ' + ordinal + ': ' + venue.name + ', ' + venue.area + '. ' + comparisonCount + ' comparisons. View Bar Details'}
+      accessibilityLabel={t('Personal rank #{position}: {name}, {area}. {comparisons}. View Bar Details', { position, name: venue.name, area: venue.area, comparisons: t('{count} comparisons', { count: comparisonCount }) })}
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
       <Text style={[styles.position, accent]}>{ordinal}</Text>
@@ -29,8 +31,8 @@ export function RankedVenueRow({ entry, onPress }: RankedVenueRowProps) {
       </View>
       <View style={styles.copy}>
         <Text style={styles.name}>{venue.name}</Text>
-        <Text style={styles.area}>{venue.area} · {venue.vibe}</Text>
-        <Text style={styles.meta}>{comparisonCount} {comparisonCount === 1 ? 'comparison' : 'comparisons'}</Text>
+        <Text style={styles.area}>{venue.area} · {describe(venue.vibe)}</Text>
+        <Text style={styles.meta}>{t('{count} comparisons', { count: comparisonCount })}</Text>
       </View>
       <View style={styles.cue}>
         <Text style={[styles.badge, position === 1 && styles.goldBadge, accent]}>{ordinal}</Text>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
@@ -14,6 +15,7 @@ import { PreferenceVenueCard } from './preference-venue-card';
 type PersonalCompareScreenProps = { onViewVenue: (venue: Venue) => void };
 
 export function PersonalCompareScreen({ onViewVenue }: PersonalCompareScreenProps) {
+  const { t } = useTranslation();
   const { pair, round, phase, feedback, savedCount, winnerName, onlyOnePair, choose, skip } = usePersonalComparisons();
   const choosing = phase === 'feedback';
   const step = round % 5 + 1;
@@ -24,13 +26,13 @@ export function PersonalCompareScreen({ onViewVenue }: PersonalCompareScreenProp
       <ScreenContainer edges={['top', 'left', 'right']} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Logo />
-          <Text style={styles.pill}>QUICK PICK</Text>
+          <Text style={styles.pill}>{t("QUICK PICK")}</Text>
         </View>
         <View style={styles.intro}>
-          <Text style={styles.eyebrow}>PERSONAL PREFERENCES</Text>
-          <Text accessibilityRole="header" style={styles.title}>Which would you{'\n'}rather <Text style={styles.accent}>revisit?</Text></Text>
-          <Text style={styles.description}>Tap your pick. No overthinking.</Text>
-          <Text style={styles.meta}>Build your own relative ranking. Community star ratings stay separate.</Text>
+          <Text style={styles.eyebrow}>{t("PERSONAL PREFERENCES")}</Text>
+          <Text accessibilityRole="header" style={styles.title}>{t("Which would you")}{'\n'}{t("rather") + " "}<Text style={styles.accent}>{t("revisit?")}</Text></Text>
+          <Text style={styles.description}>{t("Tap your pick. No overthinking.")}</Text>
+          <Text style={styles.meta}>{t("Build your own relative ranking. Community star ratings stay separate.")}</Text>
         </View>
 
         {pair ? (
@@ -47,32 +49,32 @@ export function PersonalCompareScreen({ onViewVenue }: PersonalCompareScreenProp
                     onChoose={() => choose(venue.id)}
                     onView={() => onViewVenue(venue)}
                   />
-                  {index === 0 && <View pointerEvents="none" style={styles.versus}><Text style={styles.versusLabel}>OR</Text></View>}
+                  {index === 0 && <View pointerEvents="none" style={styles.versus}><Text style={styles.versusLabel}>{t("OR")}</Text></View>}
                 </View>
               ))}
             </View>
             <View style={styles.hintRow}>
-              <Text style={styles.meta}>Tap a card to choose</Text>
-              <View accessibilityLabel={'Quick pick ' + step + ' of 5'} style={styles.dots}>
+              <Text style={styles.meta}>{t("Tap a card to choose")}</Text>
+              <View accessibilityLabel={t('Quick pick {step} of 5', { step })} style={styles.dots}>
                 {[1, 2, 3, 4, 5].map((item) => <View key={item} style={[styles.dot, item === step && styles.activeDot]} />)}
               </View>
             </View>
             <Text accessibilityLiveRegion="polite" style={styles.feedback}>
-              {feedback?.kind === 'vote' ? winnerName + ' saved as your preference.'
-                : feedback?.kind === 'skip' ? 'Skipped — no comparison saved.' : 'Choose the place you would rather revisit.'}
+              {feedback?.kind === 'vote' ? t('{name} saved as your preference.', { name: winnerName ?? '' })
+                : feedback?.kind === 'skip' ? t("Skipped — no comparison saved.") : t("Choose the place you would rather revisit.")}
             </Text>
-            <PrimaryButton label="Not sure — skip this one" variant="secondary" disabled={choosing} onPress={skip} style={styles.skip} />
-            {onlyOnePair && <Text style={styles.meta}>Only one pair is available in this demo. You can revisit it or skip.</Text>}
+            <PrimaryButton label={t("Not sure — skip this one")} variant="secondary" disabled={choosing} onPress={skip} style={styles.skip} />
+            {onlyOnePair && <Text style={styles.meta}>{t("Only one pair is available in this demo. You can revisit it or skip.")}</Text>}
           </>
         ) : (
           <View style={styles.empty}>
             <AppIcon name="compare" size={30} color={theme.colors.purpleLight} />
-            <Text style={styles.emptyTitle}>No pair available yet</Text>
-            <Text style={styles.description}>At least two different venues are needed for a personal comparison.</Text>
+            <Text style={styles.emptyTitle}>{t("No pair available yet")}</Text>
+            <Text style={styles.description}>{t("At least two different venues are needed for a personal comparison.")}</Text>
           </View>
         )}
-        <Text accessibilityLiveRegion="polite" style={styles.saved}>{savedCount} personal {savedCount === 1 ? 'comparison' : 'comparisons'} saved this session</Text>
-        <Text style={styles.meta}>DEMO VENUES · Preferences reset on a full app reload.</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.saved}>{t('{count} personal comparisons saved this session', { count: savedCount })}</Text>
+        <Text style={styles.meta}>{t("DEMO VENUES · Preferences reset on a full app reload.")}</Text>
       </ScreenContainer>
       <AppTabs />
     </View>

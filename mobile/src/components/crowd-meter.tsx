@@ -1,10 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
+import { useTranslation } from '@/localization/language-provider';
 
 export function CrowdMeter({ level }: { level: number }) {
+  const { t } = useTranslation();
   return (
-    <View accessible accessibilityLabel={`Crowd level ${level} out of 5`} style={styles.meter}>
+    <View accessible accessibilityLabel={t('Crowd level {level} out of 5', { level })} style={styles.meter}>
       {[1, 2, 3, 4, 5].map((step) => (
         <View key={step} style={[styles.bar, { height: 4 + step * 2 }, step <= level && styles.active]} />
       ))}

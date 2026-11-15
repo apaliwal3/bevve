@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState, type PropsWithChildren, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -11,6 +12,7 @@ type ActivitySectionProps = PropsWithChildren<{
 }>;
 
 export function ProfileActivitySection({ title, count, icon, hint, emptyHint, children }: ActivitySectionProps) {
+  const { t, format } = useTranslation();
   return (
     <View style={styles.section}>
       <View style={styles.heading}>
@@ -20,12 +22,12 @@ export function ProfileActivitySection({ title, count, icon, hint, emptyHint, ch
             : <AppIcon name={icon} size={17} color={theme.colors.purpleLight} />}
         </View>
         <Text accessibilityRole="header" style={styles.title}>{title}</Text>
-        <Text style={styles.count}>{count}</Text>
+        <Text style={styles.count}>{format.number(count)}</Text>
       </View>
       {hint && <Text style={styles.hint}>{hint}</Text>}
       {count === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No activity yet</Text>
+          <Text style={styles.emptyTitle}>{t("No activity yet")}</Text>
           <Text style={styles.hint}>{emptyHint}</Text>
         </View>
       ) : <View style={styles.rows}>{children}</View>}
@@ -41,11 +43,13 @@ type ActivityRowProps = {
 };
 
 export function ProfileActivityRow({ venue, summary, trailing, onPress }: ActivityRowProps) {
+  const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
+  const name = venue.available ? venue.name : t('Venue unavailable');
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={venue.name + ', ' + summary + '. View Bar Details'}
+      accessibilityLabel={t('{name}, {summary}. View Bar Details', { name, summary })}
       accessibilityState={{ disabled: !venue.available }}
       disabled={!venue.available}
       onPress={onPress}
@@ -56,7 +60,7 @@ export function ProfileActivityRow({ venue, summary, trailing, onPress }: Activi
           : <AppIcon name="photo" size={18} />}
       </View>
       <View style={styles.copy}>
-        <Text style={styles.name}>{venue.name}</Text>
+        <Text style={styles.name}>{name}</Text>
         <Text style={styles.summary}>{summary}</Text>
       </View>
       {trailing}

@@ -2,7 +2,7 @@ import type { UUID } from '../comparisons/comparison-state.ts';
 import { priceComparisonHref } from '../prices/price-navigation.ts';
 
 type BarDetailsBackPlan = {
-  label: string;
+  label: 'Back to Profile' | 'Back to Rankings' | 'Back to personal comparisons' | 'Back to drink prices' | 'Back to Explore';
   mode: 'back' | 'dismiss';
   href: ReturnType<typeof priceComparisonHref> | { pathname: '/compare' | '/rankings' | '/explore' | '/profile' };
 };

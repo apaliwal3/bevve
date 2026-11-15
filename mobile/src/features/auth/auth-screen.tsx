@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { useCallback, useReducer, useRef, type ComponentRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -17,6 +18,7 @@ import type { AuthMode } from './auth-validation';
 type AuthScreenProps = { mode: AuthMode; onBack: () => void; onSwitch: () => void };
 
 export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
+  const { t } = useTranslation();
   const [state, dispatch] = useReducer(authFormReducer, mode, createAuthFormState);
   const emailRef = useRef<ComponentRef<typeof TextInput>>(null);
   const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -49,28 +51,28 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
           paddingBottom: Math.max(18, 28 - insets.bottom),
         }]}>
         <View style={styles.header}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back to Welcome" onPress={() => leave(onBack)} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Back to Welcome")} onPress={() => leave(onBack)} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
             <AppIcon name="back" size={20} color={theme.colors.text} />
           </Pressable>
           <View style={styles.logo}><Logo /></View>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.intro}>
-          <Text style={styles.eyebrow}>{isSignup ? 'CREATE ACCOUNT' : 'SIGN IN'}</Text>
-          <Text accessibilityRole="header" style={styles.title}>{isSignup ? 'Join bevve' : 'Welcome back'}</Text>
+          <Text style={styles.eyebrow}>{isSignup ? t("CREATE ACCOUNT") : t("SIGN IN")}</Text>
+          <Text accessibilityRole="header" style={styles.title}>{isSignup ? t("Join bevve") : t("Welcome back")}</Text>
           <Text style={styles.description}>{isSignup
-            ? 'Create your profile and start shaping your nightlife ranking.'
-            : 'Sign in to keep discovering Milan your way.'}</Text>
+            ? t("Create your profile and start shaping your nightlife ranking.")
+            : t("Sign in to keep discovering Milan your way.")}</Text>
         </View>
 
         <View style={styles.form}>
           {isSignup && (
             <FormInput
-              label="Username"
+              label={t("Username")}
               value={state.values.username}
               onChangeText={(value) => dispatch({ type: 'change', field: 'username', value })}
-              error={state.errors.username}
-              placeholder="Your name"
+              error={state.errors.username ? t(state.errors.username) : undefined}
+              placeholder={t("Your name")}
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
@@ -83,11 +85,11 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
           )}
           <FormInput
             inputRef={emailRef}
-            label="Email"
+            label={t("Email")}
             value={state.values.email}
             onChangeText={(value) => dispatch({ type: 'change', field: 'email', value })}
-            error={state.errors.email}
-            placeholder="you@example.com"
+            error={state.errors.email ? t(state.errors.email) : undefined}
+            placeholder={t("you@example.com")}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -100,11 +102,11 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
           />
           <FormInput
             inputRef={passwordRef}
-            label="Password"
+            label={t("Password")}
             value={state.values.password}
             onChangeText={(value) => dispatch({ type: 'change', field: 'password', value })}
-            error={state.errors.password}
-            placeholder="At least 6 characters"
+            error={state.errors.password ? t(state.errors.password) : undefined}
+            placeholder={t("At least 6 characters")}
             secureTextEntry={!state.passwordVisible}
             autoCapitalize="none"
             autoCorrect={false}
@@ -117,28 +119,28 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
             trailing={(
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={state.passwordVisible ? 'Hide password' : 'Show password'}
+                accessibilityLabel={state.passwordVisible ? t("Hide password") : t("Show password")}
                 accessibilityState={{ expanded: state.passwordVisible }}
                 onPress={() => dispatch({ type: 'toggle-password' })}
                 style={({ pressed }) => [styles.visibility, pressed && styles.pressed]}>
-                <Text style={styles.visibilityLabel}>{state.passwordVisible ? 'Hide' : 'Show'}</Text>
+                <Text style={styles.visibilityLabel}>{state.passwordVisible ? t("Hide") : t("Show")}</Text>
               </Pressable>
             )}
           />
-          {state.demoNotice && <PreviewNotice message={AUTH_DEMO_NOTICE} onDismiss={() => dispatch({ type: 'dismiss-notice' })} />}
-          <PrimaryButton label={isSignup ? 'Create Account' : 'Sign In'} onPress={submit} disabled={state.demoNotice} style={styles.submit} />
+          {state.demoNotice && <PreviewNotice message={t(AUTH_DEMO_NOTICE)} onDismiss={() => dispatch({ type: 'dismiss-notice' })} />}
+          <PrimaryButton label={isSignup ? t("Create Account") : t("Sign In")} onPress={submit} disabled={state.demoNotice} style={styles.submit} />
         </View>
 
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel={isSignup ? 'Already have an account? Sign In' : "Don't have an account? Create Account"}
+          accessibilityLabel={isSignup ? t("Already have an account? Sign In") : t("Don't have an account? Create Account")}
           onPress={() => leave(onSwitch)}
           style={({ pressed }) => [styles.switch, pressed && styles.pressed]}>
-          <Text style={styles.switchText}>{isSignup ? 'Already have an account? ' : "Don't have an account? "}
-            <Text style={styles.switchAccent}>{isSignup ? 'Sign In' : 'Create Account'}</Text>
+          <Text style={styles.switchText}>{(isSignup ? t('Already have an account?') : t("Don't have an account?")) + ' '}
+            <Text style={styles.switchAccent}>{isSignup ? t("Sign In") : t("Create Account")}</Text>
           </Text>
         </Pressable>
-        <Text style={styles.demoNote}>UI demo only · Please use sample details.</Text>
+        <Text style={styles.demoNote}>{t("UI demo only · Please use sample details.")}</Text>
       </ScreenContainer>
     </KeyboardAvoidingView>
   );
