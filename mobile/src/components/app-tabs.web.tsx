@@ -1,3 +1,4 @@
+import { usePathname } from 'expo-router';
 import {
   Tabs,
   TabList,
@@ -52,11 +53,12 @@ export function TabButton({ children, isFocused, ...props }: TabButtonProps) {
 }
 
 export function CustomTabList(props: TabListProps) {
+  const pathname = usePathname();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
   return (
-    <View {...props} style={styles.tabListContainer}>
+    <View {...props} style={[styles.tabListContainer, pathname === '/' && styles.hidden]}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         <ThemedText type="smallBold" style={styles.brandText}>
           Expo Starter
@@ -80,6 +82,7 @@ export function CustomTabList(props: TabListProps) {
 }
 
 const styles = StyleSheet.create({
+  hidden: { display: 'none' },
   tabListContainer: {
     position: 'absolute',
     width: '100%',

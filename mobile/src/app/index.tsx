@@ -1,98 +1,132 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
+import { useState } from 'react';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Logo } from '@/components/logo';
+import { PrimaryButton } from '@/components/primary-button';
+import { ScreenContainer } from '@/components/screen-container';
+import { BevveTheme as theme } from '@/constants/theme';
+import { welcomeMock as welcome } from '@/fixtures/welcome';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function WelcomeScreen() {
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [notice, setNotice] = useState('Mock prototype · No account data leaves this device');
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to bevve!
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <ScreenContainer edges={['left', 'right']} style={styles.screen}>
+      <View style={[styles.hero, { minHeight: Math.max(height * 0.68, 460 + insets.top) }]}>
+        <Image
+          source={welcome.image}
+          accessibilityLabel={welcome.imageDescription}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+        />
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.shade]} />
+        <View style={[styles.brand, { paddingTop: Math.max(72, insets.top + theme.spacing.lg) }]}>
+          <Logo size={31} />
+          <Text style={styles.city}>{welcome.cityLabel}</Text>
+        </View>
+        <View style={styles.copy}>
+          <View style={styles.kickerPill}>
+            <Text style={styles.kicker}>{welcome.kicker}</Text>
+          </View>
+          <Text accessibilityRole="header" style={styles.title}>
+            {welcome.title}
+          </Text>
+          <Text style={styles.description}>{welcome.description}</Text>
+        </View>
+      </View>
+      <View style={[styles.actions, { paddingBottom: Math.max(theme.spacing.xxl, insets.bottom) }]}>
+        <PrimaryButton label="Sign In" onPress={() => setNotice('Sign-in is coming soon.')} />
+        <PrimaryButton
+          label="Create Account"
+          variant="secondary"
+          onPress={() => setNotice('Account creation is coming soon.')}
+        />
+        <Text accessibilityLiveRegion="polite" style={styles.notice}>
+          {notice}
+        </Text>
+      </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+  screen: { backgroundColor: theme.colors.welcomeBackground },
+  hero: {
+    overflow: 'hidden',
+    borderBottomLeftRadius: theme.radii.hero,
+    borderBottomRightRadius: theme.radii.hero,
+    backgroundColor: theme.colors.surface,
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
+  shade: {
+    // React Native 0.88 renders this style natively; the string form also works on web.
+    backgroundImage: `linear-gradient(180deg, ${theme.colors.photoShade} 0%, ${theme.colors.photoShadeMiddle} 34%, ${theme.colors.welcomeBackground} 100%), linear-gradient(120deg, ${theme.colors.photoPurple}, ${theme.colors.transparent} 56%)`,
+  },
+  brand: {
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    paddingHorizontal: theme.spacing.xl,
+    gap: theme.spacing.xs,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  city: {
+    color: theme.colors.purpleLight,
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 8,
+    letterSpacing: 1.5,
+  },
+  copy: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    justifyContent: 'flex-end',
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.huge,
+    paddingBottom: 28,
   },
-  title: {
-    textAlign: 'center',
+  kickerPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    backgroundColor: theme.colors.purpleTint,
+    borderColor: theme.colors.purpleBorder,
+    borderWidth: 1,
+    borderRadius: theme.radii.sm,
   },
-  code: {
+  kicker: {
+    color: theme.colors.purpleText,
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 9,
+    letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  title: {
+    maxWidth: 320,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.brand,
+    fontSize: 38,
+    lineHeight: 40,
+    letterSpacing: -1.8,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+  },
+  description: {
+    maxWidth: 315,
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.body,
+    fontSize: 12,
+    lineHeight: 19,
+  },
+  actions: {
+    gap: 10,
+    paddingTop: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
+  },
+  notice: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
+    fontSize: 10,
+    lineHeight: 16,
+    textAlign: 'center',
+    marginTop: theme.spacing.xs,
   },
 });
