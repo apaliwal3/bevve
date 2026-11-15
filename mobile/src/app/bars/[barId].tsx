@@ -6,24 +6,17 @@ import { mockVenueDetails, mockVenues } from '@/fixtures/venues';
 import { mockDrinkCatalog } from '@/fixtures/contribution-catalog';
 import { priceComparisonHref, resolvePriceNavigation, type PriceRouteParams } from '@/features/prices/price-navigation';
 import { usePriceComparisonSelection } from '@/features/ratings/venue-ratings-provider';
+import { navigateBackFromBarDetails, resolveBarDetailsBack } from '@/features/venues/bar-details-navigation';
 
 export default function BarDetailsRoute() {
   const params = useLocalSearchParams<PriceRouteParams & { barId?: string | string[]; returnTo?: string | string[] }>();
   const { barId } = params;
   const { drinkId: preferredDrinkId } = usePriceComparisonSelection();
   const { drink, sourceVenue } = resolvePriceNavigation(params, mockDrinkCatalog, mockVenues, preferredDrinkId);
-  const fromPrices = params.returnTo === 'prices';
-  const fromCompare = params.returnTo === 'compare';
   const result = resolveVenueById(barId, mockVenues);
   const backToExplore = () => router.dismissTo('/explore');
-  const goBack = () => {
-    if (fromCompare) {
-      if (router.canGoBack()) router.back();
-      else router.replace('/compare');
-    } else if (!fromPrices) backToExplore();
-    else if (router.canGoBack()) router.back();
-    else router.replace(priceComparisonHref(drink?.id ?? preferredDrinkId, sourceVenue?.id));
-  };
+  const backPlan = resolveBarDetailsBack(params.returnTo, drink?.id ?? preferredDrinkId, sourceVenue?.id);
+  const goBack = () => navigateBackFromBarDetails(backPlan, router);
 
   if (result.status !== 'ready') {
     return <MissingVenueScreen reason={result.status} onBack={backToExplore} />;
@@ -35,7 +28,7 @@ export default function BarDetailsRoute() {
       venue={result.venue}
       details={mockVenueDetails[result.venue.id]}
       onBack={goBack}
-      backLabel={fromCompare ? 'Back to personal comparisons' : fromPrices ? 'Back to drink prices' : 'Back to Explore'}
+      backLabel={backPlan.label}
       onComparePrices={() => router.push(priceComparisonHref(drink?.id ?? preferredDrinkId, result.venue.id))}
     />
   );

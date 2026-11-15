@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer, type PropsWi
 import { mockVenues } from '@/fixtures/venues';
 import type { Venue } from '@/types/venue';
 import { createSessionSubmissionId, SESSION_USER_ID } from '../contributions/contribution-state';
+import { selectPersonalRankings } from '../rankings/personal-rankings';
 
 import {
   createPersonalComparisonState, parseUuid, personalComparisonReducer,
@@ -69,4 +70,13 @@ export function usePersonalComparisons() {
     winnerName: state.feedback?.kind === 'vote' ? lookup(state.feedback.winnerId)?.name ?? 'Your choice' : null,
     onlyOnePair: state.venueIds.length === 2,
   };
+}
+
+export function usePersonalRankings() {
+  const context = useContext(PersonalComparisonsContext);
+  if (!context) throw new Error('usePersonalRankings must be used inside PersonalComparisonsProvider.');
+  const { rankings, history } = context.state;
+  const { venues } = context;
+  // Votes replace these references; Skip preserves them. No refresh or second history.
+  return useMemo(() => selectPersonalRankings({ rankings, history }, venues), [rankings, history, venues]);
 }

@@ -51,7 +51,9 @@ export default function AppTabsLayout() {
         <Link href="/compare" asChild>
           <NavButton label="Compare" icon="compare" isFocused={pathname === '/compare'} onPress={() => setNotice(null)} />
         </Link>
-        <NavButton label="Rankings" icon="rankings" accessibilityHint="Coming soon" onPress={() => setNotice('Your personal rankings are coming soon.')} />
+        <Link href="/rankings" asChild>
+          <NavButton label="Rankings" icon="rankings" isFocused={pathname === '/rankings'} onPress={() => setNotice(null)} />
+        </Link>
         <NavButton label="Profile" icon="profile" accessibilityHint="Coming soon" onPress={() => setNotice('Your profile is coming soon.')} />
       </View>
     </SafeAreaView>
