@@ -13,6 +13,10 @@ const symbols = {
   bathroom: { ios: 'toilet', android: 'wc', web: 'wc' },
   close: { ios: 'xmark', android: 'close', web: 'close' },
   photo: { ios: 'photo', android: 'image', web: 'image' },
+  back: { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' },
+  plus: { ios: 'plus', android: 'add', web: 'add' },
+  languages: { ios: 'globe', android: 'language', web: 'language' },
+  safety: { ios: 'shield', android: 'shield', web: 'shield' },
 } satisfies Record<string, SymbolViewProps['name']>;
 
 export type AppIconName = keyof typeof symbols;

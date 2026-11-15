@@ -1,10 +1,9 @@
 import { useFonts } from 'expo-font';
-import { DarkTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import AppTabs from '@/components/app-tabs';
 import { BevveTheme as theme } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -38,7 +37,7 @@ export default function TabLayout() {
         },
       }}>
       <StatusBar style="light" />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
     </ThemeProvider>
   );
 }

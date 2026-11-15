@@ -15,3 +15,31 @@ export type Venue = {
   startingPriceCents: number | null;
   bathroomCleanliness: number | null;
 };
+
+export type BathroomCategorySummary = { average: number | null; count: number };
+
+export type VenueDetails = {
+  city: string;
+  address: string | null;
+  openingHoursLabel: string | null;
+  crowd: {
+    score: number | null;
+    reportCount: number;
+    newestReportAgeMinutes: number | null;
+  };
+  drinks: {
+    id: string;
+    name: string;
+    serving: string;
+    priceCents: number | null;
+    currency: 'EUR';
+  }[];
+  languages: { code: string; name: string }[];
+  bathrooms: {
+    reviewCount: number;
+    cleanliness: BathroomCategorySummary;
+    accessibility: BathroomCategorySummary;
+    waitTime: BathroomCategorySummary;
+  } | null;
+  demoSafetyNotes: string[];
+};

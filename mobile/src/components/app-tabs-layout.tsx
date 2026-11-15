@@ -1,17 +1,18 @@
-import { usePathname } from 'expo-router';
-import { Tabs, TabList, TabSlot, TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
+import { Link } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BevveTheme as theme } from '@/constants/theme';
 
 import { AppIcon, type AppIconName } from './app-icon';
 import { PreviewNotice } from './preview-notice';
 
-// Use Pressable's rendered-element ref type rather than Router's View component ref type.
-type NavButtonProps = Omit<TabTriggerSlotProps, 'ref' | 'children'> &
-  Pick<ComponentProps<typeof Pressable>, 'ref'> & { label: string; icon: AppIconName };
+type NavButtonProps = Omit<ComponentProps<typeof Pressable>, 'children' | 'style'> & {
+  label: string;
+  icon: AppIconName;
+  isFocused?: boolean;
+};
 
 function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps) {
   const color = isFocused ? theme.colors.purpleLight : theme.colors.textMuted;
@@ -30,46 +31,36 @@ function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps)
 }
 
 export default function AppTabsLayout() {
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const [notice, setNotice] = useState<string | null>(null);
-  const isWelcome = pathname === '/';
 
   return (
-    <Tabs style={styles.root}>
-      <TabSlot style={styles.content} />
-      {!isWelcome && notice && (
+    <SafeAreaView edges={['left', 'right']} style={styles.root}>
+      {notice && (
         <View style={styles.notice}>
           <PreviewNotice message={notice} onDismiss={() => setNotice(null)} />
         </View>
       )}
-      <TabList
+      <View
         accessibilityLabel="Main navigation"
-        style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, theme.spacing.sm) }, isWelcome && styles.hidden]}>
-        <TabTrigger name="welcome" href="/" style={styles.hidden} />
-        <TabTrigger name="explore" href="/explore" onPress={() => setNotice(null)} asChild>
-          <NavButton label="Explore" icon="explore" />
-        </TabTrigger>
+        style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, theme.spacing.sm) }]}>
+        <Link href="/explore" asChild>
+          <NavButton label="Explore" icon="explore" isFocused onPress={() => setNotice(null)} />
+        </Link>
         <NavButton label="Compare" icon="compare" accessibilityHint="Coming soon" onPress={() => setNotice('Pairwise comparisons are coming soon.')} />
         <NavButton label="Rankings" icon="rankings" accessibilityHint="Coming soon" onPress={() => setNotice('Your personal rankings are coming soon.')} />
         <NavButton label="Profile" icon="profile" accessibilityHint="Coming soon" onPress={() => setNotice('Your profile is coming soon.')} />
-      </TabList>
-    </Tabs>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
     backgroundColor: theme.colors.background
   },
-  content: {
-    flex: 1
-  },
-  hidden: {
-    display: 'none'
-  },
   tabBar: {
+    flexDirection: 'row',
     width: '100%',
     maxWidth: theme.layout.maxWidth,
     alignSelf: 'center',

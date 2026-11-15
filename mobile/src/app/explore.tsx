@@ -1,8 +1,9 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
+import AppTabs from '@/components/app-tabs';
 import { Logo } from '@/components/logo';
 import { PreviewNotice } from '@/components/preview-notice';
 import { ScreenContainer } from '@/components/screen-container';
@@ -24,6 +25,7 @@ export default function ExploreScreen() {
   }
 
   return (
+    <View style={styles.screen}>
     <ScreenContainer edges={['top', 'left', 'right']} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Logo />
@@ -123,7 +125,13 @@ export default function ExploreScreen() {
       </View>
 
       <View style={styles.venueList}>
-        {venues.map((venue) => <VenueCard key={venue.id} venue={venue} />)}
+        {venues.map((venue) => (
+          <VenueCard
+            key={venue.id}
+            venue={venue}
+            onPress={() => router.push({ pathname: '/bars/[barId]', params: { barId: venue.id } })}
+          />
+        ))}
         {venues.length === 0 && (
           <View style={styles.empty}>
             <AppIcon name="explore" size={28} color={theme.colors.purpleLight} />
@@ -139,10 +147,13 @@ export default function ExploreScreen() {
         <Pressable style={styles.backLink}><Text style={styles.viewAllLabel}>Back to Welcome</Text></Pressable>
       </Link>
     </ScreenContainer>
+    <AppTabs />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: theme.colors.background },
   content: {
     paddingHorizontal: 18,
     paddingTop: theme.spacing.lg,

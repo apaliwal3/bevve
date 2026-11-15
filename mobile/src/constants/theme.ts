@@ -19,6 +19,8 @@ export const BevveTheme = {
     purpleBorder: 'rgba(167, 139, 250, 0.4)',
     border: 'rgba(148, 163, 184, 0.14)',
     success: '#34d399',
+    successTint: 'rgba(52, 211, 153, 0.10)',
+    successBorder: 'rgba(52, 211, 153, 0.20)',
     star: '#fde68a',
     imageBadge: 'rgba(8, 13, 23, 0.82)',
     photoShade: 'rgba(4, 8, 18, 0.2)',
