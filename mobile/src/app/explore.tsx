@@ -11,12 +11,14 @@ import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { filterVenues, venueFilters, type VenueFilter } from '@/features/explore/filter-venues';
 import { exploreMockUser, mockVenues } from '@/fixtures/venues';
+import { useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
 
 export default function ExploreScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VenueFilter>('All');
   const [notice, setNotice] = useState<'profile' | 'prices' | null>(null);
-  const venues = useMemo(() => filterVenues(mockVenues, query, filter), [query, filter]);
+  const priceVenues = useVenuePriceCatalog(mockVenues);
+  const venues = useMemo(() => filterVenues(priceVenues, query, filter), [priceVenues, query, filter]);
 
   function resetFilters() {
     setQuery('');

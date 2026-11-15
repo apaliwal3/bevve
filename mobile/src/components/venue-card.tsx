@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
-import { useVenueContributions, useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { useVenueContributions, useVenueExtras, useVenueRating } from '@/features/ratings/venue-ratings-provider';
 import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
 import type { Venue } from '@/types/venue';
 
@@ -16,6 +16,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const { communityRating: rating } = useVenueRating(venue);
   const { ownCrowdReport, crowdSummary, bathroomSummary } = useVenueContributions(venue.id);
+  const { startingPriceCents } = useVenueExtras(venue.id);
   const crowdLevel = ownCrowdReport ? (crowdSummary.classification ? crowdSummary.score : null) : venue.crowd?.level;
   const crowdLabel = ownCrowdReport
     ? (crowdSummary.classification ? crowdClassificationLabels[crowdSummary.classification] : 'Not enough recent reports')
@@ -25,10 +26,10 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
     ? `★ ${rating.average.toFixed(1)}/5`
     : 'No ratings yet';
   const priceLabel =
-    venue.startingPriceCents === null
+    startingPriceCents === null
       ? 'No prices yet'
       : new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(
-          venue.startingPriceCents / 100,
+          startingPriceCents / 100,
         );
   const content = (
     <>
@@ -87,8 +88,9 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
               <Text style={styles.currencyIcon} accessible={false}>€</Text>
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>Drinks from</Text>
+              <Text style={styles.metricLabel}>Community prices from</Text>
               <Text style={styles.metricValue}>{priceLabel}</Text>
+              <Text style={styles.metricLabel}>Not verified</Text>
             </View>
           </View>
           <View style={styles.metric}>

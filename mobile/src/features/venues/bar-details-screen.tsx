@@ -10,7 +10,8 @@ import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import { VenueRatingOverlay } from '@/features/ratings/venue-rating-overlay';
-import { useVenueContributions, useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { useVenueContributions, useVenueExtras, useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { languageName } from '@/fixtures/contribution-catalog';
 import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
 import type { BathroomCategorySummary, Venue, VenueDetails } from '@/types/venue';
 
@@ -26,7 +27,7 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
   const { crowdSummary: crowd, bathroomSummary: bathrooms, ownBathroomReview, now } = useVenueContributions(venue.id, details?.bathrooms);
   const crowdKnown = crowd.classification !== null;
   const { communityRating: rating } = useVenueRating(venue);
-  const drinks = details?.drinks ?? [];
+  const { drinks, pendingLanguages } = useVenueExtras(venue.id);
   const languages = details?.languages ?? [];
 
   return (
@@ -102,7 +103,7 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
 
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>Drink prices</Text>
-          <Text style={styles.meta}>Community-reported · Demo prices</Text>
+          <Text style={styles.meta}>Community-reported · Not verified · Demo session</Text>
           <View style={[styles.card, styles.drinkList]}>
             {drinks.length === 0 && <Text style={styles.description}>No drink prices reported yet.</Text>}
             {drinks.map((drink, index) => (
@@ -111,6 +112,7 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
                 <View style={styles.flexCopy}>
                   <Text style={styles.drinkName}>{drink.name}</Text>
                   <Text style={styles.meta}>{drink.serving}</Text>
+                  {drink.observedAt && <Text style={styles.meta}>Reported {new Date(drink.observedAt).toLocaleString()}</Text>}
                 </View>
                 <Text style={styles.price}>
                   {drink.priceCents === null ? 'Not reported' : new Intl.NumberFormat('en-IE', { style: 'currency', currency: drink.currency }).format(drink.priceCents / 100)}
@@ -143,6 +145,14 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
               {languages.map((language) => <Text key={language.code} style={styles.languageTag}>{language.name}</Text>)}
             </View>
             {languages.length === 0 && <Text style={styles.description}>No languages reported yet.</Text>}
+            {pendingLanguages.length > 0 && (
+              <>
+                <Text style={styles.meta}>Suggestions awaiting review</Text>
+                <View style={styles.languageList}>
+                  {pendingLanguages.map((suggestion) => <Text key={suggestion.id} style={styles.languageTag}>{languageName(suggestion.language_code)} · Pending</Text>)}
+                </View>
+              </>
+            )}
           </View>
         </View>
 

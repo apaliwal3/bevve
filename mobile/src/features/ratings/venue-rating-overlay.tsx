@@ -20,10 +20,13 @@ import { BevveTheme as theme } from '@/constants/theme';
 import type { Venue } from '@/types/venue';
 import { BathroomReviewForm } from '@/features/contributions/bathroom-review-form';
 import { CrowdReportForm } from '@/features/contributions/crowd-report-form';
+import { DrinkPriceForm } from '@/features/contributions/drink-price-form';
+import { SpokenLanguagesForm } from '@/features/contributions/spoken-languages-form';
+import { SafetyInformationForm } from '@/features/contributions/safety-information-form';
 
 import type { StarRating } from './rating-state';
 import { StarSelector } from './star-selector';
-import { useVenueContributions, useVenueRating } from './venue-ratings-provider';
+import { useVenueContributions, useVenueExtras, useVenueRating } from './venue-ratings-provider';
 
 const ratingLabels: Record<StarRating, string> = {
   1: 'Disappointing',
@@ -39,13 +42,12 @@ const optionalActions: {
   title: string;
   hint: string;
   icon: AppIconName | 'euro';
-  placeholder: string;
 }[] = [
-  { id: 'crowd', title: 'Report crowd', hint: 'Share the live vibe', icon: 'crowd', placeholder: 'The crowd report form is coming soon.' },
-  { id: 'bathrooms', title: 'Rate bathrooms', hint: 'Cleanliness, accessibility and waiting time', icon: 'bathroom', placeholder: 'The bathroom rating form is coming soon.' },
-  { id: 'prices', title: 'Update drink prices', hint: 'Suggest menu prices', icon: 'euro', placeholder: 'The drink price form is coming soon.' },
-  { id: 'languages', title: 'Spoken languages', hint: 'Languages spoken by staff', icon: 'languages', placeholder: 'The spoken-language suggestion form is coming soon.' },
-  { id: 'safety', title: 'Safety information', hint: 'Public information and private reports', icon: 'safety', placeholder: 'Safety information and the private incident form are coming soon.' },
+  { id: 'crowd', title: 'Report crowd', hint: 'Share the live vibe', icon: 'crowd' },
+  { id: 'bathrooms', title: 'Rate bathrooms', hint: 'Cleanliness, accessibility and waiting time', icon: 'bathroom' },
+  { id: 'prices', title: 'Update drink prices', hint: 'Suggest menu prices', icon: 'euro' },
+  { id: 'languages', title: 'Spoken languages', hint: 'Languages spoken by staff', icon: 'languages' },
+  { id: 'safety', title: 'Safety information', hint: 'Public information and private reports', icon: 'safety' },
 ];
 
 type VenueRatingOverlayProps = { venue: Venue; onClose: () => void };
@@ -56,6 +58,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
   const { height } = useWindowDimensions();
   const { userRating, saveRating } = useVenueRating(venue);
   const { ownCrowdReport, ownBathroomReview, submitCrowdReport, saveBathroomReview } = useVenueContributions(venue.id);
+  const { drinks, languages, pendingLanguages, demoSafetyNotes, submitDrinkPrice, suggestLanguage, submitIncident } = useVenueExtras(venue.id);
   const [draftRating, setDraftRating] = useState<StarRating | null>(userRating);
   const [expanded, setExpanded] = useState<Partial<Record<OptionalActionId, boolean>>>({});
   const [isClosing, setIsClosing] = useState(false);
@@ -160,6 +163,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
             contentContainerStyle={styles.content}
             contentInsetAdjustmentBehavior="never"
             automaticallyAdjustContentInsets={false}
+            automaticallyAdjustKeyboardInsets
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag">
             {userRating === null ? (
@@ -225,11 +229,28 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
                               onSubmit={(scores) => { if (!closing.current) saveBathroomReview(scores); }}
                               onCancel={() => setExpanded((previous) => ({ ...previous, bathrooms: false }))}
                             />
+                          ) : action.id === 'prices' ? (
+                            <DrinkPriceForm
+                              prices={drinks}
+                              disabled={isClosing}
+                              onSubmit={(drinkId, cents) => { if (!closing.current) submitDrinkPrice(drinkId, cents); }}
+                              onCancel={() => setExpanded((previous) => ({ ...previous, prices: false }))}
+                            />
+                          ) : action.id === 'languages' ? (
+                            <SpokenLanguagesForm
+                              languages={languages}
+                              pending={pendingLanguages}
+                              disabled={isClosing}
+                              onSubmit={(code) => { if (!closing.current) suggestLanguage(code); }}
+                              onCancel={() => setExpanded((previous) => ({ ...previous, languages: false }))}
+                            />
                           ) : (
-                            <>
-                              <Text style={styles.eyebrow}>COMING SOON</Text>
-                              <Text style={styles.description}>{action.placeholder}</Text>
-                            </>
+                            <SafetyInformationForm
+                              demoNotes={demoSafetyNotes}
+                              disabled={isClosing}
+                              onSubmit={(incident) => { if (!closing.current) submitIncident(incident); }}
+                              onCancel={() => setExpanded((previous) => ({ ...previous, safety: false }))}
+                            />
                           )}
                         </View>
                       )}

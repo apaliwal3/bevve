@@ -2,7 +2,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import { AppState } from 'react-native';
 
 import { mockVenueDetails } from '@/fixtures/venues';
+import { mockDrinkCatalog, type VenueLanguageCode } from '@/fixtures/contribution-catalog';
 import type { Venue, VenueDetails } from '@/types/venue';
+import type { IncidentSubmission } from '../contributions/extra-form-drafts';
+import {
+  initialVenueExtrasState,
+  publicVenueExtras,
+  startingPriceCents,
+  validPriceCents,
+  venueExtrasReducer,
+  venuesWithLatestPrices,
+  type VenueExtrasState,
+} from '../contributions/venue-extras-state';
 
 import {
   aggregateBathroomReviews,
@@ -32,6 +43,10 @@ type VenueRatingsContextValue = {
   now: number;
   submitCrowdReport: (venueId: string, level: CrowdLevel) => void;
   saveBathroomReview: (venueId: string, scores: BathroomScores) => void;
+  extras: VenueExtrasState;
+  submitDrinkPrice: (venueId: string, drinkId: string, cents: number) => void;
+  suggestLanguage: (venueId: string, code: VenueLanguageCode) => void;
+  submitIncident: (venueId: string, incident: IncidentSubmission) => void;
 };
 
 const VenueRatingsContext = createContext<VenueRatingsContextValue | null>(null);
@@ -41,6 +56,7 @@ export function VenueRatingsProvider({ children }: PropsWithChildren) {
   const [ratings, dispatch] = useReducer(venueRatingsReducer, {});
   // Separate reducers keep overall ratings completely independent from contributions.
   const [contributions, dispatchContribution] = useReducer(contributionsReducer, initialContributionsState);
+  const [extras, dispatchExtra] = useReducer(venueExtrasReducer, initialVenueExtrasState);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const refresh = () => setNow(Date.now());
@@ -79,10 +95,55 @@ export function VenueRatingsProvider({ children }: PropsWithChildren) {
       created_at: time, updated_at: time,
     } });
   }, []);
-  const value = useMemo(() => ({ ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview }),
-    [ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview]);
+  const submitDrinkPrice = useCallback((venueId: string, drinkId: string, cents: number) => {
+    if (!validPriceCents(cents) || !mockDrinkCatalog.some((drink) => drink.id === drinkId)) return;
+    dispatchExtra({ type: 'observe-price', observation: {
+      id: createSessionSubmissionId(), bar_id: venueId, drink_id: drinkId, price_cents: cents,
+      currency: 'EUR', submitted_by: SESSION_USER_ID, observed_at: new Date().toISOString(),
+    } });
+  }, []);
+  const suggestLanguage = useCallback((venueId: string, code: VenueLanguageCode) => {
+    dispatchExtra({ type: 'suggest-language', associatedCodes: (mockVenueDetails[venueId]?.languages ?? []).map((language) => language.code), suggestion: {
+      id: createSessionSubmissionId(), bar_id: venueId, language_code: code,
+      suggested_by: SESSION_USER_ID, status: 'pending', created_at: new Date().toISOString(),
+    } });
+  }, []);
+  const submitIncident = useCallback((venueId: string, incident: IncidentSubmission) => {
+    dispatchExtra({ type: 'report-incident', report: {
+      ...incident, id: createSessionSubmissionId(), bar_id: venueId, reporter_id: SESSION_USER_ID,
+      status: 'pending', created_at: new Date().toISOString(),
+    } });
+  }, []);
+  const value = useMemo(() => ({
+    ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview,
+    extras, submitDrinkPrice, suggestLanguage, submitIncident,
+  }), [ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview,
+    extras, submitDrinkPrice, suggestLanguage, submitIncident]);
 
   return <VenueRatingsContext.Provider value={value}>{children}</VenueRatingsContext.Provider>;
+}
+
+export function useVenueExtras(venueId: string) {
+  const context = useContext(VenueRatingsContext);
+  if (!context) throw new Error('useVenueExtras must be used inside VenueRatingsProvider.');
+  const id = venueId.toLowerCase();
+  const publicData = publicVenueExtras(context.extras, id, mockVenueDetails[id]);
+  return {
+    ...publicData,
+    startingPriceCents: startingPriceCents(publicData.drinks),
+    submitDrinkPrice: (drinkId: string, cents: number) => context.submitDrinkPrice(id, drinkId, cents),
+    suggestLanguage: (code: VenueLanguageCode) => context.suggestLanguage(id, code),
+    submitIncident: (incident: IncidentSubmission) => context.submitIncident(id, incident),
+  };
+}
+
+// Explore filters must use the same latest prices as the cards and Bar Details.
+// Keep original overall-rating baselines intact to avoid counting a session vote twice.
+export function useVenuePriceCatalog(venues: readonly Venue[]) {
+  const context = useContext(VenueRatingsContext);
+  if (!context) throw new Error('useVenuePriceCatalog must be used inside VenueRatingsProvider.');
+  const observations = context.extras.priceObservations;
+  return useMemo(() => venuesWithLatestPrices(venues, observations, mockVenueDetails), [observations, venues]);
 }
 
 export function useVenueContributions(venueId: string, demoBathrooms?: VenueDetails['bathrooms']) {
