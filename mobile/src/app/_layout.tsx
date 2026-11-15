@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { BevveTheme as theme } from '@/constants/theme';
+import { VenueRatingsProvider } from '@/features/ratings/venue-ratings-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,7 +38,9 @@ export default function TabLayout() {
         },
       }}>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
+      <VenueRatingsProvider>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
+      </VenueRatingsProvider>
     </ThemeProvider>
   );
 }

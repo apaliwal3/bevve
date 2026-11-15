@@ -9,6 +9,8 @@ import { PreviewNotice } from '@/components/preview-notice';
 import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
+import { VenueRatingOverlay } from '@/features/ratings/venue-rating-overlay';
+import { useVenueRating } from '@/features/ratings/venue-ratings-provider';
 import type { BathroomCategorySummary, Venue, VenueDetails } from '@/types/venue';
 
 import { hasSufficientCrowdData } from './venue-details';
@@ -18,16 +20,17 @@ type BarDetailsScreenProps = { venue: Venue; details?: VenueDetails; onBack: () 
 export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenProps) {
   const insets = useSafeAreaInsets();
   const [imageFailed, setImageFailed] = useState(false);
-  const [actionsNotice, setActionsNotice] = useState(false);
+  const [ratingOverlayOpen, setRatingOverlayOpen] = useState(false);
   const [pricesNotice, setPricesNotice] = useState(false);
   const crowd = details?.crowd;
   const crowdKnown = hasSufficientCrowdData(crowd);
-  const rating = venue.communityRating;
+  const { communityRating: rating } = useVenueRating(venue);
   const bathrooms = details?.bathrooms;
   const drinks = details?.drinks ?? [];
   const languages = details?.languages ?? [];
 
   return (
+    <>
     <ScreenContainer edges={['left', 'right']}>
       <View style={[styles.hero, { minHeight: insets.top + 300 }]}>
         {venue.image && !imageFailed ? (
@@ -55,8 +58,8 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open actions for ${venue.name}`}
-              accessibilityHint="Bar actions are coming soon"
-              onPress={() => setActionsNotice(true)}
+              accessibilityHint="Open overall rating and optional bar actions"
+              onPress={() => setRatingOverlayOpen(true)}
               style={({ pressed }) => [styles.plusButton, pressed && styles.pressed]}>
               <AppIcon name="plus" size={20} color={theme.colors.text} />
             </Pressable>
@@ -71,7 +74,6 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
 
       <View style={[styles.body, { paddingBottom: Math.max(42, insets.bottom + theme.spacing.xxl) }]}>
         <Text style={styles.demoLabel}>DEMO DATA · Sample venue information</Text>
-        {actionsNotice && <PreviewNotice message="Bar actions are coming soon." onDismiss={() => setActionsNotice(false)} />}
 
         <View style={[styles.card, styles.crowdCard]}>
           <View style={styles.summaryRow}>
@@ -175,6 +177,8 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
         </View>
       </View>
     </ScreenContainer>
+    {ratingOverlayOpen && <VenueRatingOverlay venue={venue} onClose={() => setRatingOverlayOpen(false)} />}
+    </>
   );
 }
 

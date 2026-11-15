@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
+import { useVenueRating } from '@/features/ratings/venue-ratings-provider';
 import type { Venue } from '@/types/venue';
 
 import { AppIcon } from './app-icon';
@@ -12,8 +13,9 @@ type VenueCardProps = { venue: Venue; onPress?: () => void };
 
 export function VenueCard({ venue, onPress }: VenueCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
-  const ratingLabel = venue.communityRating && venue.communityRating.count > 0
-    ? `★ ${venue.communityRating.average.toFixed(1)}/5`
+  const { communityRating: rating } = useVenueRating(venue);
+  const ratingLabel = rating && rating.count > 0
+    ? `★ ${rating.average.toFixed(1)}/5`
     : 'No ratings yet';
   const priceLabel =
     venue.startingPriceCents === null
@@ -44,8 +46,8 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
             <Text style={styles.areaLabel}>{venue.area}</Text>
           </View>
           <Text
-            accessibilityLabel={venue.communityRating && venue.communityRating.count > 0
-              ? `Community bar rating: ${venue.communityRating.average.toFixed(1)} out of 5, ${venue.communityRating.count} ratings`
+            accessibilityLabel={rating && rating.count > 0
+              ? `Community bar rating: ${rating.average.toFixed(1)} out of 5, ${rating.count} ratings`
               : 'No community bar ratings yet'}
             style={[styles.badge, styles.rating]}>
             {ratingLabel}

@@ -22,6 +22,9 @@ export const BevveTheme = {
     successTint: 'rgba(52, 211, 153, 0.10)',
     successBorder: 'rgba(52, 211, 153, 0.20)',
     star: '#fde68a',
+    starTint: 'rgba(250, 204, 21, 0.15)',
+    overlayBackdrop: 'rgba(3, 7, 18, 0.72)',
+    overlaySurface: '#151e2d',
     imageBadge: 'rgba(8, 13, 23, 0.82)',
     photoShade: 'rgba(4, 8, 18, 0.2)',
     photoShadeMiddle: 'rgba(9, 14, 26, 0.18)',
@@ -39,7 +42,7 @@ export const BevveTheme = {
     xxxl: 32,
     huge: 64,
   },
-  radii: { sm: 8, md: 13, button: 15, card: 20, hero: 34, pill: 999 },
+  radii: { sm: 8, md: 13, button: 15, card: 20, panel: 22, hero: 34, pill: 999 },
   fonts: {
     body: 'DMSans-Regular',
     bodyBold: 'DMSans-Bold',
