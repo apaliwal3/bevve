@@ -12,6 +12,8 @@ export const BevveTheme = {
     textSecondary: '#cbd5e1',
     textMuted: '#94a3b8',
     textSubtle: '#64748b',
+    error: '#fda4af',
+    errorBorder: '#fb7185',
     purple: '#8b5cf6',
     purpleLight: '#a78bfa',
     purpleText: '#ddd6fe',

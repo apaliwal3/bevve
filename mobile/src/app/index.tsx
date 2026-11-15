@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,7 +12,7 @@ import { welcomeMock as welcome } from '@/fixtures/welcome';
 export default function WelcomeScreen() {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const [notice, setNotice] = useState('Mock prototype · No account data leaves this device');
+  const notice = 'UI demo · Backend authentication is not connected';
 
   return (
     <ScreenContainer edges={['left', 'right']} style={styles.screen}>
@@ -40,12 +39,12 @@ export default function WelcomeScreen() {
         </View>
       </View>
       <View style={[styles.actions, { paddingBottom: Math.max(theme.spacing.xxl, insets.bottom) }]}>
-        <PrimaryButton label="Sign In" onPress={() => setNotice('Sign-in is coming soon.')} />
-        <PrimaryButton
-          label="Create Account"
-          variant="secondary"
-          onPress={() => setNotice('Account creation is coming soon.')}
-        />
+        <Link href="/login" asChild>
+          <PrimaryButton label="Sign In" />
+        </Link>
+        <Link href="/signup" asChild>
+          <PrimaryButton label="Create Account" variant="secondary" />
+        </Link>
         <Link href="/explore" asChild>
           <Pressable style={styles.demoLink} accessibilityHint="Browse sample venues without signing in">
             <Text style={styles.demoLinkLabel}>Explore demo →</Text>
