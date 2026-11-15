@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 
-import { mockVenueDetails } from '@/fixtures/venues';
-import { mockDrinkCatalog, type VenueLanguageCode } from '@/fixtures/contribution-catalog';
+import { mockVenueDetails, mockVenues } from '@/fixtures/venues';
+import { mockDrinkCatalog, type CatalogDrink, type VenueLanguageCode } from '@/fixtures/contribution-catalog';
+import { mockPriceComparison } from '../prices/price-comparison';
 import type { Venue, VenueDetails } from '@/types/venue';
 import type { IncidentSubmission } from '../contributions/extra-form-drafts';
 import {
@@ -47,6 +48,8 @@ type VenueRatingsContextValue = {
   submitDrinkPrice: (venueId: string, drinkId: string, cents: number) => void;
   suggestLanguage: (venueId: string, code: VenueLanguageCode) => void;
   submitIncident: (venueId: string, incident: IncidentSubmission) => void;
+  comparisonDrinkId: string | null;
+  selectComparisonDrink: (drinkId: string) => void;
 };
 
 const VenueRatingsContext = createContext<VenueRatingsContextValue | null>(null);
@@ -57,6 +60,8 @@ export function VenueRatingsProvider({ children }: PropsWithChildren) {
   // Separate reducers keep overall ratings completely independent from contributions.
   const [contributions, dispatchContribution] = useReducer(contributionsReducer, initialContributionsState);
   const [extras, dispatchExtra] = useReducer(venueExtrasReducer, initialVenueExtrasState);
+  // UI preference only; no contribution is created by browsing drink prices.
+  const [comparisonDrinkId, setComparisonDrinkId] = useState<string | null>(mockDrinkCatalog[0]?.id ?? null);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const refresh = () => setNow(Date.now());
@@ -114,13 +119,31 @@ export function VenueRatingsProvider({ children }: PropsWithChildren) {
       status: 'pending', created_at: new Date().toISOString(),
     } });
   }, []);
+  const selectComparisonDrink = useCallback((drinkId: string) => {
+    const drink = mockDrinkCatalog.find((item) => item.id === drinkId.toLowerCase());
+    if (drink) setComparisonDrinkId(drink.id);
+  }, []);
   const value = useMemo(() => ({
     ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview,
     extras, submitDrinkPrice, suggestLanguage, submitIncident,
+    comparisonDrinkId, selectComparisonDrink,
   }), [ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview,
-    extras, submitDrinkPrice, suggestLanguage, submitIncident]);
+    extras, submitDrinkPrice, suggestLanguage, submitIncident, comparisonDrinkId, selectComparisonDrink]);
 
   return <VenueRatingsContext.Provider value={value}>{children}</VenueRatingsContext.Provider>;
+}
+
+export function usePriceComparisonSelection() {
+  const context = useContext(VenueRatingsContext);
+  if (!context) throw new Error('usePriceComparisonSelection must be used inside VenueRatingsProvider.');
+  return { drinkId: context.comparisonDrinkId, selectDrink: context.selectComparisonDrink };
+}
+
+export function usePriceComparisonResults(drink: CatalogDrink | null) {
+  const context = useContext(VenueRatingsContext);
+  if (!context) throw new Error('usePriceComparisonResults must be used inside VenueRatingsProvider.');
+  const observations = context.extras.priceObservations;
+  return useMemo(() => mockPriceComparison(drink, mockDrinkCatalog, mockVenues, mockVenueDetails, observations), [drink, observations]);
 }
 
 export function useVenueExtras(venueId: string) {

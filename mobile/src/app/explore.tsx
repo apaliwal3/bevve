@@ -11,12 +11,14 @@ import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { filterVenues, venueFilters, type VenueFilter } from '@/features/explore/filter-venues';
 import { exploreMockUser, mockVenues } from '@/fixtures/venues';
-import { useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
+import { usePriceComparisonSelection, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
+import { priceComparisonHref } from '@/features/prices/price-navigation';
 
 export default function ExploreScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VenueFilter>('All');
-  const [notice, setNotice] = useState<'profile' | 'prices' | null>(null);
+  const [notice, setNotice] = useState<'profile' | null>(null);
+  const { drinkId } = usePriceComparisonSelection();
   const priceVenues = useVenuePriceCatalog(mockVenues);
   const venues = useMemo(() => filterVenues(priceVenues, query, filter), [priceVenues, query, filter]);
 
@@ -101,8 +103,8 @@ export default function ExploreScreen() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Compare drink prices"
-        accessibilityHint="Coming soon"
-        onPress={() => setNotice('prices')}
+        accessibilityHint="View community-reported prices across Milan"
+        onPress={() => router.push(priceComparisonHref(drinkId))}
         style={({ pressed }) => [styles.priceCard, pressed && styles.pressed]}>
         <View style={styles.euroBadge}><Text style={styles.euro}>€</Text></View>
         <View style={styles.priceCopy}>
@@ -111,10 +113,6 @@ export default function ExploreScreen() {
         </View>
         <AppIcon name="chevron" size={18} color={theme.colors.purpleLight} />
       </Pressable>
-
-      {notice === 'prices' && (
-        <PreviewNotice message="Drink price comparison is coming soon." onDismiss={() => setNotice(null)} />
-      )}
 
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>

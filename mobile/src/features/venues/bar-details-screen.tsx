@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppIcon } from '@/components/app-icon';
 import { CrowdMeter } from '@/components/crowd-meter';
-import { PreviewNotice } from '@/components/preview-notice';
 import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
@@ -16,13 +15,18 @@ import { crowdClassificationLabels } from '@/features/contributions/contribution
 import type { BathroomCategorySummary, Venue, VenueDetails } from '@/types/venue';
 
 
-type BarDetailsScreenProps = { venue: Venue; details?: VenueDetails; onBack: () => void };
+type BarDetailsScreenProps = {
+  venue: Venue;
+  details?: VenueDetails;
+  onBack: () => void;
+  backLabel?: string;
+  onComparePrices: () => void;
+};
 
-export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenProps) {
+export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to Explore', onComparePrices }: BarDetailsScreenProps) {
   const insets = useSafeAreaInsets();
   const [imageFailed, setImageFailed] = useState(false);
   const [ratingOverlayOpen, setRatingOverlayOpen] = useState(false);
-  const [pricesNotice, setPricesNotice] = useState(false);
   const demoCrowd = details?.crowd;
   const { crowdSummary: crowd, bathroomSummary: bathrooms, ownBathroomReview, now } = useVenueContributions(venue.id, details?.bathrooms);
   const crowdKnown = crowd.classification !== null;
@@ -44,7 +48,7 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
         )}
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.heroShade]} />
         <View style={[styles.backRow, { paddingTop: insets.top + theme.spacing.lg }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back to Explore" onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={backLabel} onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <AppIcon name="back" color={theme.colors.text} />
           </Pressable>
         </View>
@@ -120,11 +124,10 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
               </View>
             ))}
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Compare drink prices" accessibilityHint="Read-only price comparison is coming soon" onPress={() => setPricesNotice(true)} style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Compare drink prices" accessibilityHint="View community-reported prices across Milan" onPress={onComparePrices} style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
             <Text style={styles.actionLabel}>Compare prices across Milan</Text>
             <AppIcon name="chevron" size={16} color={theme.colors.purpleLight} />
           </Pressable>
-          {pricesNotice && <PreviewNotice message="Read-only drink price comparison is coming soon." onDismiss={() => setPricesNotice(false)} />}
         </View>
 
         <View style={styles.infoGrid}>
