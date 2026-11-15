@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
-import { useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { useVenueContributions, useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
 import type { Venue } from '@/types/venue';
 
 import { AppIcon } from './app-icon';
@@ -14,6 +15,12 @@ type VenueCardProps = { venue: Venue; onPress?: () => void };
 export function VenueCard({ venue, onPress }: VenueCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const { communityRating: rating } = useVenueRating(venue);
+  const { ownCrowdReport, crowdSummary, bathroomSummary } = useVenueContributions(venue.id);
+  const crowdLevel = ownCrowdReport ? (crowdSummary.classification ? crowdSummary.score : null) : venue.crowd?.level;
+  const crowdLabel = ownCrowdReport
+    ? (crowdSummary.classification ? crowdClassificationLabels[crowdSummary.classification] : 'Not enough recent reports')
+    : venue.crowd?.label ?? 'No reports yet';
+  const bathroomCleanliness = bathroomSummary?.cleanliness.average ?? null;
   const ratingLabel = rating && rating.count > 0
     ? `★ ${rating.average.toFixed(1)}/5`
     : 'No ratings yet';
@@ -70,9 +77,9 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
               <AppIcon name="crowd" size={15} color={theme.colors.purpleLight} />
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>Crowd</Text>
-              <Text style={styles.metricValue}>{venue.crowd?.label ?? 'No reports yet'}</Text>
-              {venue.crowd && <CrowdMeter level={venue.crowd.level} />}
+              <Text style={styles.metricLabel}>{ownCrowdReport ? 'Session crowd' : 'Demo crowd'}</Text>
+              <Text style={styles.metricValue}>{crowdLabel}</Text>
+              {crowdLevel !== null && crowdLevel !== undefined && <CrowdMeter level={crowdLevel} />}
             </View>
           </View>
           <View style={styles.metric}>
@@ -91,11 +98,11 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
             <View style={styles.metricCopy}>
               <Text style={styles.metricLabel}>Bathrooms</Text>
               <Text style={styles.metricValue}>
-                {venue.bathroomCleanliness === null
+                {bathroomCleanliness === null
                   ? 'No reviews yet'
-                  : `${venue.bathroomCleanliness.toFixed(1)} ★`}
+                  : `${bathroomCleanliness.toFixed(1)} ★`}
               </Text>
-              {venue.bathroomCleanliness !== null && <Text style={styles.metricLabel}>Cleanliness</Text>}
+              {bathroomCleanliness !== null && <Text style={styles.metricLabel}>Cleanliness</Text>}
             </View>
           </View>
         </View>

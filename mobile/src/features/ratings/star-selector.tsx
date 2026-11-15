@@ -10,14 +10,15 @@ export function StarSelector({
   value,
   onChange,
   disabled = false,
-}: { value: StarRating | null; onChange: (rating: StarRating) => void; disabled?: boolean }) {
+  label = 'Overall bar rating',
+}: { value: StarRating | null; onChange: (rating: StarRating) => void; disabled?: boolean; label?: string }) {
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel="Overall bar rating" style={styles.row}>
+    <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.row}>
       {stars.map((star) => (
         <Pressable
           key={star}
           accessibilityRole="radio"
-          accessibilityLabel={`${star} ${star === 1 ? 'star' : 'stars'} out of 5`}
+          accessibilityLabel={`${label}: ${star} ${star === 1 ? 'star' : 'stars'} out of 5`}
           accessibilityState={{ checked: value === star, disabled }}
           disabled={disabled}
           onPress={() => onChange(star)}

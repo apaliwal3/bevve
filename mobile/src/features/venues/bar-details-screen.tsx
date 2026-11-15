@@ -10,10 +10,10 @@ import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import { VenueRatingOverlay } from '@/features/ratings/venue-rating-overlay';
-import { useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { useVenueContributions, useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
 import type { BathroomCategorySummary, Venue, VenueDetails } from '@/types/venue';
 
-import { hasSufficientCrowdData } from './venue-details';
 
 type BarDetailsScreenProps = { venue: Venue; details?: VenueDetails; onBack: () => void };
 
@@ -22,10 +22,10 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
   const [imageFailed, setImageFailed] = useState(false);
   const [ratingOverlayOpen, setRatingOverlayOpen] = useState(false);
   const [pricesNotice, setPricesNotice] = useState(false);
-  const crowd = details?.crowd;
-  const crowdKnown = hasSufficientCrowdData(crowd);
+  const demoCrowd = details?.crowd;
+  const { crowdSummary: crowd, bathroomSummary: bathrooms, ownBathroomReview, now } = useVenueContributions(venue.id, details?.bathrooms);
+  const crowdKnown = crowd.classification !== null;
   const { communityRating: rating } = useVenueRating(venue);
-  const bathrooms = details?.bathrooms;
   const drinks = details?.drinks ?? [];
   const languages = details?.languages ?? [];
 
@@ -78,9 +78,9 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
         <View style={[styles.card, styles.crowdCard]}>
           <View style={styles.summaryRow}>
             <View style={styles.flexCopy}>
-              <Text style={styles.sectionLabel}>LIVE CROWD · DEMO</Text>
+              <Text style={styles.sectionLabel}>LIVE CROWD · SESSION REPORTS</Text>
               <Text accessibilityRole="header" style={styles.sectionTitle}>
-                {crowdKnown ? (venue.crowd?.label ?? 'Reported crowd') : 'Unknown'}
+                {crowd.classification ? crowdClassificationLabels[crowd.classification] : 'Not enough recent reports'}
                 {crowdKnown && <Text style={styles.crowdScore}> {crowd?.score}/5</Text>}
               </Text>
             </View>
@@ -88,13 +88,16 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
           </View>
           <View style={styles.freshness}>
             <Text style={styles.meta}>
-              {crowd?.newestReportAgeMinutes === null || crowd?.newestReportAgeMinutes === undefined
+              {crowd.newest_report_at === null
                 ? 'No recent update'
-                : `Sample update: ${crowd.newestReportAgeMinutes} min ago`}
+                : `Updated ${Math.floor((now - Date.parse(crowd.newest_report_at)) / 60_000)} min ago`}
             </Text>
-            <Text style={styles.meta}>{crowd?.reportCount ?? 0} reports · 45 min window</Text>
+            <Text style={styles.meta}>{crowd.report_count} recent {crowd.report_count === 1 ? 'contributor' : 'contributors'} · 45 min window</Text>
           </View>
-          {!crowdKnown && <Text style={styles.description}>Not enough recent reports to show a reliable crowd status.</Text>}
+          {!crowdKnown && <Text style={styles.description}>At least 3 different contributors are needed within 45 minutes.</Text>}
+          {demoCrowd && demoCrowd.score !== null && (
+            <Text style={styles.meta}>Fictional demo snapshot: {demoCrowd.score}/5 from {demoCrowd.reportCount} reports. Not included in session crowd.</Text>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -156,6 +159,7 @@ export function BarDetailsScreen({ venue, details, onBack }: BarDetailsScreenPro
             <BathroomSummary label="Waiting time" summary={bathrooms?.waitTime} />
           </View>
           <Text style={styles.meta}>Separate from the overall bar rating. A waiting-time score of 5 means a shorter wait.</Text>
+          {ownBathroomReview && <Text style={styles.meta}>Includes your session review{details?.bathrooms ? ' and the fictional demo baseline' : ''}.</Text>}
         </View>
 
         <View style={[styles.card, styles.safetyCard]}>

@@ -18,10 +18,12 @@ import { AppIcon, type AppIconName } from '@/components/app-icon';
 import { PrimaryButton } from '@/components/primary-button';
 import { BevveTheme as theme } from '@/constants/theme';
 import type { Venue } from '@/types/venue';
+import { BathroomReviewForm } from '@/features/contributions/bathroom-review-form';
+import { CrowdReportForm } from '@/features/contributions/crowd-report-form';
 
 import type { StarRating } from './rating-state';
 import { StarSelector } from './star-selector';
-import { useVenueRating } from './venue-ratings-provider';
+import { useVenueContributions, useVenueRating } from './venue-ratings-provider';
 
 const ratingLabels: Record<StarRating, string> = {
   1: 'Disappointing',
@@ -53,6 +55,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { userRating, saveRating } = useVenueRating(venue);
+  const { ownCrowdReport, ownBathroomReview, submitCrowdReport, saveBathroomReview } = useVenueContributions(venue.id);
   const [draftRating, setDraftRating] = useState<StarRating | null>(userRating);
   const [expanded, setExpanded] = useState<Partial<Record<OptionalActionId, boolean>>>({});
   const [isClosing, setIsClosing] = useState(false);
@@ -157,7 +160,8 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
             contentContainerStyle={styles.content}
             contentInsetAdjustmentBehavior="never"
             automaticallyAdjustContentInsets={false}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag">
             {userRating === null ? (
               <View style={styles.ratingCard}>
                 <Text style={styles.eyebrow}>★ REQUIRED STEP</Text>
@@ -207,8 +211,26 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
                       </Pressable>
                       {isExpanded && (
                         <View style={styles.placeholder}>
-                          <Text style={styles.eyebrow}>COMING SOON</Text>
-                          <Text style={styles.description}>{action.placeholder}</Text>
+                          {action.id === 'crowd' ? (
+                            <CrowdReportForm
+                              savedReport={ownCrowdReport}
+                              disabled={isClosing}
+                              onSubmit={(level) => { if (!closing.current) submitCrowdReport(level); }}
+                              onCancel={() => setExpanded((previous) => ({ ...previous, crowd: false }))}
+                            />
+                          ) : action.id === 'bathrooms' ? (
+                            <BathroomReviewForm
+                              savedReview={ownBathroomReview}
+                              disabled={isClosing}
+                              onSubmit={(scores) => { if (!closing.current) saveBathroomReview(scores); }}
+                              onCancel={() => setExpanded((previous) => ({ ...previous, bathrooms: false }))}
+                            />
+                          ) : (
+                            <>
+                              <Text style={styles.eyebrow}>COMING SOON</Text>
+                              <Text style={styles.description}>{action.placeholder}</Text>
+                            </>
+                          )}
                         </View>
                       )}
                     </View>
