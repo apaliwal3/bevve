@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +31,7 @@ function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps)
 }
 
 export default function AppTabsLayout() {
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -45,9 +46,11 @@ export default function AppTabsLayout() {
         accessibilityLabel="Main navigation"
         style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, theme.spacing.sm) }]}>
         <Link href="/explore" asChild>
-          <NavButton label="Explore" icon="explore" isFocused onPress={() => setNotice(null)} />
+          <NavButton label="Explore" icon="explore" isFocused={pathname === '/explore'} onPress={() => setNotice(null)} />
         </Link>
-        <NavButton label="Compare" icon="compare" accessibilityHint="Coming soon" onPress={() => setNotice('Pairwise comparisons are coming soon.')} />
+        <Link href="/compare" asChild>
+          <NavButton label="Compare" icon="compare" isFocused={pathname === '/compare'} onPress={() => setNotice(null)} />
+        </Link>
         <NavButton label="Rankings" icon="rankings" accessibilityHint="Coming soon" onPress={() => setNotice('Your personal rankings are coming soon.')} />
         <NavButton label="Profile" icon="profile" accessibilityHint="Coming soon" onPress={() => setNotice('Your profile is coming soon.')} />
       </View>

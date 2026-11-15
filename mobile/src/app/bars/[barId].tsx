@@ -13,10 +13,14 @@ export default function BarDetailsRoute() {
   const { drinkId: preferredDrinkId } = usePriceComparisonSelection();
   const { drink, sourceVenue } = resolvePriceNavigation(params, mockDrinkCatalog, mockVenues, preferredDrinkId);
   const fromPrices = params.returnTo === 'prices';
+  const fromCompare = params.returnTo === 'compare';
   const result = resolveVenueById(barId, mockVenues);
   const backToExplore = () => router.dismissTo('/explore');
   const goBack = () => {
-    if (!fromPrices) backToExplore();
+    if (fromCompare) {
+      if (router.canGoBack()) router.back();
+      else router.replace('/compare');
+    } else if (!fromPrices) backToExplore();
     else if (router.canGoBack()) router.back();
     else router.replace(priceComparisonHref(drink?.id ?? preferredDrinkId, sourceVenue?.id));
   };
@@ -31,7 +35,7 @@ export default function BarDetailsRoute() {
       venue={result.venue}
       details={mockVenueDetails[result.venue.id]}
       onBack={goBack}
-      backLabel={fromPrices ? 'Back to drink prices' : 'Back to Explore'}
+      backLabel={fromCompare ? 'Back to personal comparisons' : fromPrices ? 'Back to drink prices' : 'Back to Explore'}
       onComparePrices={() => router.push(priceComparisonHref(drink?.id ?? preferredDrinkId, result.venue.id))}
     />
   );
