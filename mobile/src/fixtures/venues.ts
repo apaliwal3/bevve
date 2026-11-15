@@ -69,7 +69,7 @@ export const mockVenues: Venue[] = [
   },
 ];
 
-export const exploreMockUser = { initials: 'AM' } as const;
+export const exploreMockUser = { initials: 'BV' } as const;
 
 function demoDrinks(beerCents: number, spritzCents: number, ginCents: number): VenueDetails['drinks'] {
   return [

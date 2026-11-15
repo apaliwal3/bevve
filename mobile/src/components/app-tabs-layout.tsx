@@ -1,12 +1,11 @@
 import { Link, usePathname } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BevveTheme as theme } from '@/constants/theme';
 
 import { AppIcon, type AppIconName } from './app-icon';
-import { PreviewNotice } from './preview-notice';
 
 type NavButtonProps = Omit<ComponentProps<typeof Pressable>, 'children' | 'style'> & {
   label: string;
@@ -33,28 +32,24 @@ function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps)
 export default function AppTabsLayout() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const [notice, setNotice] = useState<string | null>(null);
 
   return (
     <SafeAreaView edges={['left', 'right']} style={styles.root}>
-      {notice && (
-        <View style={styles.notice}>
-          <PreviewNotice message={notice} onDismiss={() => setNotice(null)} />
-        </View>
-      )}
       <View
         accessibilityLabel="Main navigation"
         style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, theme.spacing.sm) }]}>
         <Link href="/explore" asChild>
-          <NavButton label="Explore" icon="explore" isFocused={pathname === '/explore'} onPress={() => setNotice(null)} />
+          <NavButton label="Explore" icon="explore" isFocused={pathname === '/explore'} />
         </Link>
         <Link href="/compare" asChild>
-          <NavButton label="Compare" icon="compare" isFocused={pathname === '/compare'} onPress={() => setNotice(null)} />
+          <NavButton label="Compare" icon="compare" isFocused={pathname === '/compare'} />
         </Link>
         <Link href="/rankings" asChild>
-          <NavButton label="Rankings" icon="rankings" isFocused={pathname === '/rankings'} onPress={() => setNotice(null)} />
+          <NavButton label="Rankings" icon="rankings" isFocused={pathname === '/rankings'} />
         </Link>
-        <NavButton label="Profile" icon="profile" accessibilityHint="Coming soon" onPress={() => setNotice('Your profile is coming soon.')} />
+        <Link href="/profile" asChild>
+          <NavButton label="Profile" icon="profile" isFocused={pathname === '/profile'} />
+        </Link>
       </View>
     </SafeAreaView>
   );
@@ -94,13 +89,6 @@ const styles = StyleSheet.create({
     height: 2,
     borderRadius: theme.radii.pill,
     backgroundColor: theme.colors.purpleLight
-  },
-  notice: {
-    width: '100%',
-    maxWidth: theme.layout.maxWidth,
-    alignSelf: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm
   },
   pressed: {
     opacity: 0.7

@@ -5,7 +5,6 @@ import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { AppIcon } from '@/components/app-icon';
 import AppTabs from '@/components/app-tabs';
 import { Logo } from '@/components/logo';
-import { PreviewNotice } from '@/components/preview-notice';
 import { ScreenContainer } from '@/components/screen-container';
 import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
@@ -17,7 +16,6 @@ import { priceComparisonHref } from '@/features/prices/price-navigation';
 export default function ExploreScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VenueFilter>('All');
-  const [notice, setNotice] = useState<'profile' | null>(null);
   const { drinkId } = usePriceComparisonSelection();
   const priceVenues = useVenuePriceCatalog(mockVenues);
   const venues = useMemo(() => filterVenues(priceVenues, query, filter), [priceVenues, query, filter]);
@@ -35,19 +33,14 @@ export default function ExploreScreen() {
         <Logo />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Profile"
-          accessibilityHint="Coming soon"
-          onPress={() => setNotice('profile')}
+          accessibilityLabel="Open demo profile"
+          onPress={() => router.navigate('/profile')}
           style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}>
           <View style={styles.avatar}>
             <Text style={styles.initials}>{exploreMockUser.initials}</Text>
-            <View style={styles.avatarDot} />
           </View>
         </Pressable>
       </View>
-      {notice === 'profile' && (
-        <PreviewNotice message="Your profile is coming soon." onDismiss={() => setNotice(null)} />
-      )}
 
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>TONIGHT IN MILAN</Text>
@@ -182,17 +175,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 11
-  },
-  avatarDot: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 9,
-    height: 9,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.success,
-    borderWidth: 2,
-    borderColor: theme.colors.background
   },
   hero: {
     paddingTop: 26,

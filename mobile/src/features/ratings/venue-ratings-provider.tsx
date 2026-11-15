@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import { mockVenueDetails, mockVenues } from '@/fixtures/venues';
 import { mockDrinkCatalog, type CatalogDrink, type VenueLanguageCode } from '@/fixtures/contribution-catalog';
 import { mockPriceComparison } from '../prices/price-comparison';
+import { selectProfileContributions } from '../profile/profile-activity';
 import type { Venue, VenueDetails } from '@/types/venue';
 import type { IncidentSubmission } from '../contributions/extra-form-drafts';
 import {
@@ -198,4 +199,15 @@ export function useVenueRating(venue: Venue) {
     communityRating: communityRatingWithUser(venue.communityRating, userRating),
     saveRating: (rating: StarRating) => context.saveRating(venue.id, rating),
   };
+}
+
+export function useProfileContributions() {
+  const context = useContext(VenueRatingsContext);
+  if (!context) throw new Error('useProfileContributions must be used inside VenueRatingsProvider.');
+  const { ratings } = context;
+  const { crowdReports, bathroomReviews } = context.contributions;
+  const { priceObservations } = context.extras;
+  // Pending suggestions and private incidents never enter the Profile UI contract.
+  return useMemo(() => selectProfileContributions({ ratings, crowdReports, bathroomReviews, priceObservations },
+    SESSION_USER_ID, mockVenues, mockDrinkCatalog), [ratings, crowdReports, bathroomReviews, priceObservations]);
 }

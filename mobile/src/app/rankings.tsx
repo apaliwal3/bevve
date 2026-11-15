@@ -9,6 +9,7 @@ export default function RankingsRoute() {
       <Stack.Screen options={{ title: 'My Rankings' }} />
       <PersonalRankingsScreen
         onCompare={() => router.navigate('/compare')}
+        onProfile={() => router.navigate('/profile')}
         onOpenVenue={(venue) => router.push(venueFromRankingsHref(venue.id))}
       />
     </>

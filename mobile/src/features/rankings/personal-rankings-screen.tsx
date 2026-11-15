@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
 import AppTabs from '@/components/app-tabs';
-import { PreviewNotice } from '@/components/preview-notice';
 import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
@@ -13,11 +11,10 @@ import { exploreMockUser } from '@/fixtures/venues';
 import type { RankedVenue } from './personal-rankings';
 import { RankedVenueRow } from './ranked-venue-row';
 
-type PersonalRankingsScreenProps = { onCompare: () => void; onOpenVenue: (venue: RankedVenue) => void };
+type PersonalRankingsScreenProps = { onCompare: () => void; onOpenVenue: (venue: RankedVenue) => void; onProfile: () => void };
 
-export function PersonalRankingsScreen({ onCompare, onOpenVenue }: PersonalRankingsScreenProps) {
+export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: PersonalRankingsScreenProps) {
   const { entries, completedCount } = usePersonalRankings();
-  const [profileNotice, setProfileNotice] = useState(false);
   const hasRankings = entries.length > 0;
 
   return (
@@ -28,11 +25,10 @@ export function PersonalRankingsScreen({ onCompare, onOpenVenue }: PersonalRanki
             <Text style={styles.kicker}>YOUR TASTE</Text>
             <Text accessibilityRole="header" style={styles.title}>My Rankings</Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Profile" accessibilityHint="Coming soon" onPress={() => setProfileNotice(true)} style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open demo profile" onPress={onProfile} style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}>
             <View style={styles.avatar}><Text style={styles.initials}>{exploreMockUser.initials}</Text></View>
           </Pressable>
         </View>
-        {profileNotice && <PreviewNotice message="Your profile is coming soon." onDismiss={() => setProfileNotice(false)} />}
 
         <View style={styles.tasteCard}>
           <View accessibilityLabel={entries.length + ' bars ranked'} style={styles.orb}>
