@@ -1,13 +1,18 @@
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
 import type { Venue } from '@/types/venue';
 
+import { AppIcon } from './app-icon';
+import { CrowdMeter } from './crowd-meter';
+
 type VenueCardProps = { venue: Venue; onPress?: () => void };
 
 export function VenueCard({ venue, onPress }: VenueCardProps) {
-  const ratingLabel = venue.communityRating
+  const [imageFailed, setImageFailed] = useState(false);
+  const ratingLabel = venue.communityRating && venue.communityRating.count > 0
     ? `★ ${venue.communityRating.average.toFixed(1)}/5`
     : 'No ratings yet';
   const priceLabel =
@@ -19,22 +24,39 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
   const content = (
     <>
       <View style={styles.photo}>
-        <Image
-          source={venue.image}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          accessible={false}
-        />
+        {venue.image && !imageFailed ? (
+          <Image
+            source={venue.image}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            accessible={false}
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.photoPlaceholder]}>
+            <AppIcon name="photo" size={28} />
+            <Text style={styles.metricLabel}>Photo unavailable</Text>
+          </View>
+        )}
         <View style={styles.badges}>
-          <Text style={styles.badge}>{venue.area}</Text>
-          <Text style={[styles.badge, styles.rating]}>{ratingLabel}</Text>
+          <View style={styles.areaBadge}>
+            <AppIcon name="pin" size={12} color={theme.colors.text} />
+            <Text style={styles.areaLabel}>{venue.area}</Text>
+          </View>
+          <Text
+            accessibilityLabel={venue.communityRating && venue.communityRating.count > 0
+              ? `Community bar rating: ${venue.communityRating.average.toFixed(1)} out of 5, ${venue.communityRating.count} ratings`
+              : 'No community bar ratings yet'}
+            style={[styles.badge, styles.rating]}>
+            {ratingLabel}
+          </Text>
         </View>
       </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
             <Text style={styles.name}>{venue.name}</Text>
-            <Text style={styles.subtitle}>{venue.vibe} · {venue.distanceLabel}</Text>
+            <Text style={styles.subtitle}>{venue.vibe} · {venue.distanceLabel ?? 'Distance unavailable'}</Text>
           </View>
           {onPress && (
             <Text style={styles.arrow} accessible={false}>›</Text>
@@ -42,20 +64,37 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
         </View>
         <View style={styles.metrics}>
           <View style={styles.metric}>
-            <Text style={styles.metricLabel}>Crowd</Text>
-            <Text style={styles.metricValue}>{venue.crowd?.label ?? 'No reports yet'}</Text>
+            <View style={styles.metricIcon}>
+              <AppIcon name="crowd" size={15} color={theme.colors.purpleLight} />
+            </View>
+            <View style={styles.metricCopy}>
+              <Text style={styles.metricLabel}>Crowd</Text>
+              <Text style={styles.metricValue}>{venue.crowd?.label ?? 'No reports yet'}</Text>
+              {venue.crowd && <CrowdMeter level={venue.crowd.level} />}
+            </View>
           </View>
           <View style={styles.metric}>
-            <Text style={styles.metricLabel}>Drinks from</Text>
-            <Text style={styles.metricValue}>{priceLabel}</Text>
+            <View style={styles.metricIcon}>
+              <Text style={styles.currencyIcon} accessible={false}>€</Text>
+            </View>
+            <View style={styles.metricCopy}>
+              <Text style={styles.metricLabel}>Drinks from</Text>
+              <Text style={styles.metricValue}>{priceLabel}</Text>
+            </View>
           </View>
           <View style={styles.metric}>
-            <Text style={styles.metricLabel}>Cleanliness</Text>
-            <Text style={styles.metricValue}>
-              {venue.bathroomCleanliness === null
-                ? 'No reviews yet'
-                : `${venue.bathroomCleanliness.toFixed(1)} ★`}
-            </Text>
+            <View style={styles.metricIcon}>
+              <AppIcon name="bathroom" size={15} color={theme.colors.purpleLight} />
+            </View>
+            <View style={styles.metricCopy}>
+              <Text style={styles.metricLabel}>Bathrooms</Text>
+              <Text style={styles.metricValue}>
+                {venue.bathroomCleanliness === null
+                  ? 'No reviews yet'
+                  : `${venue.bathroomCleanliness.toFixed(1)} ★`}
+              </Text>
+              {venue.bathroomCleanliness !== null && <Text style={styles.metricLabel}>Cleanliness</Text>}
+            </View>
           </View>
         </View>
       </View>
@@ -81,15 +120,42 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
-  photo: { height: 174, backgroundColor: theme.colors.surfaceRaised },
+  photo: {
+    height: 174,
+    backgroundColor: theme.colors.surfaceRaised
+  },
+  photoPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm
+  },
   badges: {
+    position: 'absolute',
+    top: theme.spacing.md,
+    left: theme.spacing.md,
+    right: theme.spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md,
+    gap: theme.spacing.sm
+  },
+  areaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flexShrink: 1,
+    backgroundColor: theme.colors.imageBadge,
+    borderRadius: theme.radii.pill,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs
+  },
+  areaLabel: {
+    flexShrink: 1,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 11
   },
   badge: {
     flexShrink: 1,
@@ -99,20 +165,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     fontFamily: theme.fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 11
   },
-  rating: { color: theme.colors.star },
-  body: { padding: theme.spacing.lg },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  titleCopy: { flex: 1 },
-  name: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 19 },
+  rating: {
+    color: theme.colors.star
+  },
+  body: {
+    padding: theme.spacing.lg
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm
+  },
+  titleCopy: {
+    flex: 1
+  },
+  name: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.heading,
+    fontSize: 19
+  },
   subtitle: {
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.body,
     fontSize: 11,
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.xs
   },
-  arrow: { color: theme.colors.purpleLight, fontSize: 28 },
+  arrow: {
+    color: theme.colors.purpleLight,
+    fontSize: 28
+  },
   metrics: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -120,10 +203,41 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: theme.colors.border,
     marginTop: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
+    paddingTop: theme.spacing.md
   },
-  metric: { flexGrow: 1, flexBasis: 80, gap: theme.spacing.xs },
-  metricLabel: { color: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 10 },
-  metricValue: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold, fontSize: 11 },
-  pressed: { opacity: 0.85 },
+  metric: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexGrow: 1,
+    flexBasis: 90,
+    gap: theme.spacing.xs
+  },
+  metricIcon: {
+    width: 25,
+    height: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.radii.sm,
+    backgroundColor: theme.colors.purpleTint,
+  },
+  metricCopy: { flex: 1, gap: theme.spacing.xs },
+  currencyIcon: {
+    color: theme.colors.purpleLight,
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 14,
+    lineHeight: 16
+  },
+  metricLabel: {
+    color: theme.colors.textMuted,
+    fontFamily: theme.fonts.body,
+    fontSize: 10
+  },
+  metricValue: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 11
+  },
+  pressed: {
+    opacity: 0.85
+  }
 });

@@ -20,6 +20,8 @@ export function ScreenContainer({
     <View style={[styles.container, style]}>
       <SafeAreaView edges={edges} style={styles.safeArea}>
         <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
           showsVerticalScrollIndicator={false}

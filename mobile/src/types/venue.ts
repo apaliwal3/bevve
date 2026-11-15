@@ -6,8 +6,10 @@ export type Venue = {
   name: string;
   area: string;
   vibe: string;
-  distanceLabel: string;
-  image: number | ImageSource;
+  distanceLabel: string | null;
+  distanceMeters: number | null;
+  isPopular: boolean;
+  image: number | ImageSource | null;
   communityRating: { average: number; count: number } | null;
   crowd: { level: 1 | 2 | 3 | 4 | 5; label: string } | null;
   startingPriceCents: number | null;

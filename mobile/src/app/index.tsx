@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
+import { Link } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/logo';
@@ -45,6 +46,11 @@ export default function WelcomeScreen() {
           variant="secondary"
           onPress={() => setNotice('Account creation is coming soon.')}
         />
+        <Link href="/explore" asChild>
+          <Pressable style={styles.demoLink} accessibilityHint="Browse sample venues without signing in">
+            <Text style={styles.demoLinkLabel}>Explore demo →</Text>
+          </Pressable>
+        </Link>
         <Text accessibilityLiveRegion="polite" style={styles.notice}>
           {notice}
         </Text>
@@ -129,4 +135,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: theme.spacing.xs,
   },
+  demoLink: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  demoLinkLabel: { color: theme.colors.purpleLight, fontFamily: theme.fonts.bodyBold, fontSize: 12 },
 });
