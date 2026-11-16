@@ -1,7 +1,7 @@
 # bevve mobile
 
 Native nightlife discovery demo built with Expo SDK 58, React Native, TypeScript
-and Expo Router. The interface follows the approved bevve Figma Make reference.
+and Expo Router. The interface uses bevve's approved dark navy and purple design.
 See the [repository README](../README.md) for features and backend boundaries.
 
 ## Prerequisites
@@ -61,6 +61,9 @@ node node_modules/typescript/bin/tsc --noEmit --incremental false
 # All mobile tests
 node --experimental-strip-types --test tests/*.test.mjs
 
+# ESLint (report findings without applying fixes)
+npm run lint
+
 # iOS JavaScript/assets export; does not build or sign an installable app
 node node_modules/expo/bin/cli export --platform ios --output-dir .expo/ios-export
 
@@ -73,8 +76,10 @@ logic, validation, localization, mocked language storage and selected component
 styles. They do not replace physical iPhone checks for rendering, keyboard
 behavior, accessibility or native storage.
 
-ESLint is not configured. The existing lint command enters Expo's setup flow;
-it is not a ready-to-run code-quality check.
+ESLint uses the official `eslint-config-expo/flat` preset in `eslint.config.js`.
+The lint command checks mobile source, tests and scripts without applying fixes.
+Generated native folders, Expo caches, build outputs and dependencies are ignored.
+Backend code is outside the mobile lint scope.
 
 ## Demo session and languages
 
@@ -105,6 +110,7 @@ bundled assets and the remaining app-icon requirements.
 
 ```text
 src/app/              Routes and root provider layout
+src/app/(tabs)/       Explore, Compare, Rankings and Profile tabs
 src/components/       Reusable native components and bottom navigation
 src/constants/        bevve colors, typography and spacing
 src/features/         Screens, state providers, reducers and selectors

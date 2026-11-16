@@ -1,13 +1,46 @@
 # bevve reference assets
 
-- `images/welcome-nightlife.jpg`: bundled copy of the Unsplash photo used by the approved Figma Welcome screen, https://images.unsplash.com/photo-1791485910633-65eb38133d34 (1200px, quality 85).
-- `fonts/DMSans-*.ttf` and `fonts/Manrope-*.ttf`: static faces from https://github.com/expo/google-fonts/tree/master/font-packages, matching the reference typography. The SIL Open Font Licenses are included beside the font files.
+## Fonts
 
-These assets load locally through the already installed `expo-image` and `expo-font` packages. The Welcome screen does not require an external image or font request.
+`fonts/DMSans-*.ttf` and `fonts/Manrope-*.ttf` are the bundled faces used by the
+native theme, originally sourced from the
+[Expo Google Fonts packages](https://github.com/expo/google-fonts/tree/master/font-packages).
+Their SIL Open Font License 1.1 notices are included in
+[`DMSans-OFL.txt`](fonts/DMSans-OFL.txt) and [`Manrope-OFL.txt`](fonts/Manrope-OFL.txt).
+Keep those notices with redistributed font files.
 
-Venue photographs are remote URLs in `src/fixtures/venues.ts` and require network
-access unless cached. They depict fictional demo venues rather than verified
-real-world listings.
+## Photographs and provenance
+
+The following image sources are recorded for the current native app. Venue URLs
+are used by [`venues.ts`](../src/fixtures/venues.ts); the bundled Welcome image
+is loaded by [`welcome.ts`](../src/fixtures/welcome.ts).
+
+- **Welcome — bundled:** `images/welcome-nightlife.jpg` (1200 × 1810 JPEG).
+  Its recorded source is [Unsplash CDN image 1791485910633-65eb38133d34](https://images.unsplash.com/photo-1791485910633-65eb38133d34).
+  The repository contains no photographer credit or original photo-page link;
+  the bundled bytes have not been independently matched to that CDN source.
+- **Luna Rossa — remote:** [Unsplash CDN image 1546847596-b6c8086514d0](https://images.unsplash.com/photo-1546847596-b6c8086514d0).
+- **Basso Club — remote:** [Unsplash CDN image 1744928869793-3908b4649ad6](https://images.unsplash.com/photo-1744928869793-3908b4649ad6).
+- **Nottetempo — remote:** [Unsplash CDN image 1707208097739-e3bdf439acb2](https://images.unsplash.com/photo-1707208097739-e3bdf439acb2).
+- **Violet Room — remote:** [Unsplash CDN image 1764270720089-63e2a918b51f](https://images.unsplash.com/photo-1764270720089-63e2a918b51f).
+
+**All five photographs: asset-specific provenance and redistribution rights
+remain unverified.** The source trail records the URLs associated with the demo,
+not the photographer, original publication page or license applicable to each
+image. No creator identities or asset-specific license grants were confirmed.
+
+The [standard Unsplash License](https://unsplash.com/license), checked on
+16 November 2026, permits downloading, modifying and distributing covered images
+for commercial and noncommercial use, subject to restrictions on unmodified
+image sales and competing image collections. That general policy does not prove
+that every URL above is covered. Before public distribution, record each original
+photo page, photographer, applicable license and any required permissions.
+
+These images remain provisional demo imagery.
+Venue names and associations are fictional and do not identify the photographed
+businesses or imply endorsement. Remote venue photographs need network access
+unless cached. The Welcome image and fonts load locally through `expo-image`
+and `expo-font`.
 
 ## Application branding
 

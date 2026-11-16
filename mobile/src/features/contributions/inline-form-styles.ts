@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
 
-// Shared only by the Stage 4C forms; existing Crowd/Bathroom styling is unchanged.
+// Shared by the drink-price, spoken-language and safety forms.
 export const inlineFormStyles = StyleSheet.create({
   form: {
     gap: theme.spacing.md

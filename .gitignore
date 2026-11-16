@@ -2,3 +2,32 @@
 .env.*
 !.env.example
 node_modules/
+
+# macOS Finder folder metadata (all directories)
+.DS_Store
+
+# Build and coverage output at project roots
+/build/
+/dist/
+/coverage/
+/barhop-backend/build/
+/barhop-backend/dist/
+/barhop-backend/coverage/
+
+# Local tooling caches, debug logs and editor temporary files
+.eslintcache
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# Private signing keys and credential containers
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision

@@ -65,7 +65,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
   const [draftRating, setDraftRating] = useState<StarRating | null>(userRating);
   const [expanded, setExpanded] = useState<Partial<Record<OptionalActionId, boolean>>>({});
   const [isClosing, setIsClosing] = useState(false);
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const mounted = useRef(true);
   const closing = useRef(false);
   const reduceMotion = useRef(false);

@@ -1,7 +1,7 @@
 # bevve
 
-bevve is a nightlife discovery project focused on Milan. Its native
-React Native application recreates the approved Figma Make design with a dark
+bevve is a nightlife discovery project focused on Milan. The maintained frontend
+is the native React Native application in `mobile/`, with bevve's approved dark
 navy and purple interface.
 
 The mobile app is an interactive demo using fictional venue fixtures and shared
@@ -38,6 +38,7 @@ session state. It does not connect to Supabase or create authenticated accounts.
 ```text
 mobile/                         Native Expo application
   src/app/                      Expo Router routes
+  src/app/(tabs)/               Explore, Compare, Rankings and Profile tabs
   src/components/               Reusable native UI
   src/features/                 Feature screens, providers and state helpers
   src/constants/                Theme and design tokens
@@ -45,7 +46,6 @@ mobile/                         Native Expo application
   src/localization/             Dictionaries, language state and formatters
   tests/                        Mobile tests
   assets/                       Fonts, images and icon assets
-design-references/figma-make/    Approved React/Vite design reference
 barhop-backend/                 Supabase backend foundation
 ```
 
@@ -71,6 +71,7 @@ From `mobile/`:
 ```sh
 node node_modules/typescript/bin/tsc --noEmit --incremental false
 node --experimental-strip-types --test tests/*.test.mjs
+npm run lint
 ```
 
 Backend logic tests are separate. From the repository root:
@@ -82,13 +83,13 @@ npm --prefix barhop-backend test
 These tests do not validate a deployed database or its access policies. Refer to
 the [backend README](barhop-backend/README.md) for its setup and database checks.
 Mobile bundling and configuration commands are in the [mobile README](mobile/README.md#validation).
-ESLint is not configured.
+ESLint uses the official Expo flat configuration and reports findings without applying fixes.
 
 ## Team workflow
 
 1. Create a focused branch from the team's agreed integration branch.
-2. Keep frontend changes in `mobile/` and treat the approved design reference as
-   read-only. Agree API and data-contract changes with the backend maintainers.
+2. Keep frontend changes in `mobile/`. Agree API and data-contract changes with
+   the backend maintainers.
 3. Run the relevant checks and test changed screens on an iPhone in both
    languages, including keyboard, safe-area and larger-text behavior.
 4. Submit a pull request describing the change, validation and remaining

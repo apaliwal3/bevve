@@ -9,8 +9,8 @@ export type PersonalRankingEntry = {
 };
 export type PersonalRankingsView = { entries: PersonalRankingEntry[]; completedCount: number };
 
-// Stage 6A owns replay, precision and tie ordering. This selector only joins venue
-// presentation data and assigns ordinals; raw scores never enter the UI contract.
+// Comparison state owns replay, precision and tie ordering. This selector joins
+// venue presentation data and assigns ordinals; raw scores never enter the UI contract.
 export function selectPersonalRankings(
   state: Pick<PersonalComparisonState, 'rankings' | 'history'>,
   venues: readonly Venue[],

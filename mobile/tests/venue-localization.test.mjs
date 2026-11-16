@@ -6,11 +6,10 @@ import { createLocaleFormatters } from '../src/localization/formatting.ts';
 import { contributionError, crowdLevelKeys, drinkCategoryLabel, venueLanguageLabel, venueServingLabel } from '../src/localization/venue-copy.ts';
 import { mockDrinkCatalog, languageCatalog } from '../src/fixtures/contribution-catalog.ts';
 import { mockVenueDetails, mockVenues } from '../src/fixtures/venues.ts';
-import { parseEuroPrice, incidentCategories } from '../src/features/contributions/venue-extras-state.ts';
+import { parseEuroPrice, incidentCategories, initialVenueExtrasState, venueExtrasReducer } from '../src/features/contributions/venue-extras-state.ts';
 import { incidentSubmission, emptyIncidentDraft, priceDraftReducer, incidentDraftReducer, languageDraftReducer } from '../src/features/contributions/extra-form-drafts.ts';
 import { createLanguageStore } from '../src/localization/language-store.ts';
 import { rankingBadgeSize } from '../src/features/rankings/ranking-summary-layout.ts';
-import { initialVenueExtrasState, venueExtrasReducer } from '../src/features/contributions/venue-extras-state.ts';
 import { SESSION_USER_ID } from '../src/features/contributions/contribution-state.ts';
 
 test('crowd levels, bathroom labels, actions and incident categories have natural EN/IT display values', () => {

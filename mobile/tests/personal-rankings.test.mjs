@@ -87,7 +87,7 @@ test('Skip preserves personal ranking order, comparison counts, and the original
   assert.deepEqual(view(next), view(state));
 });
 
-test('ties keep the Stage 6A/backend UUID order rather than venue-name or catalog order', () => {
+test('ties keep the backend-compatible UUID order rather than venue-name or catalog order', () => {
   let state = vote(initial(), 1, barA);
   state = seekPair(state, barC, barD);
   state = vote(state, 2, barC);
