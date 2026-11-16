@@ -1,13 +1,16 @@
-# Figma Make and Code Layers files
+# bevve design reference
 
-This directory contains scripts, configuration, and generated files that Figma
-Make and Code Layers use to install dependencies, run your app, build previews,
-and publish your site.
+Approved Figma Make React/Vite prototype export used as the visual reference for
+the native application in [mobile/](../../mobile/README.md).
 
-Commit this directory to your repository so Figma Make and Code Layers can reuse
-it the next time this repository is imported and start your preview server right
-away, without setting up the project from scratch.
+- `App.tsx` contains the reference screens and interactions.
+- `index.css` defines the palette, typography, spacing and animations.
+- `main.tsx` and `package.json` retain the original web entry point and tooling
+  metadata.
 
-To learn more about these files, see
-[Use Git with Figma Make and code layers](https://help.figma.com/hc/en-us/articles/44220165255063-Use-Git-with-Figma-Make-and-code-layers#h_01M5X47F86RN1RW0F8565KZHB8)
-in the Figma Help Center.
+Treat the design source as read-only during native frontend work. The native app
+uses React Native components and Expo Router rather than importing this web UI.
+
+This checkout is a reference snapshot, not a complete standalone Vite setup:
+it has no `index.html` or Vite configuration, and no running preview server is
+implied. Use the mobile README for development and validation commands.

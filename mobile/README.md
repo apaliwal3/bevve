@@ -1,56 +1,134 @@
-# Welcome to your Expo app 👋
+# bevve mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Native nightlife discovery demo built with Expo SDK 58, React Native, TypeScript
+and Expo Router. The interface follows the approved bevve Figma Make reference.
+See the [repository README](../README.md) for features and backend boundaries.
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+- Node.js 24.3 or newer within 24.x, or Node.js 26.x, with npm. These versions
+  satisfy the installed Expo and React Native engine requirements.
+- Expo Go on your iPhone, compatible with Expo SDK 58.
+- A computer running the development server. LAN mode requires the phone to
+  reach that computer over the local network; tunnel mode requires internet.
 
-   ```bash
-   npm install
-   ```
+The demo needs no Supabase credentials, backend server or authenticated account.
 
-2. Start the app
+## Setup and run on iPhone
 
-   ```bash
-   npx expo start
-   ```
+From the repository root:
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+cd mobile
+npm ci
+npm start -- --go
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+1. Keep the terminal and development server running.
+2. Put the computer and iPhone on the same Wi-Fi network for LAN mode.
+3. Scan the terminal QR code with the iPhone Camera and open the link in Expo Go.
+   Allow local network access if iOS requests it.
+4. Choose **Explore demo** on Welcome. Login and Signup are UI demonstrations;
+   they do not authenticate users or create accounts.
 
-### Other setup steps
+### Network troubleshooting
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+If the phone cannot reach the LAN server, stop it with Ctrl+C and run from
+`mobile/`:
 
-## Learn more
+```sh
+npm start -- --go --tunnel
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Scan the new QR code. Tunnel addresses can change, so reopen the current link
+rather than an old saved address. Expo may request optional tunnel tooling if
+it is unavailable; it is separate from the mobile app's runtime dependencies.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+To clear a stale Metro cache:
 
-## Join the community
+```sh
+npm start -- --go --clear
+```
 
-Join our community of developers creating universal apps.
+## Validation
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Run from `mobile/` after installing the locked dependencies:
+
+```sh
+# TypeScript
+node node_modules/typescript/bin/tsc --noEmit --incremental false
+
+# All mobile tests
+node --experimental-strip-types --test tests/*.test.mjs
+
+# iOS JavaScript/assets export; does not build or sign an installable app
+node node_modules/expo/bin/cli export --platform ios --output-dir .expo/ios-export
+
+# Resolve and inspect public Expo configuration
+node node_modules/expo/bin/cli config --type public
+```
+
+Tests use Node's built-in test runner. They cover state, selectors, comparison
+logic, validation, localization, mocked language storage and selected component
+styles. They do not replace physical iPhone checks for rendering, keyboard
+behavior, accessibility or native storage.
+
+ESLint is not configured. The existing lint command enters Expo's setup flow;
+it is not a ready-to-run code-quality check.
+
+## Demo session and languages
+
+- UUID-based fictional venues and a structured drink catalog are in `src/fixtures/`.
+  Prices use integer EUR cents internally.
+- Ratings, crowd reports, bathroom reviews, prices, language suggestions, private
+  incident submissions and personal comparisons are shared in memory. Saved
+  activity survives navigation and language switching, but resets on full reload.
+- Form drafts are local to their screen or overlay. Closing a form may discard
+  unsaved input. Returning to Welcome does not sign out or clear saved activity.
+- English is the default. Select **English** or **Italiano** in Profile to change
+  the interface immediately.
+- Native AsyncStorage stores only the language preference, so it survives reloads.
+  It does not store passwords, reports or ranking history. The web adapter keeps
+  the language only in memory.
+- Venue spoken-language suggestions are separate from the interface setting and
+  remain pending. Private incident reports are demo-only and are never published.
+- Crowd classification needs three distinct recent contributors. This demo uses
+  one contributor; repeated submissions cannot establish a live consensus.
+- Community overall stars, bathroom categories and personal rankings are
+  independent. Elo is internal; rankings display ordinal positions.
+
+The [localization guide](src/localization/README.md) explains dictionary updates,
+formatting and persistence. The [asset inventory](assets/README.md) documents
+bundled assets and the remaining app-icon requirements.
+
+## Source organization
+
+```text
+src/app/              Routes and root provider layout
+src/components/       Reusable native components and bottom navigation
+src/constants/        bevve colors, typography and spacing
+src/features/         Screens, state providers, reducers and selectors
+src/fixtures/         Mock venues and catalog data
+src/localization/     English/Italian dictionaries, persistence and formatting
+src/types/            Shared venue presentation types
+tests/                Node-based mobile tests
+assets/               Bundled fonts, imagery and platform icon placeholders
+```
+
+The main routes are `/`, `/login`, `/signup`, `/explore`, `/compare`, `/rankings`,
+`/profile`, `/bars/[barId]` and `/prices`. Contribution forms stay inside Bar
+Details rather than navigating to separate pages.
+
+## Application identity
+
+`app.json` sets the visible app name to **bevve**. The npm package name, Expo slug
+and URL scheme remain `mobile` to preserve existing tooling and project links.
+Platform icon references still use the original starter assets pending approved
+bevve artwork. No new cloud project, ownership or signing configuration is needed
+for the Expo Go demo.
+
+After an app-config change, restart the development server and reopen its current
+QR code in Expo Go to refresh project metadata. This does not rename the installed
+Expo Go application itself. Updating an installed development/standalone app's
+native name or icon requires a new native build. See the
+[Expo app-config reference](https://docs.expo.dev/versions/v58.0.0/config/app/).
