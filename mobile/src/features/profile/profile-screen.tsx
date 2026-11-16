@@ -2,7 +2,6 @@ import { useTranslation } from '@/localization/language-provider';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
-import AppTabs from '@/components/app-tabs';
 import { CrowdMeter } from '@/components/crowd-meter';
 import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
@@ -117,7 +116,6 @@ export function ProfileScreen({ onOpenVenue, onCompare, onRankings, onWelcome }:
         </View>
         <Text style={styles.note}>{t("Pending language suggestions and private incident reports are not included in these activity summaries.")}</Text>
       </ScreenContainer>
-      <AppTabs />
     </View>
   );
 }

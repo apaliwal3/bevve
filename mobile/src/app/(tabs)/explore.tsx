@@ -4,12 +4,12 @@ import { useMemo, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
-import AppTabs from '@/components/app-tabs';
 import { Logo } from '@/components/logo';
 import { ScreenContainer } from '@/components/screen-container';
 import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { filterVenues, venueFilters, type VenueFilter } from '@/features/explore/filter-venues';
+import { EXPLORE_HORIZONTAL_PADDING, filterChipLayout } from '@/features/explore/filter-layout';
 import { exploreMockUser, mockVenues } from '@/fixtures/venues';
 import { usePriceComparisonSelection, useVenueCrowdSelector, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
 import { priceComparisonHref } from '@/features/prices/price-navigation';
@@ -142,7 +142,6 @@ export default function ExploreScreen() {
         <Pressable style={styles.backLink}><Text style={styles.viewAllLabel}>{t("Back to Welcome")}</Text></Pressable>
       </Link>
     </ScreenContainer>
-    <AppTabs />
     </View>
   );
 }
@@ -150,7 +149,7 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: {
-    paddingHorizontal: 18,
+    paddingHorizontal: EXPLORE_HORIZONTAL_PADDING,
     paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.xxl
   },
@@ -244,17 +243,21 @@ const styles = StyleSheet.create({
   },
   filters: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
+    flexWrap: 'nowrap',
+    alignItems: 'stretch',
+    gap: filterChipLayout.gap,
     paddingTop: theme.spacing.md,
     paddingBottom: theme.spacing.xs
   },
   chip: {
-    minHeight: 44,
+    minHeight: filterChipLayout.minHeight,
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: theme.spacing.xs,
-    paddingHorizontal: 13,
+    paddingHorizontal: filterChipLayout.paddingHorizontal,
+    paddingVertical: theme.spacing.sm,
     borderRadius: theme.radii.pill,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -268,7 +271,9 @@ const styles = StyleSheet.create({
   chipLabel: {
     color: theme.colors.textSecondary,
     fontFamily: theme.fonts.bodyBold,
-    fontSize: 12
+    fontSize: filterChipLayout.fontSize,
+    flexShrink: 1,
+    textAlign: 'center'
   },
   selectedChipLabel: {
     color: theme.colors.text

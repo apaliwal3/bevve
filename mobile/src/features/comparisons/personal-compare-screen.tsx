@@ -2,7 +2,6 @@ import { useTranslation } from '@/localization/language-provider';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
-import AppTabs from '@/components/app-tabs';
 import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
@@ -76,7 +75,6 @@ export function PersonalCompareScreen({ onViewVenue }: PersonalCompareScreenProp
         <Text accessibilityLiveRegion="polite" style={styles.saved}>{t('{count} personal comparisons saved this session', { count: savedCount })}</Text>
         <Text style={styles.meta}>{t("DEMO VENUES · Preferences reset on a full app reload.")}</Text>
       </ScreenContainer>
-      <AppTabs />
     </View>
   );
 }

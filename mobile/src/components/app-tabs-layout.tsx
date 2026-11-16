@@ -1,5 +1,5 @@
 import { useTranslation } from '@/localization/language-provider';
-import { Link, usePathname } from 'expo-router';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,28 +30,41 @@ function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps)
   );
 }
 
-export default function AppTabsLayout() {
+const mainTabs = [
+  { name: 'explore', label: 'Explore', icon: 'explore' },
+  { name: 'compare', label: 'Compare', icon: 'compare' },
+  { name: 'rankings', label: 'Rankings', icon: 'rankings' },
+  { name: 'profile', label: 'Profile', icon: 'profile' },
+] as const;
+
+export default function AppTabsLayout({ state, emitter, navigateToTab }: BottomTabBarProps) {
   const { t } = useTranslation();
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView edges={['left', 'right']} style={styles.root}>
       <View
+        accessibilityRole="tablist"
         accessibilityLabel={t("Main navigation")}
         style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, theme.spacing.sm) }]}>
-        <Link href="/explore" asChild>
-          <NavButton label={t("Explore")} icon="explore" isFocused={pathname === '/explore'} />
-        </Link>
-        <Link href="/compare" asChild>
-          <NavButton label={t("Compare")} icon="compare" isFocused={pathname === '/compare'} />
-        </Link>
-        <Link href="/rankings" asChild>
-          <NavButton label={t("Rankings")} icon="rankings" isFocused={pathname === '/rankings'} />
-        </Link>
-        <Link href="/profile" asChild>
-          <NavButton label={t("Profile")} icon="profile" isFocused={pathname === '/profile'} />
-        </Link>
+        {mainTabs.map((item) => {
+          const route = state.routes.find((candidate) => candidate.name === item.name);
+          if (!route) return null;
+          const isFocused = state.routes[state.index].key === route.key;
+          return (
+            <NavButton
+              key={route.key}
+              label={t(item.label)}
+              icon={item.icon}
+              isFocused={isFocused}
+              onPress={() => {
+                const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                if (!isFocused && !event.defaultPrevented) navigateToTab(route.key);
+              }}
+              onLongPress={() => emitter.emit({ type: 'tabLongPress', target: route.key })}
+            />
+          );
+        })}
       </View>
     </SafeAreaView>
   );

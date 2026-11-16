@@ -2,7 +2,6 @@ import { useTranslation } from '@/localization/language-provider';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
-import AppTabs from '@/components/app-tabs';
 import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
@@ -71,7 +70,6 @@ export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: Pe
         <Text style={styles.note}>{t("Only bars you have compared appear here. Every choice helps refine your personal order.")}</Text>
         <Text style={styles.note}>{t("DEMO SESSION · Rankings reset on a full app reload.")}</Text>
       </ScreenContainer>
-      <AppTabs />
     </View>
   );
 }
