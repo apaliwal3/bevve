@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
-import { useVenueContributions, useVenueExtras, useVenueRating } from '@/features/ratings/venue-ratings-provider';
-import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
+import { useVenueContributions, useVenueCrowdSelector, useVenueExtras, useVenueRating } from '@/features/ratings/venue-ratings-provider';
 import type { Venue } from '@/types/venue';
 
 import { AppIcon } from './app-icon';
@@ -17,12 +16,12 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
   const { t, format, describe } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const { communityRating: rating } = useVenueRating(venue);
-  const { ownCrowdReport, crowdSummary, bathroomSummary } = useVenueContributions(venue.id);
+  const { bathroomSummary } = useVenueContributions(venue.id);
+  const crowdFor = useVenueCrowdSelector();
+  const crowd = crowdFor(venue);
   const { startingPriceCents } = useVenueExtras(venue.id);
-  const crowdLevel = ownCrowdReport ? (crowdSummary.classification ? crowdSummary.score : null) : venue.crowd?.level;
-  const crowdLabel = ownCrowdReport
-    ? (crowdSummary.classification ? describe(crowdClassificationLabels[crowdSummary.classification]) : t('Not enough recent reports'))
-    : venue.crowd?.label ? describe(venue.crowd.label) : t('No reports yet');
+  const crowdLabel = crowd.label !== null ? describe(crowd.label)
+    : crowd.source === 'session' ? t('Not enough recent reports') : t('No reports yet');
   const bathroomCleanliness = bathroomSummary?.cleanliness.average ?? null;
   const ratingLabel = rating && rating.count > 0
     ? '★ ' + format.decimal(rating.average) + '/5'
@@ -78,9 +77,9 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
               <AppIcon name="crowd" size={15} color={theme.colors.purpleLight} />
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>{ownCrowdReport ? t("Session crowd") : t("Demo crowd")}</Text>
+              <Text style={styles.metricLabel}>{crowd.source === 'session' ? t("Session crowd") : t("Demo crowd")}</Text>
               <Text style={styles.metricValue}>{crowdLabel}</Text>
-              {crowdLevel !== null && crowdLevel !== undefined && <CrowdMeter level={crowdLevel} />}
+              {crowd.level !== null && <CrowdMeter level={crowd.level} />}
             </View>
           </View>
           <View style={styles.metric}>

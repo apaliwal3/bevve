@@ -15,6 +15,8 @@ export const BevveTheme = {
     error: '#fda4af',
     errorBorder: '#fb7185',
     purple: '#8b5cf6',
+    purpleButton: '#8353ed',
+    purpleButtonPressed: '#7949e3',
     purpleLight: '#a78bfa',
     purpleText: '#ddd6fe',
     purpleTint: 'rgba(139, 92, 246, 0.15)',

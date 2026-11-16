@@ -11,7 +11,7 @@ import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { filterVenues, venueFilters, type VenueFilter } from '@/features/explore/filter-venues';
 import { exploreMockUser, mockVenues } from '@/fixtures/venues';
-import { usePriceComparisonSelection, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
+import { usePriceComparisonSelection, useVenueCrowdSelector, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
 import { priceComparisonHref } from '@/features/prices/price-navigation';
 
 export default function ExploreScreen() {
@@ -20,7 +20,8 @@ export default function ExploreScreen() {
   const [filter, setFilter] = useState<VenueFilter>('All');
   const { drinkId } = usePriceComparisonSelection();
   const priceVenues = useVenuePriceCatalog(mockVenues);
-  const venues = useMemo(() => filterVenues(priceVenues, query, filter), [priceVenues, query, filter]);
+  const crowdFor = useVenueCrowdSelector();
+  const venues = useMemo(() => filterVenues(priceVenues, query, filter, crowdFor), [priceVenues, query, filter, crowdFor]);
 
   function resetFilters() {
     setQuery('');
@@ -86,7 +87,7 @@ export default function ExploreScreen() {
             accessibilityRole="button"
             accessibilityState={{ selected: filter === item }}
             onPress={() => setFilter(item)}
-            style={({ pressed }) => [styles.chip, filter === item && styles.selectedChip, pressed && styles.pressed]}>
+            style={({ pressed }) => [styles.chip, filter === item && styles.selectedChip, pressed && (filter === item ? styles.selectedChipPressed : styles.pressed)]}>
             {item === 'Nearby' && <View style={styles.nearbyDot} />}
             <Text style={[styles.chipLabel, filter === item && styles.selectedChipLabel]}>{t(item)}</Text>
           </Pressable>
@@ -260,9 +261,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface
   },
   selectedChip: {
-    backgroundColor: theme.colors.purple,
-    borderColor: theme.colors.purple
+    backgroundColor: theme.colors.purpleButton,
+    borderColor: theme.colors.purpleButton
   },
+  selectedChipPressed: { backgroundColor: theme.colors.purpleButtonPressed },
   chipLabel: {
     color: theme.colors.textSecondary,
     fontFamily: theme.fonts.bodyBold,

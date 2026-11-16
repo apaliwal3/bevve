@@ -1,10 +1,11 @@
 import type { Venue } from '../../types/venue';
+import { selectVenueCrowd, type EffectiveVenueCrowd } from './venue-crowd.ts';
 
 export const venueFilters = ['All', 'Nearby', 'Cheap', 'Quiet', 'Popular'] as const;
 export type VenueFilter = (typeof venueFilters)[number];
 
 // Explicit demo rules; distance is fixture data, not the user's location.
-export function filterVenues(venues: readonly Venue[], query: string, filter: VenueFilter): Venue[] {
+export function filterVenues(venues: readonly Venue[], query: string, filter: VenueFilter, crowdFor: (venue: Venue) => EffectiveVenueCrowd = selectVenueCrowd): Venue[] {
   const search = query.trim().toLowerCase();
   return venues.filter((venue) => {
     if (!`${venue.name} ${venue.area}`.toLowerCase().includes(search)) return false;
@@ -15,7 +16,7 @@ export function filterVenues(venues: readonly Venue[], query: string, filter: Ve
       case 'Cheap':
         return venue.startingPriceCents !== null && venue.startingPriceCents <= 500;
       case 'Quiet':
-        return venue.crowd !== null && venue.crowd.level <= 2;
+        return crowdFor(venue).isQuiet;
       case 'Popular':
         return venue.isPopular;
       default:

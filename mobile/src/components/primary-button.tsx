@@ -32,11 +32,11 @@ export function PrimaryButton({
       style={({ pressed }) => [
         styles.button,
         variant === 'secondary' && styles.secondary,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
+        pressed && !disabled && (variant === 'primary' ? styles.primaryPressed : styles.pressed),
+        disabled && (variant === 'primary' ? styles.primaryDisabled : styles.disabled),
         style,
       ]}>
-      <Text style={[styles.label, variant === 'secondary' && styles.secondaryLabel]}>{label}</Text>
+      <Text style={[styles.label, variant === 'secondary' && styles.secondaryLabel, disabled && variant === 'primary' && styles.primaryDisabledLabel]}>{label}</Text>
     </Pressable>
   );
 }
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.xl,
     borderRadius: theme.radii.button,
-    backgroundColor: theme.colors.purple,
+    backgroundColor: theme.colors.purpleButton,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -64,6 +64,9 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.purpleBorder,
   },
   secondaryLabel: { color: theme.colors.purpleText },
+  primaryPressed: { backgroundColor: theme.colors.purpleButtonPressed },
+  primaryDisabled: { backgroundColor: theme.colors.surfaceRaised },
+  primaryDisabledLabel: { color: theme.colors.textMuted },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },
 });

@@ -145,11 +145,12 @@ const styles = StyleSheet.create({
   orb: {
     flexShrink: 0,
     borderRadius: theme.radii.pill,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: theme.colors.purpleBorder,
-    backgroundImage: 'linear-gradient(135deg, ' + theme.colors.purpleLight + ', ' + theme.colors.purple + ')'
+    backgroundColor: theme.colors.purple
   },
   orbCount: {
     color: theme.colors.text,

@@ -67,7 +67,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               accessibilityLabel={t('Open actions for {name}', { name: venue.name })}
               accessibilityHint={t("Open overall rating and optional bar actions")}
               onPress={() => setRatingOverlayOpen(true)}
-              style={({ pressed }) => [styles.plusButton, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.plusButton, pressed && styles.plusPressed]}>
               <AppIcon name="plus" size={20} color={theme.colors.text} />
             </Pressable>
           </View>
@@ -293,12 +293,13 @@ const styles = StyleSheet.create({
     height: 44,
     flexShrink: 0,
     borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.purple,
+    backgroundColor: theme.colors.purpleButton,
     borderWidth: 1,
     borderColor: theme.colors.purpleLight,
     alignItems: 'center',
     justifyContent: 'center'
   },
+  plusPressed: { backgroundColor: theme.colors.purpleButtonPressed },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',

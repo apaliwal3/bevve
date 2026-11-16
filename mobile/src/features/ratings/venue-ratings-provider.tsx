@@ -5,6 +5,7 @@ import { mockVenueDetails, mockVenues } from '@/fixtures/venues';
 import { mockDrinkCatalog, type CatalogDrink, type VenueLanguageCode } from '@/fixtures/contribution-catalog';
 import { mockPriceComparison } from '../prices/price-comparison';
 import { selectProfileContributions } from '../profile/profile-activity';
+import { selectVenueCrowd } from '../explore/venue-crowd';
 import type { Venue, VenueDetails } from '@/types/venue';
 import type { IncidentSubmission } from '../contributions/extra-form-drafts';
 import {
@@ -168,6 +169,14 @@ export function useVenuePriceCatalog(venues: readonly Venue[]) {
   if (!context) throw new Error('useVenuePriceCatalog must be used inside VenueRatingsProvider.');
   const observations = context.extras.priceObservations;
   return useMemo(() => venuesWithLatestPrices(venues, observations, mockVenueDetails), [observations, venues]);
+}
+
+export function useVenueCrowdSelector() {
+  const context = useContext(VenueRatingsContext);
+  if (!context) throw new Error('useVenueCrowdSelector must be used inside VenueRatingsProvider.');
+  const { crowdReports } = context.contributions;
+  const { now } = context;
+  return useCallback((venue: Venue) => selectVenueCrowd(venue, crowdReports, now), [crowdReports, now]);
 }
 
 export function useVenueContributions(venueId: string, demoBathrooms?: VenueDetails['bathrooms']) {

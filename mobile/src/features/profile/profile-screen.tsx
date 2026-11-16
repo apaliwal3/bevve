@@ -168,10 +168,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.radii.pill,
+    overflow: 'hidden',
     borderWidth: 4,
     borderColor: theme.colors.purpleBorder,
     marginBottom: theme.spacing.sm,
-    backgroundImage: 'linear-gradient(145deg, ' + theme.colors.purpleLight + ', ' + theme.colors.purple + ')'
+    backgroundColor: theme.colors.purple
   },
   initials: {
     color: theme.colors.text,
