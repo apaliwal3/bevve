@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
+import { useTranslation } from '@/localization/language-provider';
 
 import type { StarRating } from './rating-state';
 
@@ -10,15 +11,17 @@ export function StarSelector({
   value,
   onChange,
   disabled = false,
-  label = 'Overall bar rating',
+  label,
 }: { value: StarRating | null; onChange: (rating: StarRating) => void; disabled?: boolean; label?: string }) {
+  const { t } = useTranslation();
+  const title = label ?? t('Overall bar rating');
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.row}>
+    <View accessibilityRole="radiogroup" accessibilityLabel={title} style={styles.row}>
       {stars.map((star) => (
         <Pressable
           key={star}
           accessibilityRole="radio"
-          accessibilityLabel={`${label}: ${star} ${star === 1 ? 'star' : 'stars'} out of 5`}
+          accessibilityLabel={t('{label}: {count} stars out of 5', { label: title, count: star })}
           accessibilityState={{ checked: value === star, disabled }}
           disabled={disabled}
           onPress={() => onChange(star)}

@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -23,12 +24,13 @@ import { CrowdReportForm } from '@/features/contributions/crowd-report-form';
 import { DrinkPriceForm } from '@/features/contributions/drink-price-form';
 import { SpokenLanguagesForm } from '@/features/contributions/spoken-languages-form';
 import { SafetyInformationForm } from '@/features/contributions/safety-information-form';
+import type { PlainTranslationKey } from '@/localization/translation';
 
 import type { StarRating } from './rating-state';
 import { StarSelector } from './star-selector';
 import { useVenueContributions, useVenueExtras, useVenueRating } from './venue-ratings-provider';
 
-const ratingLabels: Record<StarRating, string> = {
+const ratingLabels: Record<StarRating, PlainTranslationKey> = {
   1: 'Disappointing',
   2: 'Mediocre',
   3: 'Decent',
@@ -39,8 +41,8 @@ const ratingLabels: Record<StarRating, string> = {
 type OptionalActionId = 'crowd' | 'bathrooms' | 'prices' | 'languages' | 'safety';
 const optionalActions: {
   id: OptionalActionId;
-  title: string;
-  hint: string;
+  title: PlainTranslationKey;
+  hint: PlainTranslationKey;
   icon: AppIconName | 'euro';
 }[] = [
   { id: 'crowd', title: 'Report crowd', hint: 'Share the live vibe', icon: 'crowd' },
@@ -54,6 +56,7 @@ type VenueRatingOverlayProps = { venue: Venue; onClose: () => void };
 
 // Mounted only while open: unsaved first-time selections are discarded on dismissal.
 export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { userRating, saveRating } = useVenueRating(venue);
@@ -146,12 +149,12 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
           }]}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>{userRating === null ? 'RATE TO UNLOCK' : 'BAR ACTIONS & RATINGS'}</Text>
+              <Text style={styles.eyebrow}>{userRating === null ? t("RATE TO UNLOCK") : t("BAR ACTIONS & RATINGS")}</Text>
               <Text accessibilityRole="header" style={styles.venueName}>{venue.name}</Text>
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close bar actions"
+              accessibilityLabel={t("Close bar actions")}
               onPress={requestClose}
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
               <AppIcon name="close" size={18} color={theme.colors.textSecondary} />
@@ -168,34 +171,34 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
             keyboardDismissMode="on-drag">
             {userRating === null ? (
               <View style={styles.ratingCard}>
-                <Text style={styles.eyebrow}>★ REQUIRED STEP</Text>
-                <Text accessibilityRole="header" style={styles.question}>How was {venue.name}?</Text>
-                <Text style={styles.description}>Rate your overall experience from 1 to 5 stars to unlock the optional cards.</Text>
+                <Text style={styles.eyebrow}>{t("★ REQUIRED STEP")}</Text>
+                <Text accessibilityRole="header" style={styles.question}>{t('How was {name}?', { name: venue.name })}</Text>
+                <Text style={styles.description}>{t("Rate your overall experience from 1 to 5 stars to unlock the optional cards.")}</Text>
                 <StarSelector value={draftRating} onChange={setDraftRating} disabled={isClosing} />
                 <Text accessibilityLiveRegion="polite" style={styles.ratingCaption}>
-                  {draftRating === null ? 'Choose a star rating' : `${draftRating} ★ · ${ratingLabels[draftRating]}`}
+                  {draftRating === null ? t("Choose a star rating") : draftRating + ' ★ · ' + t(ratingLabels[draftRating])}
                 </Text>
-                <PrimaryButton label="Save rating and continue" disabled={draftRating === null || isClosing} onPress={saveFirstRating} />
+                <PrimaryButton label={t('Save rating and continue')} disabled={draftRating === null || isClosing} onPress={saveFirstRating} />
               </View>
             ) : (
               <>
                 <View style={styles.ratingCard}>
                   <View style={styles.ratingHeading}>
-                    <Text style={styles.eyebrow}>YOUR OVERALL RATING</Text>
+                    <Text style={styles.eyebrow}>{t("YOUR OVERALL RATING")}</Text>
                     <Text accessibilityLiveRegion="polite" style={styles.ratingBadge}>{userRating}/5 ★</Text>
                   </View>
-                  <Text accessibilityRole="header" style={styles.question}>How was {venue.name}?</Text>
+                  <Text accessibilityRole="header" style={styles.question}>{t('How was {name}?', { name: venue.name })}</Text>
                   <StarSelector value={userRating} onChange={updateRating} disabled={isClosing} />
-                  <Text style={styles.description}>Saved for this session. Tap any star to update your rating.</Text>
+                  <Text style={styles.description}>{t("Saved for this session. Tap any star to update your rating.")}</Text>
                 </View>
-                <Text style={styles.description}>All five contributions are optional. Choose any card, or close when you are done.</Text>
+                <Text style={styles.description}>{t("All five contributions are optional. Choose any card, or close when you are done.")}</Text>
                 {optionalActions.map((action) => {
                   const isExpanded = expanded[action.id] === true;
                   return (
                     <View key={action.id} style={[styles.optionalCard, isExpanded && styles.expandedCard]}>
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={action.title}
+                        accessibilityLabel={t(action.title)}
                         accessibilityState={{ expanded: isExpanded }}
                         disabled={isClosing}
                         onPress={() => setExpanded((previous) => ({ ...previous, [action.id]: !previous[action.id] }))}
@@ -206,8 +209,8 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
                             : <AppIcon name={action.icon} size={20} color={theme.colors.purpleLight} />}
                         </View>
                         <View style={styles.cardCopy}>
-                          <Text style={styles.cardTitle}>{action.title}</Text>
-                          <Text style={styles.hint}>{action.hint}</Text>
+                          <Text style={styles.cardTitle}>{t(action.title)}</Text>
+                          <Text style={styles.hint}>{t(action.hint)}</Text>
                         </View>
                         <View style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}>
                           <AppIcon name="chevron" size={16} color={theme.colors.purpleLight} />

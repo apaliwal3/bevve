@@ -4,11 +4,11 @@ import { incidentCategories, type IncidentCategory, type ValidationResult } from
 export type PriceDraft = { drinkId: string | null; euros: string };
 export const emptyPriceDraft: PriceDraft = { drinkId: null, euros: '' };
 export function priceDraftReducer(draft: PriceDraft, action:
-  | { type: 'select'; drinkId: string; savedCents: number | null }
+  | { type: 'select'; drinkId: string; savedCents: number | null; prefilledEuros?: string }
   | { type: 'price'; euros: string }
   | { type: 'cancel' }): PriceDraft {
   switch (action.type) {
-    case 'select': return { drinkId: action.drinkId, euros: action.savedCents === null ? '' : (action.savedCents / 100).toFixed(2) };
+    case 'select': return { drinkId: action.drinkId, euros: action.savedCents === null ? '' : action.prefilledEuros ?? (action.savedCents / 100).toFixed(2) };
     case 'price': return { ...draft, euros: action.euros };
     case 'cancel': return emptyPriceDraft;
   }

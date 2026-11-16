@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,7 +11,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import { VenueRatingOverlay } from '@/features/ratings/venue-rating-overlay';
 import { useVenueContributions, useVenueExtras, useVenueRating } from '@/features/ratings/venue-ratings-provider';
-import { languageName } from '@/fixtures/contribution-catalog';
+import { venueLanguageLabel, venueServingLabel } from '@/localization/venue-copy';
 import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
 import type { BathroomCategorySummary, Venue, VenueDetails } from '@/types/venue';
 
@@ -23,7 +24,8 @@ type BarDetailsScreenProps = {
   onComparePrices: () => void;
 };
 
-export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to Explore', onComparePrices }: BarDetailsScreenProps) {
+export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices }: BarDetailsScreenProps) {
+  const { t, format, describe } = useTranslation();
   const insets = useSafeAreaInsets();
   const [imageFailed, setImageFailed] = useState(false);
   const [ratingOverlayOpen, setRatingOverlayOpen] = useState(false);
@@ -43,27 +45,27 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to 
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.photoPlaceholder]}>
             <AppIcon name="photo" size={32} />
-            <Text style={styles.meta}>Photo unavailable</Text>
+            <Text style={styles.meta}>{t("Photo unavailable")}</Text>
           </View>
         )}
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.heroShade]} />
         <View style={[styles.backRow, { paddingTop: insets.top + theme.spacing.lg }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel={backLabel} onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={backLabel ?? t('Back to Explore')} onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <AppIcon name="back" color={theme.colors.text} />
           </Pressable>
         </View>
         <View style={styles.heroCopy}>
           {details?.openingHoursLabel && (
             <View style={styles.hoursBadge}>
-              <Text style={styles.hoursLabel}>{details.openingHoursLabel}</Text>
+              <Text style={styles.hoursLabel}>{describe(details.openingHoursLabel)}</Text>
             </View>
           )}
           <View style={styles.nameRow}>
             <Text accessibilityRole="header" style={styles.name}>{venue.name}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Open actions for ${venue.name}`}
-              accessibilityHint="Open overall rating and optional bar actions"
+              accessibilityLabel={t('Open actions for {name}', { name: venue.name })}
+              accessibilityHint={t("Open overall rating and optional bar actions")}
               onPress={() => setRatingOverlayOpen(true)}
               style={({ pressed }) => [styles.plusButton, pressed && styles.pressed]}>
               <AppIcon name="plus" size={20} color={theme.colors.text} />
@@ -71,22 +73,22 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to 
           </View>
           <View style={styles.locationRow}>
             <AppIcon name="pin" size={15} color={theme.colors.textSecondary} />
-            <Text style={styles.location}>{venue.area}, {details?.city ?? 'City unavailable'} · {venue.distanceLabel ?? 'Distance unavailable'}</Text>
+            <Text style={styles.location}>{venue.area}, {details?.city ?? t("City unavailable")} · {venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
           </View>
           {details?.address && <Text style={styles.location}>{details.address}</Text>}
         </View>
       </View>
 
       <View style={[styles.body, { paddingBottom: Math.max(42, insets.bottom + theme.spacing.xxl) }]}>
-        <Text style={styles.demoLabel}>DEMO DATA · Sample venue information</Text>
+        <Text style={styles.demoLabel}>{t("DEMO DATA · Sample venue information")}</Text>
 
         <View style={[styles.card, styles.crowdCard]}>
           <View style={styles.summaryRow}>
             <View style={styles.flexCopy}>
-              <Text style={styles.sectionLabel}>LIVE CROWD · SESSION REPORTS</Text>
+              <Text style={styles.sectionLabel}>{t("LIVE CROWD · SESSION REPORTS")}</Text>
               <Text accessibilityRole="header" style={styles.sectionTitle}>
-                {crowd.classification ? crowdClassificationLabels[crowd.classification] : 'Not enough recent reports'}
-                {crowdKnown && <Text style={styles.crowdScore}> {crowd?.score}/5</Text>}
+                {crowd.classification ? describe(crowdClassificationLabels[crowd.classification]) : t("Not enough recent reports")}
+                {crowdKnown && crowd.score !== null && <Text style={styles.crowdScore}> {format.number(crowd.score)}/5</Text>}
               </Text>
             </View>
             {crowdKnown && crowd?.score !== null && crowd?.score !== undefined && <CrowdMeter level={crowd.score} />}
@@ -94,38 +96,38 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to 
           <View style={styles.freshness}>
             <Text style={styles.meta}>
               {crowd.newest_report_at === null
-                ? 'No recent update'
-                : `Updated ${Math.floor((now - Date.parse(crowd.newest_report_at)) / 60_000)} min ago`}
+                ? t("No recent update")
+                : t('Updated {time}', { time: format.relativeTime(crowd.newest_report_at, now) })}
             </Text>
-            <Text style={styles.meta}>{crowd.report_count} recent {crowd.report_count === 1 ? 'contributor' : 'contributors'} · 45 min window</Text>
+            <Text style={styles.meta}>{t('{count} recent contributors · 45 min window', { count: crowd.report_count })}</Text>
           </View>
-          {!crowdKnown && <Text style={styles.description}>At least 3 different contributors are needed within 45 minutes.</Text>}
+          {!crowdKnown && <Text style={styles.description}>{t("At least 3 different contributors are needed within 45 minutes.")}</Text>}
           {demoCrowd && demoCrowd.score !== null && (
-            <Text style={styles.meta}>Fictional demo snapshot: {demoCrowd.score}/5 from {demoCrowd.reportCount} reports. Not included in session crowd.</Text>
+            <Text style={styles.meta}>{t('Fictional demo snapshot: {score}/5 from {count} reports. Not included in session crowd.', { score: format.number(demoCrowd.score), count: demoCrowd.reportCount })}</Text>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Drink prices</Text>
-          <Text style={styles.meta}>Community-reported · Not verified · Demo session</Text>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Drink prices")}</Text>
+          <Text style={styles.meta}>{t("Community-reported · Not verified · Demo session")}</Text>
           <View style={[styles.card, styles.drinkList]}>
-            {drinks.length === 0 && <Text style={styles.description}>No drink prices reported yet.</Text>}
+            {drinks.length === 0 && <Text style={styles.description}>{t("No drink prices reported yet.")}</Text>}
             {drinks.map((drink, index) => (
               <View key={drink.id} style={[styles.drinkRow, index > 0 && styles.drinkSeparator]}>
                 <View style={styles.drinkSymbol}><Text style={styles.drinkInitial}>{drink.name[0]}</Text></View>
                 <View style={styles.flexCopy}>
                   <Text style={styles.drinkName}>{drink.name}</Text>
-                  <Text style={styles.meta}>{drink.serving}</Text>
-                  {drink.observedAt && <Text style={styles.meta}>Reported {new Date(drink.observedAt).toLocaleString()}</Text>}
+                  <Text style={styles.meta}>{venueServingLabel(drink, t)}</Text>
+                  {drink.observedAt && <Text style={styles.meta}>{t('Reported {date}', { date: format.dateTime(drink.observedAt) })}</Text>}
                 </View>
                 <Text style={styles.price}>
-                  {drink.priceCents === null ? 'Not reported' : new Intl.NumberFormat('en-IE', { style: 'currency', currency: drink.currency }).format(drink.priceCents / 100)}
+                  {drink.priceCents === null ? t("Not reported") : format.currency(drink.priceCents)}
                 </Text>
               </View>
             ))}
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Compare drink prices" accessibilityHint="View community-reported prices across Milan" onPress={onComparePrices} style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
-            <Text style={styles.actionLabel}>Compare prices across Milan</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Compare drink prices")} accessibilityHint={t("View community-reported prices across Milan")} onPress={onComparePrices} style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+            <Text style={styles.actionLabel}>{t("Compare prices across Milan")}</Text>
             <AppIcon name="chevron" size={16} color={theme.colors.purpleLight} />
           </Pressable>
         </View>
@@ -133,26 +135,26 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to 
         <View style={styles.infoGrid}>
           <View style={[styles.card, styles.infoCard]}>
             <Text style={styles.starIcon} accessible={false}>★</Text>
-            <Text style={styles.sectionLabel}>BAR RATING</Text>
+            <Text style={styles.sectionLabel}>{t("BAR RATING")}</Text>
             {rating && rating.count > 0 ? (
               <>
-                <Text style={styles.ratingValue}>{rating.average.toFixed(1)} <Text style={styles.outOfFive}>/ 5</Text></Text>
-                <Text style={styles.meta}>{rating.count} community bar ratings</Text>
+                <Text style={styles.ratingValue}>{format.decimal(rating.average)} <Text style={styles.outOfFive}>/ 5</Text></Text>
+                <Text style={styles.meta}>{t('{count} community bar ratings', { count: rating.count })}</Text>
               </>
-            ) : <Text style={styles.description}>No community bar ratings yet.</Text>}
+            ) : <Text style={styles.description}>{t("No community bar ratings yet.")}</Text>}
           </View>
           <View style={[styles.card, styles.infoCard]}>
             <AppIcon name="languages" size={22} color={theme.colors.purpleLight} />
-            <Text style={styles.sectionLabel}>SPOKEN LANGUAGES</Text>
+            <Text style={styles.sectionLabel}>{t("SPOKEN LANGUAGES")}</Text>
             <View style={styles.languageList}>
-              {languages.map((language) => <Text key={language.code} style={styles.languageTag}>{language.name}</Text>)}
+              {languages.map((language) => <Text key={language.code} style={styles.languageTag}>{venueLanguageLabel(language.code, t, language.name)}</Text>)}
             </View>
-            {languages.length === 0 && <Text style={styles.description}>No languages reported yet.</Text>}
+            {languages.length === 0 && <Text style={styles.description}>{t("No languages reported yet.")}</Text>}
             {pendingLanguages.length > 0 && (
               <>
-                <Text style={styles.meta}>Suggestions awaiting review</Text>
+                <Text style={styles.meta}>{t("Suggestions awaiting review")}</Text>
                 <View style={styles.languageList}>
-                  {pendingLanguages.map((suggestion) => <Text key={suggestion.id} style={styles.languageTag}>{languageName(suggestion.language_code)} · Pending</Text>)}
+                  {pendingLanguages.map((suggestion) => <Text key={suggestion.id} style={styles.languageTag}>{venueLanguageLabel(suggestion.language_code, t)} · {t('Pending')}</Text>)}
                 </View>
               </>
             )}
@@ -160,37 +162,37 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to 
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>BATHROOM RATINGS</Text>
+          <Text style={styles.sectionLabel}>{t("BATHROOM RATINGS")}</Text>
           <View style={styles.summaryRow}>
-            <Text accessibilityRole="header" style={[styles.sectionTitle, styles.flexCopy]}>Community averages</Text>
-            <Text style={styles.meta}>{bathrooms?.reviewCount ?? 0} reviews</Text>
+            <Text accessibilityRole="header" style={[styles.sectionTitle, styles.flexCopy]}>{t("Community averages")}</Text>
+            <Text style={styles.meta}>{t('{count} reviews', { count: bathrooms?.reviewCount ?? 0 })}</Text>
           </View>
-          {!bathrooms || bathrooms.reviewCount === 0 ? <Text style={styles.description}>No bathroom reviews yet.</Text> : null}
+          {!bathrooms || bathrooms.reviewCount === 0 ? <Text style={styles.description}>{t("No bathroom reviews yet.")}</Text> : null}
           <View style={styles.bathroomGrid}>
-            <BathroomSummary label="Cleanliness" summary={bathrooms?.cleanliness} />
-            <BathroomSummary label="Accessibility" summary={bathrooms?.accessibility} />
-            <BathroomSummary label="Waiting time" summary={bathrooms?.waitTime} />
+            <BathroomSummary label={t("Cleanliness")} summary={bathrooms?.cleanliness} />
+            <BathroomSummary label={t("Accessibility")} summary={bathrooms?.accessibility} />
+            <BathroomSummary label={t("Waiting time")} summary={bathrooms?.waitTime} />
           </View>
-          <Text style={styles.meta}>Separate from the overall bar rating. A waiting-time score of 5 means a shorter wait.</Text>
-          {ownBathroomReview && <Text style={styles.meta}>Includes your session review{details?.bathrooms ? ' and the fictional demo baseline' : ''}.</Text>}
+          <Text style={styles.meta}>{t("Separate from the overall bar rating. A waiting-time score of 5 means a shorter wait.")}</Text>
+          {ownBathroomReview && <Text style={styles.meta}>{details?.bathrooms ? t('Includes your session review and the fictional demo baseline.') : t('Includes your session review.')}</Text>}
         </View>
 
         <View style={[styles.card, styles.safetyCard]}>
           <View style={styles.summaryRow}>
             <AppIcon name="safety" size={24} color={theme.colors.success} />
             <View style={styles.flexCopy}>
-              <Text style={[styles.sectionLabel, styles.safetyLabel]}>DEMO DATA</Text>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>Safety information</Text>
+              <Text style={[styles.sectionLabel, styles.safetyLabel]}>{t("DEMO DATA")}</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Safety information")}</Text>
             </View>
           </View>
           {(details?.demoSafetyNotes ?? []).map((note, index) => (
             <View key={index} style={styles.safetyNote}>
-              <Text style={styles.sectionLabel}>FICTIONAL EXAMPLE · DEMO DATA</Text>
+              <Text style={styles.sectionLabel}>{t("FICTIONAL EXAMPLE · DEMO DATA")}</Text>
               <Text style={styles.description}>{note}</Text>
             </View>
           ))}
-          {!details?.demoSafetyNotes.length && <Text style={styles.description}>No published safety information.</Text>}
-          <Text style={styles.description}>This preview contains no real verified safety records. Missing information does not guarantee safety.</Text>
+          {!details?.demoSafetyNotes.length && <Text style={styles.description}>{t("No published safety information.")}</Text>}
+          <Text style={styles.description}>{t("This preview contains no real verified safety records. Missing information does not guarantee safety.")}</Text>
         </View>
       </View>
     </ScreenContainer>
@@ -200,23 +202,26 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel = 'Back to 
 }
 
 function BathroomSummary({ label, summary }: { label: string; summary?: BathroomCategorySummary }) {
-  const hasRatings = summary && summary.count > 0 && summary.average !== null;
+  const { t, format } = useTranslation();
+  const average = summary?.average ?? null;
+  const hasRatings = summary && summary.count > 0 && average !== null;
   return (
     <View style={styles.bathroomTile}>
       <Text style={styles.meta}>{label}</Text>
-      <Text style={styles.bathroomValue}>{hasRatings ? `${summary.average?.toFixed(1)} ★` : 'No ratings'}</Text>
-      <Text style={styles.meta}>{summary?.count ?? 0} ratings</Text>
+      <Text style={styles.bathroomValue}>{hasRatings ? format.decimal(average) + ' ★' : t("No ratings")}</Text>
+      <Text style={styles.meta}>{t('{count} ratings', { count: summary?.count ?? 0 })}</Text>
     </View>
   );
 }
 
 export function MissingVenueScreen({ reason, onBack }: { reason: 'invalid' | 'not-found'; onBack: () => void }) {
+  const { t } = useTranslation();
   return (
     <ScreenContainer contentContainerStyle={styles.missing}>
       <AppIcon name="pin" size={32} color={theme.colors.purpleLight} />
-      <Text accessibilityRole="header" style={styles.sectionTitle}>{reason === 'invalid' ? 'Invalid venue link' : 'Venue not found'}</Text>
-      <Text style={styles.description}>{reason === 'invalid' ? 'This link is missing a valid venue ID.' : 'This venue is not available in the demo catalog.'}</Text>
-      <PrimaryButton label="Back to Explore" onPress={onBack} />
+      <Text accessibilityRole="header" style={styles.sectionTitle}>{reason === 'invalid' ? t("Invalid venue link") : t("Venue not found")}</Text>
+      <Text style={styles.description}>{reason === 'invalid' ? t("This link is missing a valid venue ID.") : t("This venue is not available in the demo catalog.")}</Text>
+      <PrimaryButton label={t("Back to Explore")} onPress={onBack} />
     </ScreenContainer>
   );
 }

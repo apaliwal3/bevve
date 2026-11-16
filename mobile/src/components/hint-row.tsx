@@ -5,16 +5,18 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Spacing } from '@/constants/theme';
+import { useTranslation } from '@/localization/language-provider';
 
 type HintRowProps = {
   title?: string;
   hint?: ReactNode;
 };
 
-export function HintRow({ title = 'Try editing', hint = 'app/index.tsx' }: HintRowProps) {
+export function HintRow({ title, hint = 'app/index.tsx' }: HintRowProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.stepRow}>
-      <ThemedText type="small">{title}</ThemedText>
+      <ThemedText type="small">{title ?? t('Try editing')}</ThemedText>
       <ThemedView type="backgroundSelected" style={styles.codeSnippet}>
         <ThemedText themeColor="textSecondary">{hint}</ThemedText>
       </ThemedView>

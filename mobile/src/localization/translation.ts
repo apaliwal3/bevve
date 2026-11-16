@@ -43,6 +43,10 @@ const descriptions: Record<string, PlainTranslationKey> = {
   Buzzing: 'Buzzing', Easygoing: 'Easygoing', Lively: 'Lively',
   quiet: 'Quiet crowd', moderate: 'Moderate crowd', busy: 'Busy crowd',
   Quiet: 'Quiet crowd', Moderate: 'Moderate crowd', Busy: 'Busy crowd',
+  'Sample hours · Until 02:00': 'Sample hours · Until 02:00',
+  'Draft · 0.4 L': 'Draft · 0.4 L',
+  'Classic · 250 ml': 'Classic · 250 ml',
+  'House gin · 300 ml': 'House gin · 300 ml',
 };
 export function describeFixture(value: string, t: Translate): string {
   const key = Object.prototype.hasOwnProperty.call(descriptions, value) ? descriptions[value] : undefined;

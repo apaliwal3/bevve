@@ -60,7 +60,7 @@ export function PersonalCompareScreen({ onViewVenue }: PersonalCompareScreenProp
               </View>
             </View>
             <Text accessibilityLiveRegion="polite" style={styles.feedback}>
-              {feedback?.kind === 'vote' ? t('{name} saved as your preference.', { name: winnerName ?? '' })
+              {feedback?.kind === 'vote' ? t('{name} saved as your preference.', { name: winnerName ?? t('Your choice') })
                 : feedback?.kind === 'skip' ? t("Skipped — no comparison saved.") : t("Choose the place you would rather revisit.")}
             </Text>
             <PrimaryButton label={t("Not sure — skip this one")} variant="secondary" disabled={choosing} onPress={skip} style={styles.skip} />

@@ -67,7 +67,7 @@ export function usePersonalComparisons() {
     savedCount: state.history.length,
     choose: (venueId: string) => context.choose(state.round, venueId),
     skip: () => context.skip(state.round),
-    winnerName: state.feedback?.kind === 'vote' ? lookup(state.feedback.winnerId)?.name ?? 'Your choice' : null,
+    winnerName: state.feedback?.kind === 'vote' ? lookup(state.feedback.winnerId)?.name ?? null : null,
     onlyOnePair: state.venueIds.length === 2,
   };
 }

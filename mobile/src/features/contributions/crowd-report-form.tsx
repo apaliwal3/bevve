@@ -1,18 +1,20 @@
+import { useTranslation } from '@/localization/language-provider';
 import { useReducer, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/primary-button';
 import { BevveTheme as theme } from '@/constants/theme';
+import { crowdLevelKeys } from '@/localization/venue-copy';
 
 import { crowdDraftReducer } from './contribution-drafts';
 import type { CrowdLevel, SessionCrowdReport } from './contribution-state';
 
-const options: { level: CrowdLevel; label: string }[] = [
-  { level: 1, label: 'Very Quiet' },
-  { level: 2, label: 'Quiet' },
-  { level: 3, label: 'Moderate' },
-  { level: 4, label: 'Busy' },
-  { level: 5, label: 'Packed' },
+const options: { level: CrowdLevel }[] = [
+  { level: 1 },
+  { level: 2 },
+  { level: 3 },
+  { level: 4 },
+  { level: 5 },
 ];
 
 type CrowdReportFormProps = {
@@ -23,6 +25,7 @@ type CrowdReportFormProps = {
 };
 
 export function CrowdReportForm({ savedReport, disabled = false, onSubmit, onCancel }: CrowdReportFormProps) {
+  const { t, format } = useTranslation();
   const [level, dispatchDraft] = useReducer(crowdDraftReducer, savedReport?.level ?? null);
   const [success, setSuccess] = useState(false);
 
@@ -40,27 +43,27 @@ export function CrowdReportForm({ savedReport, disabled = false, onSubmit, onCan
 
   return (
     <View style={styles.form}>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Crowd level" style={styles.options}>
+      <View accessibilityRole="radiogroup" accessibilityLabel={t("Crowd level")} style={styles.options}>
         {options.map((option) => (
           <Pressable
             key={option.level}
             accessibilityRole="radio"
-            accessibilityLabel={`${option.level} ${option.label}`}
+            accessibilityLabel={option.level + ' ' + t(crowdLevelKeys[option.level])}
             accessibilityState={{ checked: level === option.level, disabled }}
             disabled={disabled}
             onPress={() => { dispatchDraft({ type: 'select', level: option.level }); setSuccess(false); }}
             style={({ pressed }) => [styles.option, level === option.level && styles.selected, pressed && styles.pressed]}>
             <Text style={styles.level}>{option.level}</Text>
-            <Text style={styles.optionLabel}>{option.label}</Text>
+            <Text style={styles.optionLabel}>{t(crowdLevelKeys[option.level])}</Text>
           </Pressable>
         ))}
       </View>
-      {savedReport && <Text style={styles.hint}>Last saved: {new Date(savedReport.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>}
-      {success && <Text accessibilityLiveRegion="polite" style={styles.success}>Crowd report saved for this session.</Text>}
-      <Text style={styles.hint}>Only your latest report counts. A crowd classification needs at least 3 recent contributors.</Text>
+      {savedReport && <Text style={styles.hint}>{t('Last saved: {date}', { date: format.dateTime(savedReport.created_at) })}</Text>}
+      {success && <Text accessibilityLiveRegion="polite" style={styles.success}>{t("Crowd report saved for this session.")}</Text>}
+      <Text style={styles.hint}>{t("Only your latest report counts. A crowd classification needs at least 3 recent contributors.")}</Text>
       <View style={styles.actions}>
-        <PrimaryButton label="Cancel" variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
-        <PrimaryButton label="Submit crowd" disabled={level === null || disabled} onPress={submit} style={styles.button} />
+        <PrimaryButton label={t("Cancel")} variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
+        <PrimaryButton label={t("Submit crowd")} disabled={level === null || disabled} onPress={submit} style={styles.button} />
       </View>
     </View>
   );

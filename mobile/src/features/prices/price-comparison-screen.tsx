@@ -7,9 +7,10 @@ import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import type { CatalogDrink } from '@/fixtures/contribution-catalog';
 import type { Venue } from '@/types/venue';
+import { drinkCategoryLabel } from '@/localization/venue-copy';
 
 import { DrinkSelector } from './drink-selector';
-import { formatEuroCents, type PriceComparison } from './price-comparison';
+import type { PriceComparison } from './price-comparison';
 import { PriceResultRow } from './price-result-row';
 
 type PriceComparisonScreenProps = PriceComparison & {
@@ -22,7 +23,7 @@ type PriceComparisonScreenProps = PriceComparison & {
 };
 
 export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, backLabel, onBack, onSelectDrink, onOpenVenue }: PriceComparisonScreenProps) {
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
   const lowest = rows[0];
   const highest = rows[rows.length - 1];
 
@@ -30,39 +31,39 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
     <ScreenContainer contentContainerStyle={styles.content}>
       <FlowHeader eyebrow={t('SMARTER NIGHTS')} title={t('Drink prices')} backLabel={backLabel} onBack={onBack} />
       <View style={styles.intro}>
-        <Text accessibilityRole="header" style={styles.title}>What are you drinking?</Text>
-        <Text style={styles.description}>Community-reported prices from bars across Milan.</Text>
+        <Text accessibilityRole="header" style={styles.title}>{t("What are you drinking?")}</Text>
+        <Text style={styles.description}>{t("Community-reported prices from bars across Milan.")}</Text>
       </View>
 
       <DrinkSelector catalog={catalog} selectedId={drink?.id ?? null} onSelect={onSelectDrink} />
       {drink ? (
         <View style={styles.selection}>
           <Text style={styles.selectedDrink}>{drink.name} · {drink.serving_ml} ml</Text>
-          <Text style={styles.meta}>{drink.category} · Same catalog drink and serving at every venue</Text>
+          <Text style={styles.meta}>{drinkCategoryLabel(drink.category, t)} · {t('Same catalog drink and serving at every venue')}</Text>
         </View>
-      ) : <Text style={[styles.description, styles.selection]}>Choose an available drink above to see matching prices.</Text>}
-      <Text style={styles.demoLabel}>READ-ONLY · DEMO DATA · COMMUNITY-REPORTED</Text>
+      ) : <Text style={[styles.description, styles.selection]}>{t("Choose an available drink above to see matching prices.")}</Text>}
+      <Text style={styles.demoLabel}>{t("READ-ONLY · DEMO DATA · COMMUNITY-REPORTED")}</Text>
 
       {lowest && highest && (
         <View style={styles.summary}>
           <View style={styles.summaryPrice}>
-            <Text style={styles.summaryLabel}>LOWEST REPORTED</Text>
-            <Text style={styles.lowestPrice}>{formatEuroCents(lowest.priceCents)}</Text>
+            <Text style={styles.summaryLabel}>{t("LOWEST REPORTED")}</Text>
+            <Text style={styles.lowestPrice}>{format.currency(lowest.priceCents)}</Text>
           </View>
           <View style={styles.summaryCopy}>
             <Text style={styles.description}>{lowest.venue.name}</Text>
             <Text style={styles.meta}>
               {rows.length > 1
-                ? `${formatEuroCents(highest.priceCents - lowest.priceCents)} spread across reported prices`
-                : 'Only one venue has a price for this serving'}
+                ? t('{price} spread across reported prices', { price: format.currency(highest.priceCents - lowest.priceCents) })
+                : t("Only one venue has a price for this serving")}
             </Text>
           </View>
         </View>
       )}
 
       <View style={styles.resultsHeading}>
-        <Text accessibilityRole="header" style={styles.sectionTitle}>Cheapest first</Text>
-        <Text accessibilityLiveRegion="polite" style={styles.meta}>{rows.length} {rows.length === 1 ? 'price' : 'prices'}</Text>
+        <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Cheapest first")}</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.meta}>{t('{count} prices', { count: rows.length })}</Text>
       </View>
       {rows.length > 0 ? (
         <View style={styles.list}>
@@ -78,16 +79,16 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
       ) : (
         <View style={styles.empty}>
           <AppIcon name="compare" size={26} color={theme.colors.purpleLight} />
-          <Text style={styles.sectionTitle}>{drink ? 'No matching prices yet' : 'Select a drink'}</Text>
-          <Text style={styles.description}>{drink ? `No reported EUR prices for ${drink.name}, ${drink.serving_ml} ml.` : 'Only drinks from the catalog can be compared.'}</Text>
+          <Text style={styles.sectionTitle}>{drink ? t("No matching prices yet") : t("Select a drink")}</Text>
+          <Text style={styles.description}>{drink ? t('No reported EUR prices for {name}, {volume} ml.', { name: drink.name, volume: format.number(drink.serving_ml) }) : t("Only drinks from the catalog can be compared.")}</Text>
         </View>
       )}
 
       {drink && missingVenues.length > 0 && (
         <>
           <View style={styles.resultsHeading}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>No price reported</Text>
-            <Text style={styles.meta}>{missingVenues.length} {missingVenues.length === 1 ? 'venue' : 'venues'}</Text>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>{t("No price reported")}</Text>
+            <Text style={styles.meta}>{t('{count} venues', { count: missingVenues.length })}</Text>
           </View>
           <View style={styles.list}>
             {missingVenues.map((venue, index) => (
@@ -98,7 +99,7 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
           </View>
         </>
       )}
-      <Text style={styles.note}>Community-reported, not verified. Observation dates are shown when available. Open a venue and use + to report a price.</Text>
+      <Text style={styles.note}>{t("Community-reported, not verified. Observation dates are shown when available. Open a venue and use + to report a price.")}</Text>
     </ScreenContainer>
   );
 }

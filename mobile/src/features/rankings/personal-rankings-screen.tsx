@@ -1,5 +1,5 @@
 import { useTranslation } from '@/localization/language-provider';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
 import AppTabs from '@/components/app-tabs';
@@ -11,11 +11,13 @@ import { exploreMockUser } from '@/fixtures/venues';
 
 import type { RankedVenue } from './personal-rankings';
 import { RankedVenueRow } from './ranked-venue-row';
+import { rankingBadgeSize } from './ranking-summary-layout';
 
 type PersonalRankingsScreenProps = { onCompare: () => void; onOpenVenue: (venue: RankedVenue) => void; onProfile: () => void };
 
 export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: PersonalRankingsScreenProps) {
   const { t } = useTranslation();
+  const { fontScale } = useWindowDimensions();
   const { entries, completedCount } = usePersonalRankings();
   const hasRankings = entries.length > 0;
 
@@ -33,9 +35,9 @@ export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: Pe
         </View>
 
         <View style={styles.tasteCard}>
-          <View accessibilityLabel={t('{count} bars ranked', { count: entries.length })} style={styles.orb}>
+          <View accessible accessibilityLabel={t('{count} bars ranked', { count: entries.length })} style={[styles.orb, rankingBadgeSize(fontScale)]}>
             <Text style={styles.orbCount}>{entries.length}</Text>
-            <Text style={styles.orbLabel}>{t("RANKED")}</Text>
+            <Text numberOfLines={1} style={styles.orbLabel}>{t("RANKED")}</Text>
           </View>
           <View style={styles.tasteCopy}>
             <Text style={styles.sectionLabel}>{t("YOUR NIGHTLIFE DNA")}</Text>
@@ -129,6 +131,8 @@ const styles = StyleSheet.create({
   },
   tasteCard: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     alignItems: 'center',
     gap: 14,
     marginTop: theme.spacing.md,
@@ -139,8 +143,7 @@ const styles = StyleSheet.create({
     backgroundImage: 'linear-gradient(135deg, ' + theme.colors.purpleTint + ', ' + theme.colors.surface + ')'
   },
   orb: {
-    width: 67,
-    height: 67,
+    flexShrink: 0,
     borderRadius: theme.radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -157,10 +160,12 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 8,
-    letterSpacing: 1
+    letterSpacing: 1,
+    textAlign: 'center'
   },
   tasteCopy: {
     flex: 1,
+    minWidth: 140,
     gap: theme.spacing.xs
   },
   sectionLabel: {

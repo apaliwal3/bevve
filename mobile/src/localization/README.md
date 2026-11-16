@@ -4,9 +4,8 @@ bevve supports English (`en`) and Italian (`it`) interface languages. English is
 the default when no valid saved preference is available.
 
 Localization covers Welcome, Login, Signup, Explore, personal comparisons,
-Rankings, Profile, bottom navigation and shared navigation headers. Detailed
-Bar Details content, the rating overlay and contribution forms, and the price
-comparison page body are not yet fully localized.
+Rankings, Profile, Bar Details, the rating overlay, all five contribution forms,
+drink price comparison, bottom navigation and shared navigation headers.
 
 ## Dictionaries and usage
 
@@ -14,6 +13,8 @@ comparison page body are not yet fully localized.
 - `it.ts` provides the same keys in Italian.
 - `translation.ts` handles interpolation, plural selection and locale mapping.
 - `language-provider.tsx` provides `LanguageProvider` and `useTranslation`.
+- `venue-copy.ts` maps venue-language codes, catalog categories and validator
+  messages to display text without changing their saved values.
 
 `LanguageProvider` is installed in the root layout. Within a component, use
 `useTranslation` to access translated messages, formatters, the current
@@ -75,6 +76,8 @@ Run the type check and focused tests from `mobile/`:
 node node_modules/typescript/bin/tsc --noEmit --incremental false
 node --experimental-strip-types --test \
   tests/localization.test.mjs \
+  tests/localization-coverage.test.mjs \
+  tests/venue-localization.test.mjs \
   tests/language-persistence.test.mjs \
   tests/localization-session.test.mjs
 ```

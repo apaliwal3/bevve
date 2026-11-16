@@ -1,3 +1,4 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -6,7 +7,7 @@ import { AppIcon } from '@/components/app-icon';
 import { BevveTheme as theme } from '@/constants/theme';
 import type { Venue } from '@/types/venue';
 
-import { formatEuroCents, type PriceComparisonRow } from './price-comparison';
+import type { PriceComparisonRow } from './price-comparison';
 
 type PriceResultRowProps = {
   venue: Venue;
@@ -18,19 +19,20 @@ type PriceResultRowProps = {
 };
 
 export function PriceResultRow({ venue, quote, servingMl, position, isLowest = false, onPress }: PriceResultRowProps) {
+  const { t, format } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
-  const price = quote ? formatEuroCents(quote.priceCents) : 'No price yet';
+  const price = quote ? format.currency(quote.priceCents) : t('No price yet');
   const date = quote?.observedAt
-    ? `Reported ${new Date(quote.observedAt).toLocaleString()}`
-    : quote ? 'Date unavailable · Demo snapshot' : 'No observation';
+    ? t('Reported {date}', { date: format.dateTime(quote.observedAt) })
+    : quote ? t('Date unavailable · Demo snapshot') : t('No observation');
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${venue.name}, ${venue.area}, ${price}, ${servingMl} millilitres. ${date}. Open Bar Details`}
+      accessibilityLabel={t('{name}, {area}, {price}, {volume} millilitres. {date}. Open Bar Details', { name: venue.name, area: venue.area, price, volume: format.number(servingMl), date })}
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      <Text style={[styles.position, isLowest && styles.best]}>{quote ? isLowest ? 'BEST' : position : '—'}</Text>
+      <Text style={[styles.position, isLowest && styles.best]}>{quote ? isLowest ? t("BEST") : position : '—'}</Text>
       <View style={styles.photo}>
         {venue.image && !imageFailed
           ? <Image source={venue.image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} onError={() => setImageFailed(true)} />

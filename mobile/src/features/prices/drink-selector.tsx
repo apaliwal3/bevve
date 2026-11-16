@@ -1,7 +1,9 @@
+import { useTranslation } from '@/localization/language-provider';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
 import type { CatalogDrink } from '@/fixtures/contribution-catalog';
+import { drinkCategoryLabel } from '@/localization/venue-copy';
 
 type DrinkSelectorProps = {
   catalog: readonly CatalogDrink[];
@@ -10,15 +12,16 @@ type DrinkSelectorProps = {
 };
 
 export function DrinkSelector({ catalog, selectedId, onSelect }: DrinkSelectorProps) {
+  const { t, format } = useTranslation();
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel="Drink to compare" style={styles.options}>
+    <View accessibilityRole="radiogroup" accessibilityLabel={t("Drink to compare")} style={styles.options}>
       {catalog.map((drink) => {
         const selected = drink.id === selectedId;
         return (
           <Pressable
             key={drink.id}
             accessibilityRole="radio"
-            accessibilityLabel={`${drink.name}, ${drink.category}, ${drink.serving_ml} millilitres`}
+            accessibilityLabel={t('{name}, {category}, {volume} millilitres', { name: drink.name, category: drinkCategoryLabel(drink.category, t), volume: format.number(drink.serving_ml) })}
             accessibilityState={{ checked: selected }}
             onPress={() => onSelect(drink)}
             style={({ pressed }) => [styles.option, selected && styles.selected, pressed && styles.pressed]}>
