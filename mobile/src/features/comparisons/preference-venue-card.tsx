@@ -14,10 +14,12 @@ type PreferenceVenueCardProps = {
   faded: boolean;
   disabled: boolean;
   onChoose: () => void;
-  onView: () => void;
+  onView?: () => void;
+  compact?: boolean;
+  choiceHint?: string;
 };
 
-export function PreferenceVenueCard({ venue, otherName, selected, faded, disabled, onChoose, onView }: PreferenceVenueCardProps) {
+export function PreferenceVenueCard({ venue, otherName, selected, faded, disabled, onChoose, onView, compact = false, choiceHint }: PreferenceVenueCardProps) {
   const { t, describe } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   return (
@@ -25,11 +27,11 @@ export function PreferenceVenueCard({ venue, otherName, selected, faded, disable
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('Prefer {name} over {other}', { name: venue.name, other: otherName })}
-        accessibilityHint={t("Save your personal preference and show the next pair")}
+        accessibilityHint={choiceHint ?? t("Save your personal preference and show the next pair")}
         accessibilityState={{ selected, disabled }}
         disabled={disabled}
         onPress={onChoose}
-        style={({ pressed }) => [styles.choice, pressed && styles.pressed]}>
+        style={({ pressed }) => [styles.choice, compact && styles.compactChoice, pressed && styles.pressed]}>
         {venue.image && !imageFailed ? (
           <Image source={venue.image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} onError={() => setImageFailed(true)} />
         ) : (
@@ -47,7 +49,7 @@ export function PreferenceVenueCard({ venue, otherName, selected, faded, disable
         </View>
       </Pressable>
       {/* Sibling controls: opening details must never bubble into a preference vote. */}
-      <Pressable
+      {onView && <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('View details for {name}', { name: venue.name })}
         accessibilityState={{ disabled }}
@@ -56,7 +58,7 @@ export function PreferenceVenueCard({ venue, otherName, selected, faded, disable
         style={({ pressed }) => [styles.viewBar, pressed && styles.pressed]}>
         <Text style={styles.viewLabel}>{t("View bar")}</Text>
         <AppIcon name="chevron" size={12} color={theme.colors.purpleLight} />
-      </Pressable>
+      </Pressable>}
     </View>
   );
 }
@@ -82,6 +84,7 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.lg,
     paddingHorizontal: theme.spacing.lg
   },
+  compactChoice: { minHeight: 150, paddingTop: theme.spacing.xl },
   placeholder: {
     alignItems: 'center',
     justifyContent: 'center',

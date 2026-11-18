@@ -65,7 +65,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('Open actions for {name}', { name: venue.name })}
-              accessibilityHint={t("Open overall rating and optional bar actions")}
+              accessibilityHint={t('Open experience, personal comparisons and optional bar actions')}
               onPress={() => setRatingOverlayOpen(true)}
               style={({ pressed }) => [styles.plusButton, pressed && styles.plusPressed]}>
               <AppIcon name="plus" size={20} color={theme.colors.text} />
