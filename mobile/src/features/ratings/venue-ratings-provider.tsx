@@ -32,16 +32,9 @@ import {
   type VenueContributionsState,
 } from '../contributions/contribution-state';
 
-import {
-  communityRatingWithUser,
-  venueRatingsReducer,
-  type StarRating,
-  type VenueRatingsState,
-} from './rating-state';
+import type { VenueImpressionsState } from '../impressions/impression-state';
 
 type VenueRatingsContextValue = {
-  ratings: VenueRatingsState;
-  saveRating: (venueId: string, rating: StarRating) => void;
   contributions: VenueContributionsState;
   now: number;
   submitCrowdReport: (venueId: string, level: CrowdLevel) => void;
@@ -58,8 +51,8 @@ const VenueRatingsContext = createContext<VenueRatingsContextValue | null>(null)
 
 // One demo user for this app session. No browser/native persistence or backend writes.
 export function VenueRatingsProvider({ children }: PropsWithChildren) {
-  const [ratings, dispatch] = useReducer(venueRatingsReducer, {});
-  // Separate reducers keep overall ratings completely independent from contributions.
+  // Retain this provider and its contribution/price contracts; impression and Elo
+  // remain in the existing PersonalComparisonsProvider above screen routes.
   const [contributions, dispatchContribution] = useReducer(contributionsReducer, initialContributionsState);
   const [extras, dispatchExtra] = useReducer(venueExtrasReducer, initialVenueExtrasState);
   // UI preference only; no contribution is created by browsing drink prices.
@@ -82,9 +75,6 @@ export function VenueRatingsProvider({ children }: PropsWithChildren) {
     const timer = setTimeout(() => setNow(Date.now()), Math.min(...expirations) - currentTime);
     return () => clearTimeout(timer);
   }, [contributions.crowdReports, now]);
-  const saveRating = useCallback((venueId: string, rating: StarRating) => {
-    dispatch({ venueId, rating });
-  }, []);
   const submitCrowdReport = useCallback((venueId: string, level: CrowdLevel) => {
     const submittedAt = Date.now();
     setNow(submittedAt);
@@ -126,10 +116,10 @@ export function VenueRatingsProvider({ children }: PropsWithChildren) {
     if (drink) setComparisonDrinkId(drink.id);
   }, []);
   const value = useMemo(() => ({
-    ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview,
+    contributions, now, submitCrowdReport, saveBathroomReview,
     extras, submitDrinkPrice, suggestLanguage, submitIncident,
     comparisonDrinkId, selectComparisonDrink,
-  }), [ratings, saveRating, contributions, now, submitCrowdReport, saveBathroomReview,
+  }), [contributions, now, submitCrowdReport, saveBathroomReview,
     extras, submitDrinkPrice, suggestLanguage, submitIncident, comparisonDrinkId, selectComparisonDrink]);
 
   return <VenueRatingsContext.Provider value={value}>{children}</VenueRatingsContext.Provider>;
@@ -163,7 +153,6 @@ export function useVenueExtras(venueId: string) {
 }
 
 // Explore filters must use the same latest prices as the cards and Bar Details.
-// Keep original overall-rating baselines intact to avoid counting a session vote twice.
 export function useVenuePriceCatalog(venues: readonly Venue[]) {
   const context = useContext(VenueRatingsContext);
   if (!context) throw new Error('useVenuePriceCatalog must be used inside VenueRatingsProvider.');
@@ -198,25 +187,12 @@ export function useVenueContributions(venueId: string, demoBathrooms?: VenueDeta
   };
 }
 
-export function useVenueRating(venue: Venue) {
-  const context = useContext(VenueRatingsContext);
-  if (!context) throw new Error('useVenueRating must be used inside VenueRatingsProvider.');
-
-  const userRating = context.ratings[venue.id.toLowerCase()] ?? null;
-  return {
-    userRating,
-    communityRating: communityRatingWithUser(venue.communityRating, userRating),
-    saveRating: (rating: StarRating) => context.saveRating(venue.id, rating),
-  };
-}
-
-export function useProfileContributions() {
+export function useProfileContributions(impressions: VenueImpressionsState) {
   const context = useContext(VenueRatingsContext);
   if (!context) throw new Error('useProfileContributions must be used inside VenueRatingsProvider.');
-  const { ratings } = context;
   const { crowdReports, bathroomReviews } = context.contributions;
   const { priceObservations } = context.extras;
   // Pending suggestions and private incidents never enter the Profile UI contract.
-  return useMemo(() => selectProfileContributions({ ratings, crowdReports, bathroomReviews, priceObservations },
-    SESSION_USER_ID, mockVenues, mockDrinkCatalog), [ratings, crowdReports, bathroomReviews, priceObservations]);
+  return useMemo(() => selectProfileContributions({ impressions, crowdReports, bathroomReviews, priceObservations },
+    SESSION_USER_ID, mockVenues, mockDrinkCatalog), [impressions, crowdReports, bathroomReviews, priceObservations]);
 }

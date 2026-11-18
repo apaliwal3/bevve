@@ -3,18 +3,18 @@ import {
   type PersonalComparisonAction, type PersonalComparisonState, type UUID,
 } from '../comparisons/comparison-state.ts';
 import {
-  createVenueComparisonController, getVenueComparisonPrompt, venueComparisonFlowReducer,
+  createVenueComparisonController, getVenueComparisonPrompt, selectVenueComparisonOpponents, venueComparisonFlowReducer,
   type VenueComparisonAction, type VenueComparisonController, type VenueComparisonFlow,
 } from '../comparisons/venue-comparison-flow.ts';
 import {
-  getUserVenueSentiment, saveVenueSentiment, type Sentiment, type VenueSentimentsState,
-} from '../sentiments/sentiment-state.ts';
+  getUserVenueImpression, saveVenueImpression, type Impression, type VenueImpressionsState,
+} from '../impressions/impression-state.ts';
 
 export type OverlayToken = { overlayId: string; barId: string; catalogRevision: number };
-type Overlay = { id: UUID; barId: UUID; step: 'sentiment' | 'comparisons' | 'contributions' };
+type Overlay = { id: UUID; barId: UUID; step: 'impression' | 'comparisons' | 'contributions' };
 export type RatingJourneyState = {
   comparisons: PersonalComparisonState;
-  sentiments: VenueSentimentsState;
+  impressions: VenueImpressionsState;
   // Per-venue progress only; comparison events live exclusively in comparisons.
   flows: Readonly<Partial<Record<string, VenueComparisonFlow>>>;
   knownVenueIds: readonly UUID[];
@@ -31,7 +31,7 @@ const catalogIds = (ids: readonly string[]) => [...new Set(ids.flatMap((id) => {
 export function createRatingJourneyState(userId: string, ids: readonly string[]): RatingJourneyState {
   const controller = createVenueComparisonController(createPersonalComparisonState(userId, ids), {});
   return {
-    comparisons: controller.comparisons, sentiments: {}, flows: {},
+    comparisons: controller.comparisons, impressions: {}, flows: {},
     knownVenueIds: controller.knownVenueIds, usedFlowIds: controller.usedFlowIds, usedOverlayIds: [],
     catalogIds: catalogIds(ids), catalogRevision: 0, overlay: null,
   };
@@ -58,10 +58,19 @@ export function getRatingJourneyView(state: RatingJourneyState, barId: string) {
   const overlay = id && state.overlay?.barId === id ? state.overlay : null;
   const controller = controllerFor(state, id ?? '');
   const prompt = getVenueComparisonPrompt(controller);
+  const impression = getUserVenueImpression(state.impressions, state.comparisons.userId, barId)?.impression ?? null;
+  const pending = controller.flow?.phase === 'comparisons';
+  const hasOpponents = impression !== null && selectVenueComparisonOpponents({
+    userId: state.comparisons.userId, currentVenueId: barId, impressions: state.impressions,
+    catalogVenueIds: state.catalogIds, history: state.comparisons.history,
+  }).length > 0;
   return {
-    sentiment: getUserVenueSentiment(state.sentiments, state.comparisons.userId, barId)?.sentiment ?? null,
-    step: overlay?.step ?? 'sentiment',
-    pending: controller.flow?.phase === 'comparisons',
+    impression,
+    step: overlay?.step ?? 'impression',
+    pending,
+    flowId: controller.flow?.id ?? null,
+    canCompareAgain: impression !== null && !pending && hasOpponents,
+    noOpponents: impression !== null && !pending && !hasOpponents,
     prompt: overlay?.step === 'comparisons' ? prompt : null,
     progress: controller.flow ? { current: controller.flow.round + 1, total: controller.flow.opponentIds.length } : null,
     token: overlay ? { overlayId: overlay.id, barId: overlay.barId, catalogRevision: state.catalogRevision } : null,
@@ -73,7 +82,9 @@ export type RatingJourneyAction =
   | { type: 'close'; overlayId: string }
   | { type: 'catalog'; venueIds: readonly string[] }
   | { type: 'legacy'; action: PersonalComparisonAction }
-  | (OverlayToken & { type: 'save-sentiment'; sentiment: Sentiment; at: string; flowId: string; resume: boolean })
+  | (OverlayToken & { type: 'save-impression'; impression: Impression; at: string; flowId: string; resume: boolean })
+  | (OverlayToken & { type: 'revisit'; intent: 'resume' | 'contributions'; userId: string; expectedFlowId: string | null })
+  | (OverlayToken & { type: 'compare-again'; userId: string; expectedFlowId: string | null; flowId: string })
   | (OverlayToken & { type: 'flow'; action: Exclude<VenueComparisonAction, { type: 'begin' }> });
 
 export function ratingJourneyReducer(state: RatingJourneyState, action: RatingJourneyAction): RatingJourneyState {
@@ -104,7 +115,7 @@ export function ratingJourneyReducer(state: RatingJourneyState, action: RatingJo
   if (action.type === 'open') {
     const id = uuid(action.overlayId), bar = uuid(action.barId);
     if (!id || !bar || !state.catalogIds.includes(bar) || state.usedOverlayIds.includes(id)) return state;
-    return { ...state, overlay: { id, barId: bar, step: 'sentiment' }, usedOverlayIds: [...state.usedOverlayIds, id], comparisons: invalidateLegacyRound(state.comparisons) };
+    return { ...state, overlay: { id, barId: bar, step: 'impression' }, usedOverlayIds: [...state.usedOverlayIds, id], comparisons: invalidateLegacyRound(state.comparisons) };
   }
   if (action.type === 'close') {
     if (uuid(action.overlayId) !== state.overlay?.id) return state;
@@ -112,26 +123,49 @@ export function ratingJourneyReducer(state: RatingJourneyState, action: RatingJo
   }
   const overlay = state.overlay;
   if (!overlay || uuid(action.overlayId) !== overlay.id || uuid(action.barId) !== overlay.barId || action.catalogRevision !== state.catalogRevision) return state;
-  if (action.type === 'save-sentiment') {
-    if (overlay.step !== 'sentiment' || !uuid(action.flowId) || state.usedFlowIds.includes(uuid(action.flowId)!)) return state;
-    const previous = getUserVenueSentiment(state.sentiments, state.comparisons.userId, overlay.barId);
+  if (action.type === 'revisit' || action.type === 'compare-again') {
+    const controller = controllerFor(state, overlay.barId);
+    const expected = action.expectedFlowId === null ? null : uuid(action.expectedFlowId);
+    if (overlay.step !== 'impression' || uuid(action.userId) !== state.comparisons.userId ||
+      (action.expectedFlowId !== null && !expected) || expected !== (controller.flow?.id ?? null) ||
+      !getUserVenueImpression(state.impressions, state.comparisons.userId, overlay.barId)) return state;
+    if (action.type === 'revisit') {
+      if (action.intent === 'resume' && controller.flow?.phase === 'comparisons') {
+        return { ...state, overlay: { ...overlay, step: 'comparisons' } };
+      }
+      return action.intent === 'contributions' ? { ...state, overlay: { ...overlay, step: 'contributions' } } : state;
+    }
+    // A new batch is explicit and can only replace a finished batch. The existing
+    // controller owns opponent selection, flow-ID reuse guards and vote validation.
+    if (controller.flow?.phase === 'comparisons') return state;
+    const begun = venueComparisonFlowReducer(controller, {
+      type: 'begin', intent: 'compare-again', flowId: action.flowId, expectedFlowId: action.expectedFlowId,
+      userId: action.userId, currentVenueId: overlay.barId, impressions: state.impressions, catalogVenueIds: state.catalogIds,
+    });
+    if (begun === controller) return state;
+    return { ...mergeController(state, begun), overlay: { ...overlay, step: begun.flow?.phase === 'comparisons' ? 'comparisons' : 'contributions' } };
+  }
+  if (action.type === 'save-impression') {
+    if (overlay.step !== 'impression' || !uuid(action.flowId) || state.usedFlowIds.includes(uuid(action.flowId)!)) return state;
+    const previous = getUserVenueImpression(state.impressions, state.comparisons.userId, overlay.barId);
     const at = Date.parse(action.at);
-    if (!Number.isFinite(at) || !['liked', 'fine', 'disliked'].includes(action.sentiment)) return state;
+    if (!Number.isFinite(at) || !['liked', 'fine', 'disliked'].includes(action.impression)) return state;
     const record = {
-      user_id: state.comparisons.userId, bar_id: overlay.barId, sentiment: action.sentiment,
+      user_id: state.comparisons.userId, bar_id: overlay.barId, impression: action.impression,
       source: 'demo' as const, updated_at: new Date(Math.max(at, previous ? Date.parse(previous.updated_at) + 1 : at)).toISOString(),
     };
-    const sentiments = previous?.sentiment === action.sentiment ? state.sentiments : saveVenueSentiment(state.sentiments, record);
-    let next = { ...state, sentiments };
+    const impressions = previous?.impression === action.impression ? state.impressions : saveVenueImpression(state.impressions, record);
+    let next = { ...state, impressions };
     const existing = state.flows[overlay.barId];
-    // Reopening preserves pending progress; resuming is an explicit save action.
+    // Saving an edit preserves pending progress. Unchanged revisits use separate
+    // resume/contribution actions and never need to resubmit the impression.
     if (existing) {
       return { ...next, overlay: { ...overlay, step: action.resume && existing.phase === 'comparisons' ? 'comparisons' : 'contributions' } };
     }
     const controller = controllerFor(state, overlay.barId);
     const begun = venueComparisonFlowReducer(controller, {
       type: 'begin', flowId: action.flowId, expectedFlowId: null, userId: state.comparisons.userId,
-      currentVenueId: overlay.barId, intent: 'after-sentiment', sentiments, catalogVenueIds: state.catalogIds,
+      currentVenueId: overlay.barId, intent: 'after-impression', impressions, catalogVenueIds: state.catalogIds,
     });
     next = mergeController(next, begun);
     return { ...next, overlay: { ...overlay, step: begun.flow?.phase === 'comparisons' ? 'comparisons' : 'contributions' } };

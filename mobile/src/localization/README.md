@@ -3,7 +3,7 @@
 bevve supports English (`en`) and Italian (`it`) interface languages. English is
 the default when no valid saved preference is available.
 
-Localization covers Welcome, Login, Signup, Explore, personal comparisons,
+Localization covers Welcome, Login, Signup, Explore, comparisons in the `+` overlay,
 Rankings, Profile, Bar Details, the rating overlay, all five contribution forms,
 drink price comparison, bottom navigation and shared navigation headers.
 
@@ -23,15 +23,34 @@ drink price comparison, bottom navigation and shared navigation headers.
 ```tsx
 const { t, format, setLanguage } = useTranslation();
 
-t('Compare');
+t('Rankings');
 t('{count} comparisons', { count: 2 });
 format.currency(650); // Formats 650 cents as EUR.
 const selectItalian = () => { void setLanguage('it'); };
 ```
 
 Bind `selectItalian` to a language selector's press handler.
-Language changes update the interface immediately. Ratings, contributions,
+Language changes update the interface immediately. Impressions, contributions,
 personal comparisons and navigation remain managed by their existing providers.
+
+Community-opinion availability and **Your impression** use matching English and
+Italian keys. Demo answers are never labeled as genuine community percentages.
+Future genuine-data summaries have distinct zero-opinion copy and percentage
+labels that always include the opinion count in visible text and accessibility
+labels. Singular counts are localized; there is no minimum-opinion message.
+Bathroom star labels remain separate from the retired overall bar rating copy.
+
+Main navigation has three localized tab labels: Explore, Rankings and Profile.
+Rankings and Profile share guidance to open Explore and a bar's `+` action.
+Standalone personal Compare copy is retired; Compare Drink Prices retains its
+own labels and contextual Back copy. Old Compare return contexts use the
+existing translated **Back to Rankings** label.
+
+The compact impression selector uses the same three columns and sizing rules for
+both languages. Labels wrap and follow Dynamic Type. Revisit actions distinguish
+**Compare this bar again**, **Resume comparisons** and **Continue to contributions**;
+editing still uses Save. No-opponent copy is localized without inventing eligible
+venues or submitting a impression again.
 
 ## Adding or updating translations
 

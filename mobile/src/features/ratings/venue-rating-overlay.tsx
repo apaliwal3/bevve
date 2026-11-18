@@ -29,8 +29,8 @@ import type { PlainTranslationKey } from '@/localization/translation';
 import { useVenueRatingJourney } from '@/features/comparisons/personal-comparisons-provider';
 import { PreferenceVenueCard } from '@/features/comparisons/preference-venue-card';
 import { createSessionSubmissionId } from '@/features/contributions/contribution-state';
-import { SentimentSelector, sentimentLabels } from '@/features/sentiments/sentiment-selector';
-import type { Sentiment } from '@/features/sentiments/sentiment-state';
+import { ImpressionSelector, impressionLabels } from '@/features/impressions/impression-selector';
+import type { Impression } from '@/features/impressions/impression-state';
 
 import { useVenueContributions, useVenueExtras } from './venue-ratings-provider';
 
@@ -59,9 +59,10 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
   const { open, close, available } = journey;
   const { ownCrowdReport, ownBathroomReview, submitCrowdReport, saveBathroomReview } = useVenueContributions(venue.id);
   const { drinks, languages, pendingLanguages, demoSafetyNotes, submitDrinkPrice, suggestLanguage, submitIncident } = useVenueExtras(venue.id);
-  const [draftSentiment, setDraftSentiment] = useState<Sentiment | null>(journey.sentiment);
+  const [draftImpression, setDraftImpression] = useState<Impression | null>(journey.impression);
   const [closingSnapshot, setClosingSnapshot] = useState<typeof journey | null>(null);
   const view = closingSnapshot ?? journey;
+  const unchangedImpression = view.impression !== null && draftImpression === view.impression;
   const [expanded, setExpanded] = useState<Partial<Record<OptionalActionId, boolean>>>({});
   const [isClosing, setIsClosing] = useState(false);
   const [progress] = useState(() => new Animated.Value(0));
@@ -140,7 +141,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
   }
 
   function continueJourney(resume = true) {
-    if (draftSentiment !== null && canAct()) journey.save(draftSentiment, resume);
+    if (draftImpression !== null && canAct()) journey.save(draftImpression, resume);
   }
 
   return (
@@ -193,22 +194,34 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
             automaticallyAdjustKeyboardInsets
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag">
-            {view.step === 'sentiment' ? (
+            {view.step === 'impression' ? (
               <View style={styles.ratingCard}>
                 <Text accessibilityRole="header" style={styles.question}>{t('How was it?')}</Text>
-                <Text style={styles.description}>{t('Choose your experience before continuing. Comparisons and contributions are separate.')}</Text>
-                <SentimentSelector value={draftSentiment} onChange={(sentiment) => { if (canAct()) setDraftSentiment(sentiment); }} disabled={isClosing || !journey.token} />
-                {view.pending && <Text style={styles.description}>{t('You have unfinished comparisons for this venue. Resume them or continue to optional contributions.')}</Text>}
-                <PrimaryButton label={view.pending ? t('Save and resume comparisons') : t('Save sentiment and continue')}
-                  disabled={draftSentiment === null || isClosing || !journey.token} onPress={() => continueJourney()} />
-                {view.pending && <PrimaryButton label={t('Save and continue to optional contributions')} variant="secondary"
-                  disabled={draftSentiment === null || isClosing || !journey.token} onPress={() => continueJourney(false)} />}
+                <ImpressionSelector value={draftImpression} onChange={(impression) => { if (canAct()) setDraftImpression(impression); }} disabled={isClosing || !journey.token} />
+                {view.noOpponents && <Text style={styles.description}>{t('No other experienced bars are available to compare yet.')}</Text>}
+                {unchangedImpression ? (
+                  <>
+                    {view.pending ? <PrimaryButton label={t('Resume comparisons')} disabled={isClosing || !journey.token}
+                      onPress={() => { if (canAct()) journey.resume(); }} />
+                      : view.canCompareAgain && <PrimaryButton label={t('Compare this bar again')} disabled={isClosing || !journey.token}
+                        onPress={() => { if (canAct()) journey.compareAgain(); }} />}
+                    <PrimaryButton label={t('Continue to contributions')} variant="secondary" disabled={isClosing || !journey.token}
+                      onPress={() => { if (canAct()) journey.continueToContributions(); }} />
+                  </>
+                ) : (
+                  <>
+                    <PrimaryButton label={view.pending ? t('Save and resume comparisons') : t('Save impression and continue')}
+                      disabled={draftImpression === null || isClosing || !journey.token} onPress={() => continueJourney()} />
+                    {view.pending && <PrimaryButton label={t('Save and continue to optional contributions')} variant="secondary"
+                      disabled={draftImpression === null || isClosing || !journey.token} onPress={() => continueJourney(false)} />}
+                  </>
+                )}
               </View>
             ) : view.step === 'comparisons' && view.pair && view.progress ? (
               <>
                 <Text accessibilityLiveRegion="polite" style={styles.eyebrow}>{t('Comparison {current} of {total}', { current: view.progress.current, total: view.progress.total })}</Text>
                 <Text accessibilityRole="header" style={styles.question}>{t('Which would you rather revisit?')}</Text>
-                <Text style={styles.description}>{t('Your personal choices are separate from your saved sentiment.')}</Text>
+                <Text style={styles.description}>{t('Your personal choices are separate from your saved impression.')}</Text>
                 {view.pair.map((option, index) => (
                   <PreferenceVenueCard key={option.id} venue={option} otherName={view.pair![index === 0 ? 1 : 0].name}
                     compact selected={false} faded={false} disabled={isClosing}
@@ -222,8 +235,9 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
               <>
                 <View style={styles.ratingCard}>
                   <Text style={styles.eyebrow}>{t('YOUR EXPERIENCE')}</Text>
-                  {view.sentiment && <Text accessibilityLiveRegion="polite" style={styles.question}>{t(sentimentLabels[view.sentiment])}</Text>}
+                  {view.impression && <Text accessibilityLiveRegion="polite" style={styles.question}>{t(impressionLabels[view.impression])}</Text>}
                   <Text style={styles.description}>{t('Saved for this demo session. Reopen + to edit your experience.')}</Text>
+                  {view.noOpponents && <Text style={styles.description}>{t('No other experienced bars are available to compare yet.')}</Text>}
                 </View>
                 <Text style={styles.description}>{t("All five contributions are optional. Choose any card, or close when you are done.")}</Text>
                 {optionalActions.map((action) => {
@@ -382,28 +396,6 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 19
-  },
-  ratingCaption: {
-    color: theme.colors.star,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 12,
-    textAlign: 'center'
-  },
-  ratingHeading: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm
-  },
-  ratingBadge: {
-    color: theme.colors.star,
-    backgroundColor: theme.colors.starTint,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radii.pill,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 12
   },
   optionalCard: {
     borderWidth: 1,

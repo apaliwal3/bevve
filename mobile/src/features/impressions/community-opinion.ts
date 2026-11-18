@@ -1,10 +1,8 @@
-import { normalizeSentimentUuid, normalizeVenueSentiment, type VenueSentiment } from './sentiment-state.ts';
+import { normalizeImpressionUuid, normalizeVenueImpression, type VenueImpression } from './impression-state.ts';
 
 export type CommunityOpinionOptions = {
-  // No product minimum has been approved. Absence/null means unresolved.
-  minimumOpinions?: number | null;
   // A future trusted adapter may further restrict eligible community records.
-  isEligible?: (record: VenueSentiment) => boolean;
+  isEligible?: (record: VenueImpression) => boolean;
 };
 
 export type CommunityOpinion = {
@@ -12,9 +10,8 @@ export type CommunityOpinion = {
   fineCount: number;
   dislikedCount: number;
   totalDistinctOpinions: number;
-  // Raw, unrounded calculation; future presentation must honor sufficiency.
+  // Raw, unrounded calculation. Every positive distinct-user count is usable.
   likedPercentage: number | null;
-  sufficiency: 'unresolved' | 'insufficient' | 'sufficient';
 };
 
 // Only explicitly community-sourced, valid, eligible records enter this input's
@@ -22,19 +19,15 @@ export type CommunityOpinion = {
 // Select the latest eligible snapshot per user at this venue. Equal timestamps
 // use the later supplied snapshot, matching the state operation's edit ordering.
 export function calculateCommunityOpinion(
-  records: readonly VenueSentiment[],
+  records: readonly VenueImpression[],
   barId: string,
   options: CommunityOpinionOptions = {},
 ): CommunityOpinion {
-  const venue = normalizeSentimentUuid(barId);
+  const venue = normalizeImpressionUuid(barId);
   if (!venue) throw new Error('A venue UUID is required.');
-  const minimum = options.minimumOpinions ?? null;
-  if (minimum !== null && (!Number.isSafeInteger(minimum) || minimum < 1)) {
-    throw new Error('The configured opinion minimum must be a positive integer.');
-  }
-  const latest = new Map<string, VenueSentiment>();
+  const latest = new Map<string, VenueImpression>();
   for (const input of records) {
-    const record = normalizeVenueSentiment(input);
+    const record = normalizeVenueImpression(input);
     if (!record || record.bar_id !== venue || record.source !== 'community' ||
       (options.isEligible && !options.isEligible(record))) continue;
     const previous = latest.get(record.user_id);
@@ -44,14 +37,13 @@ export function calculateCommunityOpinion(
   let fineCount = 0;
   let dislikedCount = 0;
   for (const record of latest.values()) {
-    if (record.sentiment === 'liked') likedCount++;
-    else if (record.sentiment === 'fine') fineCount++;
+    if (record.impression === 'liked') likedCount++;
+    else if (record.impression === 'fine') fineCount++;
     else dislikedCount++;
   }
   const totalDistinctOpinions = latest.size;
   return {
     likedCount, fineCount, dislikedCount, totalDistinctOpinions,
     likedPercentage: totalDistinctOpinions === 0 ? null : likedCount / totalDistinctOpinions * 100,
-    sufficiency: minimum === null ? 'unresolved' : totalDistinctOpinions >= minimum ? 'sufficient' : 'insufficient',
   };
 }

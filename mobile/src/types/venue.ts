@@ -1,6 +1,6 @@
 import type { ImageSource } from 'expo-image';
 
-// Temporary presentation model; community ratings are separate from bathroom scores and rankings.
+// Venue presentation data contains no overall bar score or community vote baseline.
 export type Venue = {
   id: string;
   name: string;
@@ -10,7 +10,6 @@ export type Venue = {
   distanceMeters: number | null;
   isPopular: boolean;
   image: number | ImageSource | null;
-  communityRating: { average: number; count: number } | null;
   crowd: { level: 1 | 2 | 3 | 4 | 5; label: string } | null;
   startingPriceCents: number | null;
   bathroomCleanliness: number | null;

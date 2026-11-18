@@ -32,7 +32,6 @@ function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps)
 
 const mainTabs = [
   { name: 'explore', label: 'Explore', icon: 'explore' },
-  { name: 'compare', label: 'Compare', icon: 'compare' },
   { name: 'rankings', label: 'Rankings', icon: 'rankings' },
   { name: 'profile', label: 'Profile', icon: 'profile' },
 ] as const;

@@ -1,7 +1,7 @@
 import type { VenueDetails } from '../../types/venue';
-import type { StarRating } from '../ratings/rating-state';
+import type { FivePointScore } from '../../types/five-point-score';
 
-export type CrowdLevel = StarRating;
+export type CrowdLevel = FivePointScore;
 export const SESSION_USER_ID = '97c0c196-e3f2-4d15-9c53-81757f652dd1';
 export const CROWD_WINDOW_MS = 45 * 60 * 1000;
 
@@ -14,9 +14,9 @@ export type SessionCrowdReport = {
 };
 
 export type BathroomScores = {
-  cleanliness: StarRating;
-  accessibility: StarRating;
-  wait_time: StarRating;
+  cleanliness: FivePointScore;
+  accessibility: FivePointScore;
+  wait_time: FivePointScore;
 };
 
 export type SessionBathroomReview = BathroomScores & {

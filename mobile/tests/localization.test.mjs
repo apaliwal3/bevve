@@ -18,6 +18,7 @@ test('English and Italian dictionaries have complete keys, matching placeholders
     const translated = typeof italian === 'string' ? [italian] : Object.values(italian);
     if (typeof english !== 'string') assert.deepEqual(Object.keys(italian).sort(), ['one', 'other']);
     variants.forEach((variant, index) => {
+      assert.ok(!/\bsentiments?\b/i.test(variant), 'Visible English copy must use impression: ' + key);
       assert.deepEqual(slots(variant), slots(key), key);
       assert.deepEqual(slots(translated[index]), slots(key), key);
       assert.ok(translated[index].trim().length > 0, key);
@@ -74,6 +75,14 @@ test('core labels and zero, singular and plural empty-state counts translate nat
   assert.equal(t('{count} comparisons', { count: 1 }), '1 confronto');
   assert.equal(t('{count} comparisons', { count: 2 }), '2 confronti');
   assert.equal(createTranslator('en')('{count} bars ranked', { count: 1 }), '1 bar ranked');
+  // Impression identifiers and displayed copy use the official terminology.
+  assert.equal(createTranslator('en')('Save impression and continue'), 'Save impression and continue');
+  assert.equal(t('Save impression and continue'), 'Salva l’impressione e continua');
+  assert.equal(createTranslator('en')('Your personal choices are separate from your saved impression.'), 'Your personal choices are separate from your saved impression.');
+  assert.equal(t('Your personal choices are separate from your saved impression.'), 'Le tue preferenze personali sono separate dalla tua impressione salvata.');
+  const choices = ['How was it?', 'I liked it', 'It was fine', "I didn't like it"];
+  assert.deepEqual(choices.map((key) => createTranslator('en')(key)), choices);
+  assert.deepEqual(choices.map((key) => t(key)), ['Com’è andata?', 'Mi è piaciuto', 'È stato nella media', 'Non mi è piaciuto']);
 });
 
 test('interpolation preserves venue names, neighborhoods and user text verbatim', () => {
@@ -81,8 +90,8 @@ test('interpolation preserves venue names, neighborhoods and user text verbatim'
   const name = 'Luna Rossa {name}';
   const area = 'Porta Venezia';
   assert.equal(t('Back to {name}', { name }), 'Torna a ' + name);
-  const message = t('{name}, {area}, {rating}. View venue', { name, area, rating: '4,5/5' });
-  assert.ok(message.includes(name) && message.includes(area) && message.includes('4,5/5'));
+  const message = t('{name}, {area}. {opinion}. {impression}. View venue', { name, area, opinion: 'Community demo', impression: 'Saved answer' });
+  assert.ok(message.includes(name) && message.includes(area) && message.includes('Saved answer'));
   assert.equal(describeFixture('Aperol Spritz', t), 'Aperol Spritz');
   assert.equal(describeFixture('Porta Venezia', t), 'Porta Venezia');
   assert.equal(describeFixture('toString', t), 'toString');

@@ -1,7 +1,7 @@
 import {
-  experiencedVenueIds, getUserVenueSentiment, normalizeVenueSentiment,
-  type VenueSentimentsState,
-} from '../sentiments/sentiment-state.ts';
+  experiencedVenueIds, getUserVenueImpression, normalizeVenueImpression,
+  type VenueImpressionsState,
+} from '../impressions/impression-state.ts';
 import {
   parseUuid, personalComparisonReducer,
   type PersonalComparison, type PersonalComparisonState, type UUID, type VenuePair,
@@ -12,10 +12,10 @@ export const PROTOTYPE_MAX_VENUE_COMPARISONS = 3;
 
 const uuid = (value: unknown) => typeof value === 'string' ? parseUuid(value) : null;
 
-function savedVenueIds(sentiments: VenueSentimentsState, userId: UUID): UUID[] {
-  return experiencedVenueIds(sentiments, userId).flatMap((value) => {
+function savedVenueIds(impressions: VenueImpressionsState, userId: UUID): UUID[] {
+  return experiencedVenueIds(impressions, userId).flatMap((value) => {
     const id = uuid(value);
-    const record = normalizeVenueSentiment(getUserVenueSentiment(sentiments, userId, value));
+    const record = normalizeVenueImpression(getUserVenueImpression(impressions, userId, value));
     return id && record?.user_id === userId && record.bar_id === id ? [id] : [];
   });
 }
@@ -23,7 +23,7 @@ function savedVenueIds(sentiments: VenueSentimentsState, userId: UUID): UUID[] {
 type OpponentSelection = {
   userId: string;
   currentVenueId: string;
-  sentiments: VenueSentimentsState;
+  impressions: VenueImpressionsState;
   catalogVenueIds: readonly string[];
   history: readonly PersonalComparison[];
 };
@@ -35,7 +35,7 @@ export function selectVenueComparisonOpponents(input: OpponentSelection): UUID[]
   const current = uuid(input.currentVenueId);
   if (!user || !current) return [];
   const catalog = new Set(input.catalogVenueIds.flatMap((value) => { const id = uuid(value); return id ? [id] : []; }));
-  const experienced = savedVenueIds(input.sentiments, user);
+  const experienced = savedVenueIds(input.impressions, user);
   if (!catalog.has(current) || !experienced.includes(current)) return [];
   const eligible = new Set(experienced.filter((id) => id !== current && catalog.has(id)));
   const lastMatch = new Map<UUID, { time: number; id: UUID }>();
@@ -75,18 +75,18 @@ export type VenueComparisonController = {
   usedFlowIds: readonly UUID[];
 };
 
-// Initialize once with existing saved sentiments, BEFORE saving a newly added
+// Initialize once with existing saved impressions, BEFORE saving a newly added
 // venue. Existing/imported experience must not trigger automatic comparisons.
 // Retain this controller across overlay mounts; do not recreate it on reopening.
 export function createVenueComparisonController(
   comparisons: PersonalComparisonState,
-  existingSentiments: VenueSentimentsState,
+  existingImpressions: VenueImpressionsState,
 ): VenueComparisonController {
   const user = uuid(comparisons.userId);
   if (!user) throw new Error('A comparison user UUID is required.');
   return {
     comparisons: user === comparisons.userId ? comparisons : { ...comparisons, userId: user },
-    flow: null, knownVenueIds: savedVenueIds(existingSentiments, user), usedFlowIds: [],
+    flow: null, knownVenueIds: savedVenueIds(existingImpressions, user), usedFlowIds: [],
   };
 }
 
@@ -104,8 +104,8 @@ type BeginVenueComparison = {
   expectedFlowId: string | null;
   userId: string;
   currentVenueId: string;
-  intent: 'after-sentiment' | 'compare-again';
-  sentiments: VenueSentimentsState;
+  intent: 'after-impression' | 'compare-again';
+  impressions: VenueImpressionsState;
   catalogVenueIds: readonly string[];
 };
 
@@ -141,11 +141,11 @@ export function venueComparisonFlowReducer(state: VenueComparisonController, act
     const expected = action.expectedFlowId === null ? null : uuid(action.expectedFlowId);
     if (!flowId || user !== state.comparisons.userId || !current || state.usedFlowIds.includes(flowId) ||
       (action.expectedFlowId !== null && !expected) || expected !== (state.flow?.id ?? null) ||
-      (action.intent !== 'after-sentiment' && action.intent !== 'compare-again')) return state;
-    const saved = savedVenueIds(action.sentiments, user);
+      (action.intent !== 'after-impression' && action.intent !== 'compare-again')) return state;
+    const saved = savedVenueIds(action.impressions, user);
     if (!saved.includes(current) || !action.catalogVenueIds.some((value) => uuid(value) === current)) return state;
     const previouslyExperienced = state.knownVenueIds.includes(current);
-    const opponents = action.intent === 'after-sentiment' && previouslyExperienced ? []
+    const opponents = action.intent === 'after-impression' && previouslyExperienced ? []
       : selectVenueComparisonOpponents({ ...action, history: state.comparisons.history });
     return {
       ...state,
@@ -154,7 +154,7 @@ export function venueComparisonFlowReducer(state: VenueComparisonController, act
       flow: {
         id: flowId, currentVenueId: current, opponentIds: opponents, round: 0,
         phase: opponents.length ? 'comparisons' : 'contributions',
-        finishReason: opponents.length ? null : action.intent === 'after-sentiment' && previouslyExperienced ? 'already-experienced' : 'no-opponents',
+        finishReason: opponents.length ? null : action.intent === 'after-impression' && previouslyExperienced ? 'already-experienced' : 'no-opponents',
       },
     };
   }

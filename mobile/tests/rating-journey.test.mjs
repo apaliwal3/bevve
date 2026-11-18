@@ -18,8 +18,10 @@ const initial = () => createRatingJourneyState(SESSION_USER_ID, ids);
 const view = (state, bar = state.overlay?.barId ?? a) => getRatingJourneyView(state, bar);
 const open = (state, bar, n) => ratingJourneyReducer(state, { type: 'open', barId: bar, overlayId: id(n) });
 const close = (state) => ratingJourneyReducer(state, { type: 'close', overlayId: state.overlay.id });
-const saveAction = (state, n, sentiment = 'liked', resume = true) => ({ ...view(state).token, type: 'save-sentiment', sentiment, resume, at, flowId: id(n) });
-const save = (state, n, sentiment = 'liked', resume = true) => ratingJourneyReducer(state, saveAction(state, n, sentiment, resume));
+const saveAction = (state, n, impression = 'liked', resume = true) => ({ ...view(state).token, type: 'save-impression', impression, resume, at, flowId: id(n) });
+const save = (state, n, impression = 'liked', resume = true) => ratingJourneyReducer(state, saveAction(state, n, impression, resume));
+const revisitAction = (state, intent) => ({ ...view(state).token, type: 'revisit', intent, userId: SESSION_USER_ID, expectedFlowId: view(state).flowId });
+const againAction = (state, n) => ({ ...view(state).token, type: 'compare-again', userId: SESSION_USER_ID, expectedFlowId: view(state).flowId, flowId: id(n) });
 function flowAction(state, type = 'vote', n = 900, winner) {
   const current = view(state);
   const chosen = winner ?? current.prompt.pair[0];
@@ -37,24 +39,24 @@ function experience(state, bar, n) {
   return close(state);
 }
 
-test('opening, selecting an unsaved draft and closing cannot create sentiment, comparisons or forms', () => {
+test('opening, selecting an unsaved draft and closing cannot create impression, comparisons or forms', () => {
   const start = initial();
   const opened = open(start, a, 1);
-  assert.equal(view(opened).step, 'sentiment');
-  assert.equal(view(opened).sentiment, null);
+  assert.equal(view(opened).step, 'impression');
+  assert.equal(view(opened).impression, null);
   const closed = close(opened);
-  assert.deepEqual(closed.sentiments, {});
+  assert.deepEqual(closed.impressions, {});
   assert.equal(closed.comparisons.history, start.comparisons.history);
   assert.ok(!('contributions' in closed));
   assert.equal(view(opened).prompt, null);
 });
 
-test('first saved sentiment goes straight to the five optional contributions without Elo', () => {
+test('first saved impression goes straight to the five optional contributions without Elo', () => {
   const opened = open(initial(), a, 1);
   const saved = save(opened, 2, 'fine');
   assert.equal(view(saved).step, 'contributions');
-  assert.equal(view(saved).sentiment, 'fine');
-  assert.equal(saved.sentiments[SESSION_USER_ID][a].source, 'demo');
+  assert.equal(view(saved).impression, 'fine');
+  assert.equal(saved.impressions[SESSION_USER_ID][a].source, 'demo');
   assert.equal(saved.comparisons.history, opened.comparisons.history);
   assert.equal(saved.comparisons.rankings, opened.comparisons.rankings);
 });
@@ -88,7 +90,7 @@ test('rapid saves, duplicate votes and queued skip actions consume at most one d
   assert.equal(ratingJourneyReducer(voted, vote), voted);
   assert.equal(ratingJourneyReducer(voted, skipped), voted);
   assert.equal(voted.comparisons.history.length, 1);
-  assert.equal(Object.keys(voted.sentiments[SESSION_USER_ID]).length, 2);
+  assert.equal(Object.keys(voted.impressions[SESSION_USER_ID]).length, 2);
 });
 
 test('dismissal retains unfinished progress; reopening explicitly resumes the next unconsumed opponent', () => {
@@ -103,9 +105,9 @@ test('dismissal retains unfinished progress; reopening explicitly resumes the ne
   const closed = close(state);
   assert.equal(ratingJourneyReducer(closed, stale), closed);
   state = open(closed, d, 9);
-  assert.equal(view(state).step, 'sentiment');
+  assert.equal(view(state).step, 'impression');
   assert.equal(view(state).pending, true);
-  assert.equal(view(state).sentiment, 'liked');
+  assert.equal(view(state).impression, 'liked');
   assert.equal(view(state).prompt, null);
   state = save(state, 10, 'liked', true);
   assert.equal(state.flows[d], pending);
@@ -126,24 +128,114 @@ test('users may save an edit and go to optional forms while retaining a later ex
   assert.equal(state.flows[b], pending);
   state = save(open(close(state), b, 7), 8, 'fine', true);
   assert.equal(view(state).step, 'comparisons');
-  assert.equal(view(state).sentiment, 'fine');
+  assert.equal(view(state).impression, 'fine');
   assert.equal(state.flows[b], pending);
   assert.deepEqual(state.comparisons.history, []);
 });
 
-test('completed and skipped flows never restart when unchanged or edited sentiment is saved', () => {
+test('completed and skipped flows never restart when unchanged or edited impression is saved', () => {
   let state = save(open(experience(initial(), a, 1), b, 3), 4);
   state = ratingJourneyReducer(state, flowAction(state, 'vote', 100));
   const history = state.comparisons.history;
   const rankings = state.comparisons.rankings;
-  for (const [index, sentiment] of ['liked', 'fine', 'disliked'].entries()) {
-    state = save(open(close(state), b, 5 + index * 2), 6 + index * 2, sentiment);
+  for (const [index, impression] of ['liked', 'fine', 'disliked'].entries()) {
+    state = save(open(close(state), b, 5 + index * 2), 6 + index * 2, impression);
     assert.equal(view(state).step, 'contributions');
     assert.equal(view(state).pending, false);
     assert.equal(state.comparisons.history, history);
     assert.equal(state.comparisons.rankings, rankings);
-    assert.equal(Object.keys(state.sentiments[SESSION_USER_ID]).length, 2);
+    assert.equal(Object.keys(state.impressions[SESSION_USER_ID]).length, 2);
   }
+});
+
+test('Skip all, dismiss and reopen only starts a new batch after an explicit Compare again, without resaving impression or voting', () => {
+  let state = experience(experience(initial(), a, 1), b, 3);
+  const oldFlow = state.flows[b];
+  const impressions = state.impressions;
+  state = open(state, b, 5);
+  assert.equal(view(state).canCompareAgain, true);
+  assert.equal(view(state).step, 'impression');
+  assert.equal(state.flows[b], oldFlow);
+  const comparisons = state.comparisons;
+  const action = againAction(state, 6);
+  state = ratingJourneyReducer(state, action);
+  assert.equal(view(state).step, 'comparisons');
+  assert.notEqual(state.flows[b].id, oldFlow.id);
+  assert.equal(state.impressions, impressions);
+  assert.equal(state.comparisons, comparisons);
+  assert.deepEqual(view(state).prompt.pair, [b, a]);
+  assert.equal(ratingJourneyReducer(state, action), state);
+  assert.equal(state.comparisons.history.length, 0);
+});
+
+test('a new explicit batch prefers unplayed opponents, reuses previously played ones and retains exact Elo across at most three distinct opponents', () => {
+  let state = initial();
+  for (const [index, bar] of [a, b, c].entries()) state = experience(state, bar, index * 2 + 1);
+  state = save(open(state, d, 7), 8);
+  const played = view(state).prompt.token.opponentId;
+  const oldVote = flowAction(state, 'vote', 100, d);
+  state = ratingJourneyReducer(state, oldVote);
+  state = ratingJourneyReducer(state, flowAction(state, 'skip-remaining'));
+  state = open(close(state), d, 9);
+  const history = state.comparisons.history, rankings = state.comparisons.rankings, impressions = state.impressions;
+  state = ratingJourneyReducer(state, againAction(state, 10));
+  assert.equal(state.comparisons.history, history);
+  assert.equal(state.comparisons.rankings, rankings);
+  assert.equal(state.impressions, impressions);
+  assert.equal(state.flows[d].opponentIds.length, 3);
+  assert.equal(state.flows[d].opponentIds[2], played);
+  const opponents = new Set();
+  for (let round = 0; round < 3; round++) {
+    assert.equal(ratingJourneyReducer(state, oldVote), state);
+    assert.ok(view(state).prompt.pair.includes(d));
+    opponents.add(view(state).prompt.token.opponentId);
+    state = ratingJourneyReducer(state, flowAction(state, 'vote', 200 + round, d));
+  }
+  assert.equal(opponents.size, 3);
+  assert.equal(view(state).step, 'contributions');
+  assert.equal(state.comparisons.history.length, 4);
+  assert.deepEqual(state.comparisons.rankings, backendRankings(state.comparisons.history));
+});
+
+test('Resume and Continue to contributions preserve saved impressions, pending flow identity and every recorded vote', () => {
+  let state = initial();
+  for (const [index, bar] of [a, b, c].entries()) state = experience(state, bar, index * 2 + 1);
+  state = save(open(state, d, 7), 8);
+  state = ratingJourneyReducer(state, flowAction(state, 'vote', 100));
+  state = open(close(state), d, 9);
+  const flow = state.flows[d], impressions = state.impressions, history = state.comparisons.history;
+  assert.equal(view(state).canCompareAgain, false);
+  assert.equal(ratingJourneyReducer(state, againAction(state, 10)), state);
+  state = ratingJourneyReducer(state, revisitAction(state, 'contributions'));
+  assert.equal(view(state).step, 'contributions');
+  assert.equal(state.flows[d], flow);
+  state = open(close(state), d, 11);
+  state = ratingJourneyReducer(state, revisitAction(state, 'resume'));
+  assert.equal(state.flows[d], flow);
+  assert.equal(state.impressions, impressions);
+  assert.equal(state.comparisons.history, history);
+  assert.deepEqual(view(state).progress, { current: 2, total: 3 });
+});
+
+test('revisit guards reject wrong users, venues, previous flow IDs, reused new IDs and stale catalog or overlay callbacks', () => {
+  let state = open(experience(experience(initial(), a, 1), b, 3), b, 5);
+  const action = againAction(state, 6);
+  for (const fields of [
+    { userId: id(99) }, { barId: a }, { expectedFlowId: null }, { expectedFlowId: 'invalid' },
+    { flowId: state.flows[b].id }, { flowId: 'invalid' }, { overlayId: id(99) }, { catalogRevision: -1 },
+  ]) assert.equal(ratingJourneyReducer(state, { ...action, ...fields }), state);
+  const reopened = open(close(state), b, 7);
+  assert.equal(ratingJourneyReducer(reopened, action), reopened);
+  const changed = ratingJourneyReducer(state, { type: 'catalog', venueIds: [b] });
+  assert.equal(ratingJourneyReducer(changed, action), changed);
+  assert.equal(view(changed).canCompareAgain, false);
+  assert.equal(view(changed).noOpponents, true);
+  state = ratingJourneyReducer(changed, revisitAction(changed, 'contributions'));
+  assert.equal(view(state).step, 'contributions');
+  assert.equal(state.comparisons.history.length, 0);
+  assert.equal(ratingJourneyReducer(state, againAction(state, 8)), state);
+  const fresh = open(initial(), a, 1);
+  assert.equal(ratingJourneyReducer(fresh, againAction(fresh, 2)), fresh);
 });
 
 test('progress survives opening another venue, and stale callbacks/cleanup cannot change the newer overlay', () => {
@@ -197,14 +289,14 @@ test('catalog changes remove missing opponents, invalidate captured actions and 
   assert.deepEqual(state.comparisons.rankings, backendRankings(history));
 });
 
-test('removing the current venue revokes the overlay and keeps its sentiment and pending progress', () => {
+test('removing the current venue revokes the overlay and keeps its impression and pending progress', () => {
   let state = save(open(experience(initial(), a, 1), b, 3), 4);
   const pending = state.flows[b];
   const stale = flowAction(state);
   state = ratingJourneyReducer(state, { type: 'catalog', venueIds: [a] });
   assert.equal(state.overlay, null);
   assert.equal(state.flows[b], pending);
-  assert.equal(state.sentiments[SESSION_USER_ID][b].sentiment, 'liked');
+  assert.equal(state.impressions[SESSION_USER_ID][b].impression, 'liked');
   assert.equal(ratingJourneyReducer(state, stale), state);
   state = ratingJourneyReducer(state, { type: 'catalog', venueIds: ids });
   state = save(open(state, b, 5), 6);
@@ -240,7 +332,7 @@ test('legacy Compare and the overlay append to one history, retain exact Elo par
   assert.ok(projection.entries.every((entry) => !('score' in entry)));
 });
 
-test('sentiment/comparison steps do not submit optional forms or touch contribution and price state', () => {
+test('impression/comparison steps do not submit optional forms or touch contribution and price state', () => {
   const contributions = contributionsReducer(initialContributionsState, { type: 'submit-crowd', report: {
     id: id(600), bar_id: a, user_id: SESSION_USER_ID, level: 3, created_at: at,
   } });
@@ -253,7 +345,7 @@ test('sentiment/comparison steps do not submit optional forms or touch contribut
   assert.ok(!('extras' in state) && !('contributions' in state));
 });
 
-test('English/Italian preference changes cannot reset saved sentiments, shared Elo or pending progress', async () => {
+test('English/Italian preference changes cannot reset saved impressions, shared Elo or pending progress', async () => {
   const state = save(open(experience(initial(), a, 1), b, 3), 4);
   const before = JSON.stringify(state);
   const writes = [];

@@ -5,7 +5,8 @@ import type { Venue } from '@/types/venue';
 import { createSessionSubmissionId, SESSION_USER_ID } from '../contributions/contribution-state';
 import { selectPersonalRankings } from '../rankings/personal-rankings';
 import { createRatingJourneyState, getRatingJourneyView, ratingJourneyReducer, type RatingJourneyAction, type RatingJourneyState } from '../ratings/rating-journey-state';
-import type { Sentiment } from '../sentiments/sentiment-state';
+import { getUserVenueImpression, type Impression } from '../impressions/impression-state';
+import { communityOpinionView } from '../impressions/community-opinion-presentation';
 
 import {
   parseUuid,
@@ -59,7 +60,7 @@ export function PersonalComparisonsProvider({ children, venues = mockVenues }: P
   return <PersonalComparisonsContext.Provider value={value}>{children}</PersonalComparisonsContext.Provider>;
 }
 
-// The overlay owns only drafts/animation. Sentiment, progress and the shared
+// The overlay owns only drafts/animation. Impression, progress and the shared
 // comparison history all remain in this existing provider above screen routes.
 export function useVenueRatingJourney(barId: string) {
   const context = useContext(PersonalComparisonsContext);
@@ -76,9 +77,21 @@ export function useVenueRatingJourney(barId: string) {
     available: journey.catalogIds.includes(barId.toLowerCase() as UUID),
     pair: first && second ? [first, second] as const : null,
     open, close,
-    save: (sentiment: Sentiment, resume = true) => {
+    save: (impression: Impression, resume = true) => {
       if (!view.token) return;
-      dispatchJourney({ ...view.token, type: 'save-sentiment', sentiment, resume, at: new Date().toISOString(), flowId: createSessionSubmissionId() });
+      dispatchJourney({ ...view.token, type: 'save-impression', impression, resume, at: new Date().toISOString(), flowId: createSessionSubmissionId() });
+    },
+    resume: () => {
+      if (!view.token) return;
+      dispatchJourney({ ...view.token, type: 'revisit', intent: 'resume', userId: journey.comparisons.userId, expectedFlowId: view.flowId });
+    },
+    continueToContributions: () => {
+      if (!view.token) return;
+      dispatchJourney({ ...view.token, type: 'revisit', intent: 'contributions', userId: journey.comparisons.userId, expectedFlowId: view.flowId });
+    },
+    compareAgain: () => {
+      if (!view.token) return;
+      dispatchJourney({ ...view.token, type: 'compare-again', userId: journey.comparisons.userId, expectedFlowId: view.flowId, flowId: createSessionSubmissionId() });
     },
     choose: (winnerId: string) => {
       const winner = parseUuid(winnerId);
@@ -127,4 +140,21 @@ export function usePersonalRankings() {
   const { venues } = context;
   // Votes replace these references; Skip preserves them. No refresh or second history.
   return useMemo(() => selectPersonalRankings({ rankings, history }, venues), [rankings, history, venues]);
+}
+
+export function useSavedImpressions() {
+  const context = useContext(PersonalComparisonsContext);
+  if (!context) throw new Error('useSavedImpressions must be used inside PersonalComparisonsProvider.');
+  return context.journey.impressions;
+}
+
+export function useVenueOpinion(barId: string) {
+  const context = useContext(PersonalComparisonsContext);
+  if (!context) throw new Error('useVenueOpinion must be used inside PersonalComparisonsProvider.');
+  return {
+    // There is no live multi-user source. Do not aggregate this demo user's
+    // saved answers or venue fixtures into purported community statistics.
+    community: communityOpinionView(null, barId),
+    ownImpression: getUserVenueImpression(context.journey.impressions, context.state.userId, barId)?.impression ?? null,
+  };
 }

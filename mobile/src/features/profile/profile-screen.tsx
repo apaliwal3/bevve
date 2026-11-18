@@ -8,7 +8,8 @@ import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import type { UUID } from '@/features/comparisons/comparison-state';
-import { usePersonalRankings } from '@/features/comparisons/personal-comparisons-provider';
+import { usePersonalRankings, useSavedImpressions } from '@/features/comparisons/personal-comparisons-provider';
+import { impressionLabels } from '@/features/impressions/impression-selector';
 import { languages } from '@/localization/translation';
 import { useProfileContributions } from '@/features/ratings/venue-ratings-provider';
 import { exploreMockUser } from '@/fixtures/venues';
@@ -18,14 +19,15 @@ import { languagePreferenceFeedback } from './language-preference-feedback';
 
 type ProfileScreenProps = {
   onOpenVenue: (venueId: UUID) => void;
-  onCompare: () => void;
+  onExplore: () => void;
   onRankings: () => void;
   onWelcome: () => void;
 };
 
-export function ProfileScreen({ onOpenVenue, onCompare, onRankings, onWelcome }: ProfileScreenProps) {
+export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }: ProfileScreenProps) {
   const { t, format, language, setLanguage, persistent, saving, error } = useTranslation();
-  const activity = useProfileContributions();
+  const savedImpressions = useSavedImpressions();
+  const activity = useProfileContributions(savedImpressions);
   const personal = usePersonalRankings();
 
   return (
@@ -38,17 +40,18 @@ export function ProfileScreen({ onOpenVenue, onCompare, onRankings, onWelcome }:
           <Text style={styles.pill}>{t("DEMO SESSION")}</Text>
           <Text style={styles.description}>{t("No authenticated account or email is connected.")}</Text>
           <View style={styles.stats}>
-            <ProfileStat value={activity.counts.ratings} label={t("Ratings")} />
+            <ProfileStat value={activity.counts.impressions} label={t('Impressions')} />
             <ProfileStat value={activity.updatesCount} label={t("Updates")} />
             <ProfileStat value={personal.completedCount} label={t("Comparisons")} />
           </View>
           <Text style={styles.note}>{t("Updates include crowd reports, bathroom reviews and price observations.")}</Text>
         </View>
 
-        <ProfileActivitySection title={t("My overall bar ratings")} count={activity.counts.ratings} icon="star" emptyHint={t("Open a venue and use + to rate your overall experience.")}>
-          {activity.ratings.map((entry) => (
-            <ProfileActivityRow key={entry.venue.id} venue={entry.venue} summary={t('{area} · Your overall rating: {rating}/5', { area: entry.venue.available ? entry.venue.area : t('Neighborhood unavailable'), rating: entry.rating })}
-              trailing={<Text style={styles.stars}>{'★'.repeat(entry.rating)}{'☆'.repeat(5 - entry.rating)}</Text>}
+        <ProfileActivitySection title={t('My impressions')} count={activity.counts.impressions} icon="profile"
+          hint={t('One editable impression per venue · Demo session only')}
+          emptyHint={t('Open a venue and use + to share your impression.')}>
+          {activity.impressions.map((entry) => (
+            <ProfileActivityRow key={entry.venue.id} venue={entry.venue} summary={t('{area} · Your impression: {impression}', { area: entry.venue.available ? entry.venue.area : t('Neighborhood unavailable'), impression: t(impressionLabels[entry.impression]) })}
               onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
@@ -79,14 +82,15 @@ export function ProfileScreen({ onOpenVenue, onCompare, onRankings, onWelcome }:
           ))}
         </ProfileActivitySection>
         <ProfileActivitySection title={t("My personal rankings")} count={personal.entries.length} icon="rankings"
-          hint={t('{count} personal comparisons completed. Skips do not count. Ordering is separate from community ratings.', { count: personal.completedCount })}
-          emptyHint={t("Choose the bar you prefer in Compare to start your personal ranking.")}>
+          hint={t('{count} personal comparisons completed. Skips do not count. Ordering is separate from community opinions.', { count: personal.completedCount })}
+          emptyHint={t('Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.')}>
           {personal.entries.map((entry) => (
             <ProfileActivityRow key={entry.venue.id} venue={{ ...entry.venue, available: true }} summary={t('{area} · Personal position #{position}', { area: entry.venue.area, position: entry.position })}
               trailing={<Text style={styles.ordinal}>#{entry.position}</Text>} onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <PrimaryButton label={t("Continue comparing")} onPress={onCompare} />
+        <Text style={styles.note}>{t('To add impressions or resume comparisons, open a bar in Explore and tap +.')}</Text>
+        <PrimaryButton label={t('Explore bars')} accessibilityHint={t('Open Explore, choose a bar and tap + to add an impression or resume comparisons.')} onPress={onExplore} />
         <PrimaryButton label={t("View My Rankings")} variant="secondary" onPress={onRankings} />
 
         <View style={styles.settings}>
@@ -216,10 +220,6 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
     fontSize: 11,
     lineHeight: 18
-  },
-  stars: {
-    color: theme.colors.star,
-    fontSize: 14
   },
   ordinal: {
     color: theme.colors.purpleLight,

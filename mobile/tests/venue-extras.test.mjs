@@ -20,7 +20,7 @@ import {
 } from '../src/features/contributions/extra-form-drafts.ts';
 import { filterVenues } from '../src/features/explore/filter-venues.ts';
 import { initialContributionsState, contributionsReducer, SESSION_USER_ID } from '../src/features/contributions/contribution-state.ts';
-import { venueRatingsReducer } from '../src/features/ratings/rating-state.ts';
+import { saveVenueImpression } from '../src/features/impressions/impression-state.ts';
 
 const barA = mockVenues[0].id;
 const barB = mockVenues[3].id;
@@ -119,7 +119,7 @@ test('new venues gain a starting price; corrections update Explore Cheap filteri
   assert.equal(venues[3].startingPriceCents, 750);
   assert.ok(!filterVenues(venues, '', 'Cheap').some((venue) => venue.id === barB));
   assert.equal(venues[0], mockVenues[0]);
-  assert.equal(venues[3].communityRating, mockVenues[3].communityRating);
+  assert.ok(venues.every((venue) => !('communityRating' in venue)));
   assert.equal(JSON.stringify(mockVenues), before);
   assert.equal(startingPriceCents([]), null);
   const multiple = [...state.priceObservations, observation(3, 600, spritz.id, barB, 2000)];
@@ -241,17 +241,17 @@ test('incident editing and Cancel discard only the current private draft, never 
   assert.equal(JSON.stringify(saved), before);
 });
 
-test('prices, languages and incidents remain independent from each other and overall/crowd/bathroom state', () => {
-  const ratings = venueRatingsReducer({}, { venueId: barA, rating: 4 });
+test('prices, languages and incidents remain independent from each other and impression/crowd/bathroom state', () => {
+  const impressions = saveVenueImpression({}, { user_id: SESSION_USER_ID, bar_id: barA, impression: 'liked', source: 'demo', updated_at: iso() });
   const contributions = contributionsReducer(initialContributionsState, { type: 'submit-crowd', report: {
     id: id(99), bar_id: barA, user_id: SESSION_USER_ID, level: 3, created_at: iso(),
   } });
-  const before = JSON.stringify({ ratings, contributions });
+  const before = JSON.stringify({ impressions, contributions });
   const priced = observe(initialVenueExtrasState, observation(1));
   const languages = suggest(priced, suggestion(2));
   const incidents = report(languages, incident(3));
   assert.equal(languages.priceObservations, priced.priceObservations);
   assert.equal(incidents.priceObservations, priced.priceObservations);
   assert.equal(incidents.languageSuggestions, languages.languageSuggestions);
-  assert.equal(JSON.stringify({ ratings, contributions }), before);
+  assert.equal(JSON.stringify({ impressions, contributions }), before);
 });

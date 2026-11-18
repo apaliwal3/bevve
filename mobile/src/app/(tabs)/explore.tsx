@@ -50,7 +50,7 @@ export default function ExploreScreen() {
         <Text accessibilityRole="header" style={styles.title}>{t("Where to") + ' '}<Text style={styles.titleAccent}>{t("tonight?")}</Text>
         </Text>
         <Text style={styles.subtitle}>{t("Real talk from people already there.")}</Text>
-        <Text style={styles.demoLabel}>{t("Demo venues · Sample prices, ratings and distances")}</Text>
+        <Text style={styles.demoLabel}>{t('Demo venues · Sample prices and distances')}</Text>
       </View>
 
       <View style={styles.search}>
