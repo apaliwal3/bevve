@@ -3,19 +3,20 @@ import type { Venue } from '../../types/venue.ts';
 import { parseUuid, type UUID } from '../comparisons/comparison-state.ts';
 import type { CrowdLevel, SessionBathroomReview, SessionCrowdReport } from '../contributions/contribution-state.ts';
 import type { SessionPriceObservation } from '../contributions/venue-extras-state.ts';
-import type { StarRating, VenueRatingsState } from '../ratings/rating-state.ts';
+import type { FivePointScore } from '../../types/five-point-score.ts';
+import { normalizeVenueImpression, type Impression, type VenueImpression, type VenueImpressionsState } from '../impressions/impression-state.ts';
 
 export type ProfileVenue = Pick<Venue, 'name' | 'area' | 'image'> & { id: UUID; available: boolean };
 type ProfileSource = {
-  ratings: Readonly<VenueRatingsState>;
+  impressions: VenueImpressionsState;
   crowdReports: readonly SessionCrowdReport[];
   bathroomReviews: readonly SessionBathroomReview[];
   priceObservations: readonly SessionPriceObservation[];
 };
-export type ProfileRating = { venue: ProfileVenue; rating: StarRating };
+export type ProfileImpression = { venue: ProfileVenue; impression: Impression; updatedAt: string };
 export type ProfileCrowdReport = { id: string; venue: ProfileVenue; level: CrowdLevel; submittedAt: string };
 export type ProfileBathroomReview = {
-  id: string; venue: ProfileVenue; cleanliness: StarRating; accessibility: StarRating; waitTime: StarRating; updatedAt: string;
+  id: string; venue: ProfileVenue; cleanliness: FivePointScore; accessibility: FivePointScore; waitTime: FivePointScore; updatedAt: string;
 };
 export type ProfilePriceObservation = {
   id: string; venue: ProfileVenue; drinkName: string; servingMl: number | null; priceCents: number; observedAt: string;
@@ -30,9 +31,16 @@ export function selectProfileContributions(source: ProfileSource, userId: string
     const venue = venueById.get(id);
     return { id, name: venue?.name ?? 'Venue unavailable', area: venue?.area ?? 'Neighborhood unavailable', image: venue?.image ?? null, available: venue !== undefined };
   };
-  const ratings: ProfileRating[] = Object.entries(source.ratings).flatMap(([barId, rating]) => {
-    const venue = venueInfo(barId);
-    return venue && rating !== undefined ? [{ venue, rating }] : [];
+  const ownImpressions = new Map<string, VenueImpression>();
+  for (const value of Object.values(source.impressions[owner] ?? {})) {
+    const record = normalizeVenueImpression(value);
+    if (!record || record.user_id !== owner) continue;
+    const previous = ownImpressions.get(record.bar_id);
+    if (!previous || record.updated_at >= previous.updated_at) ownImpressions.set(record.bar_id, record);
+  }
+  const impressions: ProfileImpression[] = [...ownImpressions.values()].flatMap((record) => {
+    const venue = venueInfo(record.bar_id);
+    return venue ? [{ venue, impression: record.impression, updatedAt: record.updated_at }] : [];
   }).sort((left, right) => left.venue.name.localeCompare(right.venue.name) || left.venue.id.localeCompare(right.venue.id));
   const crowds: ProfileCrowdReport[] = source.crowdReports.flatMap((report) => {
     const venue = venueInfo(report.bar_id);
@@ -64,8 +72,8 @@ export function selectProfileContributions(source: ProfileSource, userId: string
 
   // No fixture baselines, page visits, language suggestions or private reports are inputs.
   return {
-    ratings, crowds, bathrooms, prices,
-    counts: { ratings: ratings.length, crowdReports: crowds.length, bathroomReviews: bathrooms.length, priceObservations: prices.length },
+    impressions, crowds, bathrooms, prices,
+    counts: { impressions: impressions.length, crowdReports: crowds.length, bathroomReviews: bathrooms.length, priceObservations: prices.length },
     updatesCount: crowds.length + bathrooms.length + prices.length,
   };
 }

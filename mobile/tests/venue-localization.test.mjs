@@ -74,7 +74,7 @@ test('feedback, star accessibility, missing states and safety disclaimers interp
     for (const [key] of descriptors) Object.defineProperty(Intl, key, { configurable: true, value: undefined });
     for (const language of ['en', 'it']) {
       const t = createTranslator(language), format = createLocaleFormatters(language);
-      assert.ok(t('How was {name}?', { name: 'Luna Rossa' }).includes('Luna Rossa'));
+      assert.equal(t('How was it?'), language === 'it' ? 'Com’è andata?' : 'How was it?');
       assert.ok(t('{name}: {price} saved for this demo session.', { name: 'Aperol Spritz', price: format.currency(650) }).includes(format.currency(650)));
       assert.ok(t('Reported {date}', { date: format.dateTime('2026-11-15T20:30:00Z', 'UTC') }).includes('2026'));
       assert.ok(t('Updated {time}', { time: format.relativeTime(0, 120000) }).includes(language === 'it' ? '2 minuti fa' : '2 minutes ago'));

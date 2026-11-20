@@ -6,7 +6,7 @@ import { venueFromRankingsHref } from '@/features/venues/bar-details-navigation'
 export default function RankingsRoute() {
   return (
     <PersonalRankingsScreen
-      onCompare={() => router.navigate('/compare')}
+      onExplore={() => router.navigate('/explore')}
       onProfile={() => router.navigate('/profile')}
       onOpenVenue={(venue) => router.push(venueFromRankingsHref(venue.id))}
     />

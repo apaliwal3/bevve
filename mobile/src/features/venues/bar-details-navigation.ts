@@ -2,9 +2,9 @@ import type { UUID } from '../comparisons/comparison-state.ts';
 import { priceComparisonHref } from '../prices/price-navigation.ts';
 
 type BarDetailsBackPlan = {
-  label: 'Back to Profile' | 'Back to Rankings' | 'Back to personal comparisons' | 'Back to drink prices' | 'Back to Explore';
+  label: 'Back to Profile' | 'Back to Rankings' | 'Back to drink prices' | 'Back to Explore';
   mode: 'back' | 'dismiss';
-  href: ReturnType<typeof priceComparisonHref> | { pathname: '/compare' | '/rankings' | '/explore' | '/profile' };
+  href: ReturnType<typeof priceComparisonHref> | { pathname: '/rankings' | '/explore' | '/profile' };
 };
 
 export function venueFromRankingsHref(barId: UUID) {
@@ -18,7 +18,9 @@ export function venueFromProfileHref(barId: UUID) {
 export function resolveBarDetailsBack(returnTo: string | string[] | undefined, drinkId: string | null, sourceBarId?: string): BarDetailsBackPlan {
   if (returnTo === 'profile') return { label: 'Back to Profile', mode: 'back', href: { pathname: '/profile' } };
   if (returnTo === 'rankings') return { label: 'Back to Rankings', mode: 'back', href: { pathname: '/rankings' } };
-  if (returnTo === 'compare') return { label: 'Back to personal comparisons', mode: 'back', href: { pathname: '/compare' } };
+  // Old links may still carry this context. Dismiss to the surviving Rankings
+  // tab rather than popping to an obsolete screen in the previous stack.
+  if (returnTo === 'compare') return { label: 'Back to Rankings', mode: 'dismiss', href: { pathname: '/rankings' } };
   if (returnTo === 'prices') return { label: 'Back to drink prices', mode: 'back', href: priceComparisonHref(drinkId, sourceBarId) };
   return { label: 'Back to Explore', mode: 'dismiss', href: { pathname: '/explore' } };
 }

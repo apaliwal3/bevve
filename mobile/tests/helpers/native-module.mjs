@@ -12,12 +12,13 @@ export const nativeStub = {
 };
 
 // Inspect actual component props/styles without pretending to render native views.
-export function loadNativeModule(path, mocks = {}) {
+export function loadNativeModule(path, mocks = {}, globals = {}) {
   const module = { exports: {} };
   const { outputText } = ts.transpileModule(readFileSync(new URL('../../' + path, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   });
   runInNewContext(outputText, {
+    ...globals,
     module, exports: module.exports,
     require: (name) => Object.hasOwn(mocks, name) ? mocks[name] : name === 'react-native' ? nativeStub : require(name),
   });

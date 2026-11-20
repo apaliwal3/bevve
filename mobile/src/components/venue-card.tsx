@@ -4,7 +4,10 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
-import { useVenueContributions, useVenueCrowdSelector, useVenueExtras, useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { useVenueContributions, useVenueCrowdSelector, useVenueExtras } from '@/features/ratings/venue-ratings-provider';
+import { useVenueOpinion } from '@/features/comparisons/personal-comparisons-provider';
+import { CommunityOpinionSummary, communityOpinionLabel } from '@/features/impressions/community-opinion-summary';
+import { impressionLabels } from '@/features/impressions/impression-selector';
 import type { Venue } from '@/types/venue';
 
 import { AppIcon } from './app-icon';
@@ -15,7 +18,7 @@ type VenueCardProps = { venue: Venue; onPress?: () => void };
 export function VenueCard({ venue, onPress }: VenueCardProps) {
   const { t, format, describe } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
-  const { communityRating: rating } = useVenueRating(venue);
+  const { community, ownImpression } = useVenueOpinion(venue.id);
   const { bathroomSummary } = useVenueContributions(venue.id);
   const crowdFor = useVenueCrowdSelector();
   const crowd = crowdFor(venue);
@@ -23,9 +26,9 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
   const crowdLabel = crowd.label !== null ? describe(crowd.label)
     : crowd.source === 'session' ? t('Not enough recent reports') : t('No reports yet');
   const bathroomCleanliness = bathroomSummary?.cleanliness.average ?? null;
-  const ratingLabel = rating && rating.count > 0
-    ? '★ ' + format.decimal(rating.average) + '/5'
-    : t('No ratings yet');
+  const impressionLabel = ownImpression
+    ? t('Your impression: {impression} · Demo session', { impression: t(impressionLabels[ownImpression]) })
+    : t('No saved impression');
   const priceLabel =
     startingPriceCents === null
       ? t('No prices yet')
@@ -52,13 +55,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
             <AppIcon name="pin" size={12} color={theme.colors.text} />
             <Text style={styles.areaLabel}>{venue.area}</Text>
           </View>
-          <Text
-            accessibilityLabel={rating && rating.count > 0
-              ? t('Community bar rating: {rating} out of 5, {count} ratings', { rating: format.decimal(rating.average), count: rating.count })
-              : t("No community bar ratings yet")}
-            style={[styles.badge, styles.rating]}>
-            {ratingLabel}
-          </Text>
+          <CommunityOpinionSummary opinion={community} compact />
         </View>
       </View>
       <View style={styles.body}>
@@ -71,6 +68,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
             <Text style={styles.arrow} accessible={false}>›</Text>
           )}
         </View>
+        {ownImpression && <Text style={styles.metricLabel}>{impressionLabel}</Text>}
         <View style={styles.metrics}>
           <View style={styles.metric}>
             <View style={styles.metricIcon}>
@@ -116,7 +114,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={t('{name}, {area}, {rating}. View venue', { name: venue.name, area: venue.area, rating: ratingLabel })}
+      accessibilityLabel={t('{name}, {area}. {opinion}. {impression}. View venue', { name: venue.name, area: venue.area, opinion: communityOpinionLabel(community, t), impression: impressionLabel })}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       {content}
@@ -166,19 +164,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 11
-  },
-  badge: {
-    flexShrink: 1,
-    backgroundColor: theme.colors.imageBadge,
-    color: theme.colors.text,
-    borderRadius: theme.radii.pill,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 11
-  },
-  rating: {
-    color: theme.colors.star
   },
   body: {
     padding: theme.spacing.lg

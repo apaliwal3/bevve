@@ -12,9 +12,9 @@ import type { RankedVenue } from './personal-rankings';
 import { RankedVenueRow } from './ranked-venue-row';
 import { rankingBadgeSize } from './ranking-summary-layout';
 
-type PersonalRankingsScreenProps = { onCompare: () => void; onOpenVenue: (venue: RankedVenue) => void; onProfile: () => void };
+type PersonalRankingsScreenProps = { onExplore: () => void; onOpenVenue: (venue: RankedVenue) => void; onProfile: () => void };
 
-export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: PersonalRankingsScreenProps) {
+export function PersonalRankingsScreen({ onExplore, onOpenVenue, onProfile }: PersonalRankingsScreenProps) {
   const { t } = useTranslation();
   const { fontScale } = useWindowDimensions();
   const { entries, completedCount } = usePersonalRankings();
@@ -44,7 +44,7 @@ export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: Pe
             <Text style={styles.description}>{t("Ranked by your head-to-head picks. Order updates immediately as you compare.")}</Text>
           </View>
         </View>
-        <Text style={styles.description}>{t("Your preferences, separate from community star ratings and bathroom reviews.")}</Text>
+        <Text style={styles.description}>{t('Your preferences, separate from community opinions and bathroom reviews.')}</Text>
         <Text accessibilityLiveRegion="polite" style={styles.completed}>{t('{count} personal comparisons completed', { count: completedCount })}</Text>
 
         <View style={styles.rankingHeading}>
@@ -63,10 +63,11 @@ export function PersonalRankingsScreen({ onCompare, onOpenVenue, onProfile }: Pe
           <View style={styles.empty}>
             <AppIcon name="rankings" size={32} color={theme.colors.purpleLight} />
             <Text style={styles.emptyTitle}>{t("Your ranking starts with a choice")}</Text>
-            <Text style={styles.description}>{t("Compare two bars and pick the one you prefer. Your personal order will appear here.")}</Text>
+            <Text style={styles.description}>{t('Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.')}</Text>
           </View>
         )}
-        <PrimaryButton label={hasRankings ? t("Compare more bars") : t("Start comparing")} onPress={onCompare} />
+        <PrimaryButton label={t('Explore bars')} accessibilityHint={t('Open Explore, choose a bar and tap + to add an impression or resume comparisons.')} onPress={onExplore} />
+        <Text style={styles.note}>{t('To add impressions or resume comparisons, open a bar in Explore and tap +.')}</Text>
         <Text style={styles.note}>{t("Only bars you have compared appear here. Every choice helps refine your personal order.")}</Text>
         <Text style={styles.note}>{t("DEMO SESSION · Rankings reset on a full app reload.")}</Text>
       </ScreenContainer>

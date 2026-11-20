@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { mockVenues, mockVenueDetails } from '../src/fixtures/venues.ts';
 import { mockDrinkCatalog } from '../src/fixtures/contribution-catalog.ts';
 import { selectProfileContributions } from '../src/features/profile/profile-activity.ts';
-import { venueRatingsReducer } from '../src/features/ratings/rating-state.ts';
+import { saveVenueImpression } from '../src/features/impressions/impression-state.ts';
 import { contributionsReducer, initialContributionsState, SESSION_USER_ID } from '../src/features/contributions/contribution-state.ts';
 import { initialVenueExtrasState, venueExtrasReducer } from '../src/features/contributions/venue-extras-state.ts';
 import { createPersonalComparisonState, personalComparisonReducer } from '../src/features/comparisons/comparison-state.ts';
@@ -17,7 +17,11 @@ const otherUser = '97c0c196-e3f2-4d15-9c53-81757f652dd2';
 const id = (number) => 'e98f6a21-fc7c-47dd-a82d-' + number.toString(16).padStart(12, '0');
 const now = Date.parse('2026-11-15T20:00:00Z');
 const iso = (offset = 0) => new Date(now + offset).toISOString();
-const empty = () => ({ ratings: {}, crowdReports: [], bathroomReviews: [], priceObservations: [] });
+const impression = (impression = 'liked', bar = barA, user = SESSION_USER_ID, offset = 0) => ({
+  user_id: user, bar_id: bar, impression, source: 'demo', updated_at: iso(offset),
+});
+const saved = (...records) => records.reduce(saveVenueImpression, {});
+const empty = () => ({ impressions: {}, crowdReports: [], bathroomReviews: [], priceObservations: [] });
 const view = (source, venues = mockVenues, catalog = mockDrinkCatalog) => selectProfileContributions(source, SESSION_USER_ID, venues, catalog);
 const crowd = (number, level = 4, user = SESSION_USER_ID, bar = barA, offset = number) => ({
   id: id(number), user_id: user, bar_id: bar, level, created_at: iso(offset),
@@ -33,23 +37,23 @@ const price = (number, cents = 650, user = SESSION_USER_ID, bar = barA) => ({
 
 test('fresh Profile has zero activity, independent of fictional venue and bathroom baseline counts', () => {
   assert.ok(mockVenueDetails[barA].bathrooms.reviewCount > 0);
-  assert.ok(mockVenues[0].communityRating.count > 0);
+  assert.ok(mockVenues.every((venue) => !('communityRating' in venue)));
   assert.deepEqual(view(empty()), {
-    ratings: [], crowds: [], bathrooms: [], prices: [],
-    counts: { ratings: 0, crowdReports: 0, bathroomReviews: 0, priceObservations: 0 }, updatesCount: 0,
+    impressions: [], crowds: [], bathrooms: [], prices: [],
+    counts: { impressions: 0, crowdReports: 0, bathroomReviews: 0, priceObservations: 0 }, updatesCount: 0,
   });
 });
 
-test('editing an overall rating changes its displayed value without adding a submission count', () => {
-  const first = venueRatingsReducer({}, { venueId: barA, rating: 5 });
-  const edited = venueRatingsReducer(first, { venueId: barA.toUpperCase(), rating: 2 });
-  const result = view({ ...empty(), ratings: edited });
-  assert.equal(result.counts.ratings, 1);
-  assert.equal(result.ratings[0].rating, 2);
-  assert.equal(result.ratings[0].venue.id, barA);
-  const another = venueRatingsReducer(edited, { venueId: barB, rating: 4 });
-  assert.equal(view({ ...empty(), ratings: another }).counts.ratings, 2);
-  assert.equal(first[barA], 5);
+test('editing an impression changes its displayed value without adding an activity count', () => {
+  const first = saved(impression());
+  const edited = saveVenueImpression(first, impression('disliked', barA.toUpperCase(), SESSION_USER_ID, 1));
+  const result = view({ ...empty(), impressions: edited });
+  assert.equal(result.counts.impressions, 1);
+  assert.equal(result.impressions[0].impression, 'disliked');
+  assert.equal(result.impressions[0].venue.id, barA);
+  const another = saveVenueImpression(edited, impression('fine', barB));
+  assert.equal(view({ ...empty(), impressions: another }).counts.impressions, 2);
+  assert.equal(first[SESSION_USER_ID][barA].impression, 'liked');
 });
 
 test('bathroom edits retain one review and show current category values', () => {
@@ -86,31 +90,32 @@ test('price corrections count as observations and retain structured serving info
 
 test('counts and lists include only the current demo contributor', () => {
   const source = {
-    ratings: {},
+    impressions: saved(impression('liked'), impression('fine', barA, otherUser)),
     crowdReports: [crowd(1), crowd(2, 5, otherUser)],
     bathroomReviews: [bathroom(3), bathroom(4, [1, 1, 1], otherUser)],
     priceObservations: [price(5), price(6, 100, otherUser)],
   };
   const result = view(source);
-  assert.deepEqual(result.counts, { ratings: 0, crowdReports: 1, bathroomReviews: 1, priceObservations: 1 });
+  assert.deepEqual(result.counts, { impressions: 1, crowdReports: 1, bathroomReviews: 1, priceObservations: 1 });
+  assert.equal(result.impressions[0].impression, 'liked');
   assert.equal(result.updatesCount, 3);
   assert.equal(result.crowds[0].id, id(1));
   assert.equal(result.bathrooms[0].id, id(3));
   assert.equal(result.prices[0].id, id(5));
 });
 
-test('update statistics sum crowd, bathroom and price submissions without adding overall ratings twice', () => {
+test('update statistics sum crowd, bathroom and price submissions without adding impressions twice', () => {
   const result = view({
-    ratings: { [barA]: 4, [barB]: 3 }, crowdReports: [crowd(1), crowd(2)],
+    impressions: saved(impression('liked'), impression('fine', barB)), crowdReports: [crowd(1), crowd(2)],
     bathroomReviews: [bathroom(3)], priceObservations: [price(4), price(5), price(6)],
   });
-  assert.deepEqual(result.counts, { ratings: 2, crowdReports: 2, bathroomReviews: 1, priceObservations: 3 });
+  assert.deepEqual(result.counts, { impressions: 2, crowdReports: 2, bathroomReviews: 1, priceObservations: 3 });
   assert.equal(result.updatesCount, 6);
 });
 
-test('opening venues and merely generating comparison pairs never creates ratings or visits', () => {
+test('opening venues and merely generating comparison pairs never creates impressions or visits', () => {
   const result = view({ ...empty(), openedVenueIds: [barA, barB] });
-  assert.equal(result.counts.ratings, 0);
+  assert.equal(result.counts.impressions, 0);
   assert.equal(result.updatesCount, 0);
   assert.ok(!('visited' in result));
   const personal = createPersonalComparisonState(SESSION_USER_ID, [barA, barB]);
@@ -158,18 +163,18 @@ test('a future duplicated bathroom snapshot still counts one editable review per
 });
 
 test('missing venue or catalog metadata keeps saved counts visible without inventing names, serving sizes or links', () => {
-  const result = view({ ...empty(), ratings: { [barA]: 4 }, priceObservations: [price(1)] }, [], []);
-  assert.equal(result.counts.ratings, 1);
+  const result = view({ ...empty(), impressions: saved(impression()), priceObservations: [price(1)] }, [], []);
+  assert.equal(result.counts.impressions, 1);
   assert.equal(result.counts.priceObservations, 1);
-  assert.equal(result.ratings[0].venue.name, 'Venue unavailable');
-  assert.equal(result.ratings[0].venue.available, false);
+  assert.equal(result.impressions[0].venue.name, 'Venue unavailable');
+  assert.equal(result.impressions[0].venue.available, false);
   assert.equal(result.prices[0].drinkName, 'Drink unavailable');
   assert.equal(result.prices[0].servingMl, null);
 });
 
 test('activity selection is read-only and exposes no account credentials or incidental private fields', () => {
   const source = Object.freeze({
-    ratings: Object.freeze({ [barA]: 4 }),
+    impressions: Object.freeze(saved(impression())),
     crowdReports: Object.freeze([Object.freeze(crowd(1))]),
     bathroomReviews: Object.freeze([Object.freeze(bathroom(2))]),
     priceObservations: Object.freeze([Object.freeze(price(3))]),
@@ -179,11 +184,11 @@ test('activity selection is read-only and exposes no account credentials or inci
   const result = view(source);
   assert.equal(JSON.stringify(source), before);
   assert.ok(!JSON.stringify(result).includes('DO_NOT_EXPOSE'));
-  assert.deepEqual(Object.keys(result).sort(), ['ratings', 'crowds', 'bathrooms', 'prices', 'counts', 'updatesCount'].sort());
+  assert.deepEqual(Object.keys(result).sort(), ['impressions', 'crowds', 'bathrooms', 'prices', 'counts', 'updatesCount'].sort());
 });
 
 test('Profile activity links open the venue UUID and preserve the Profile return path', () => {
-  const entry = view({ ...empty(), ratings: { [barA]: 4 } }).ratings[0];
+  const entry = view({ ...empty(), impressions: saved(impression()) }).impressions[0];
   assert.deepEqual(venueFromProfileHref(entry.venue.id), { pathname: '/bars/[barId]', params: { barId: barA, returnTo: 'profile' } });
   const calls = [];
   const plan = resolveBarDetailsBack('profile', null);

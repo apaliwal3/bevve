@@ -3,18 +3,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BevveTheme as theme } from '@/constants/theme';
 import { useTranslation } from '@/localization/language-provider';
 
-import type { StarRating } from './rating-state';
+import type { FivePointScore } from '@/types/five-point-score';
 
-const stars: readonly StarRating[] = [1, 2, 3, 4, 5];
+const stars: readonly FivePointScore[] = [1, 2, 3, 4, 5];
 
 export function StarSelector({
   value,
   onChange,
   disabled = false,
   label,
-}: { value: StarRating | null; onChange: (rating: StarRating) => void; disabled?: boolean; label?: string }) {
+}: { value: FivePointScore | null; onChange: (rating: FivePointScore) => void; disabled?: boolean; label: string }) {
   const { t } = useTranslation();
-  const title = label ?? t('Overall bar rating');
+  const title = label;
   return (
     <View accessibilityRole="radiogroup" accessibilityLabel={title} style={styles.row}>
       {stars.map((star) => (

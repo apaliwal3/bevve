@@ -8,7 +8,7 @@ import { BevveTheme as theme } from '@/constants/theme';
 import type { ProfileVenue } from './profile-activity';
 
 type ActivitySectionProps = PropsWithChildren<{
-  title: string; count: number; icon: AppIconName | 'star' | 'euro'; hint?: string; emptyHint: string;
+  title: string; count: number; icon: AppIconName | 'euro'; hint?: string; emptyHint: string;
 }>;
 
 export function ProfileActivitySection({ title, count, icon, hint, emptyHint, children }: ActivitySectionProps) {
@@ -17,8 +17,8 @@ export function ProfileActivitySection({ title, count, icon, hint, emptyHint, ch
     <View style={styles.section}>
       <View style={styles.heading}>
         <View style={styles.icon}>
-          {icon === 'star' || icon === 'euro'
-            ? <Text accessible={false} style={[styles.symbol, icon === 'star' && styles.star]}>{icon === 'star' ? '★' : '€'}</Text>
+          {icon === 'euro'
+            ? <Text accessible={false} style={styles.symbol}>€</Text>
             : <AppIcon name={icon} size={17} color={theme.colors.purpleLight} />}
         </View>
         <Text accessibilityRole="header" style={styles.title}>{title}</Text>
@@ -94,9 +94,6 @@ const styles = StyleSheet.create({
     color: theme.colors.purpleLight,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 18
-  },
-  star: {
-    color: theme.colors.star
   },
   title: {
     flex: 1,

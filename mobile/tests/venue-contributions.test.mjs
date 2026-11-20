@@ -13,7 +13,7 @@ import {
 import {
   bathroomDraftFromSaved, bathroomDraftReducer, completeBathroomDraft, crowdDraftReducer,
 } from '../src/features/contributions/contribution-drafts.ts';
-import { venueRatingsReducer } from '../src/features/ratings/rating-state.ts';
+import { saveVenueImpression } from '../src/features/impressions/impression-state.ts';
 import { mockVenueDetails, mockVenues } from '../src/fixtures/venues.ts';
 
 const barA = mockVenues[0].id;
@@ -168,12 +168,13 @@ test('Cancel while editing restores the saved values rather than submitting or u
   assert.equal(state.bathroomReviews.length, 1);
 });
 
-test('contributions are independent of overall ratings and of each other', () => {
-  const overall = Object.freeze(venueRatingsReducer({}, { venueId: barA, rating: 1 }));
+test('contributions are independent of impressions and of each other', () => {
+  const impressions = Object.freeze(saveVenueImpression({}, { user_id: userA, bar_id: barA, impression: 'disliked', source: 'demo', updated_at: iso() }));
+  const before = JSON.stringify(impressions);
   const bathroom = saveBathroom(initialContributionsState, review(1));
   const both = saveCrowd(bathroom, report(2));
   assert.equal(both.bathroomReviews, bathroom.bathroomReviews);
-  assert.deepEqual(overall, { [barA]: 1 });
+  assert.equal(JSON.stringify(impressions), before);
   assert.equal(both.bathroomReviews[0].cleanliness, 4);
 });
 

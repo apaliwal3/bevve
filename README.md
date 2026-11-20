@@ -11,14 +11,20 @@ session state. It does not connect to Supabase or create authenticated accounts.
 
 - Explore venues by name or neighborhood, with Nearby, Cheap, Quiet and Popular
   filters, venue photographs and missing-data states.
-- Bar Details with separate community overall ratings, crowd information,
+- Bar Details with community-opinion availability, your saved impression, crowd information,
   bathroom summaries, drink prices, spoken languages and safety disclaimers.
-- A top-down `+` overlay: an overall rating unlocks five optional inline forms
-  for crowd, bathrooms, prices, language suggestions and private demo incidents.
+- A top-down `+` overlay: save a impression, complete or skip up to three distinct
+  personal comparisons, then use five optional inline forms for crowd, bathrooms,
+  prices, language suggestions and private demo incidents. Saved progress can resume.
+- Compact horizontal impression choices. Saved venues offer explicit **Compare
+  this bar again** or **Resume comparisons**, plus direct access to contributions.
+  Reopening never creates a new batch or a vote automatically.
 - Read-only drink price comparison for the same catalog drink and serving size,
   using the latest observation at each venue.
 - Personal pairwise comparisons and ordinal rankings. Internal Elo values remain
-  hidden and independent of community ratings.
+  hidden and independent of impressions and community opinions.
+- Three persistent main tabs: Explore, Rankings and Profile. Add impressions and
+  comparisons through a venue's `+` overlay; drink price comparison stays separate.
 - A demo Profile with activity counts and English/Italian interface selection.
 - Login and Signup UI with validation and password visibility controls.
   Valid submissions explain that authentication is not connected.
@@ -38,7 +44,7 @@ session state. It does not connect to Supabase or create authenticated accounts.
 ```text
 mobile/                         Native Expo application
   src/app/                      Expo Router routes
-  src/app/(tabs)/               Explore, Compare, Rankings and Profile tabs
+  src/app/(tabs)/               Explore, Rankings and Profile tabs
   src/components/               Reusable native UI
   src/features/                 Feature screens, providers and state helpers
   src/constants/                Theme and design tokens
@@ -102,10 +108,31 @@ Italian without resetting saved session activity. On native devices, only this
 language preference survives a full reload. See the
 [localization guide](mobile/src/localization/README.md).
 
-Ratings, reports, price observations, pending language suggestions, private
+Impressions, reports, price observations, pending language suggestions, private
 incident drafts/submissions and personal comparisons are local demo data.
 Saved session activity survives navigation; a full reload clears it. No real
 accounts, cross-device persistence or multi-user backend behavior are implemented.
+
+Rankings and Profile guide users to Explore and a bar's `+` action. The former
+standalone personal Compare screen is retired. Legacy `/compare` links redirect
+to Rankings outside the tab navigator, reusing existing tab history or replacing
+the compatibility route for a direct link. Old `returnTo=compare` contexts also
+return to Rankings. Explore, Rankings, Profile and drink-price Back destinations
+retain their existing behavior.
+
+Overall bar stars and their fictional fixture baselines are retired. Explore and
+Bar Details show that community opinions are unavailable in this demo; a saved
+answer appears separately as **Your impression**. Profile counts one current
+impression per venue, including edits. Bathroom categories and crowd reports
+retain their separate five-point scales.
+
+The pure community helper accepts explicitly eligible community impressions,
+counts each user's latest eligible answer once per venue, and calculates
+`liked / total distinct opinions * 100`. Fine and disliked answers remain in the
+denominator. There is no minimum: a genuine zero shows **No opinions yet**, and
+one or more genuine opinions shows the rounded percentage with the opinion count.
+Demo answers and historical star fixtures cannot supply those statistics. There
+is currently no genuine community source connected to the frontend.
 
 Crowd classification uses the latest report per contributor within 45 minutes
 and requires three distinct contributors. The demo has one session user, so
@@ -128,7 +155,8 @@ mobile app uses it. Future integration must replace fixture reads and session
 writes with authenticated services, server-owned identifiers/timestamps, typed
 adapters, and loading/error handling.
 
-Outstanding contracts include community overall bar ratings, pending
+Outstanding contracts include authenticated per-user venue impressions and eligible
+community-opinion reads, pending
 venue-language suggestions, frontend venue metadata and authorized contribution
 history reads. Mobile fixture UUIDs and drink servings differ from the backend
 seed and must not be matched by display name. Authentication/session handling,

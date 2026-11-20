@@ -46,7 +46,7 @@ function fakeNavigation(canGoBack) {
 }
 
 test('no comparisons produces an empty personal ranking despite populated community fixtures', () => {
-  assert.ok(mockVenues[0].communityRating.average > 0);
+  assert.ok(mockVenues.length > 0);
   assert.deepEqual(view(initial()), { entries: [], completedCount: 0 });
   assert.deepEqual(view(skip(initial())), { entries: [], completedCount: 0 });
   assert.deepEqual(view(initial([]), []), { entries: [], completedCount: 0 });
@@ -102,12 +102,12 @@ test('ties keep the backend-compatible UUID order rather than venue-name or cata
 test('venue review data cannot change personal ordering or add uncompared venues', () => {
   const state = vote(initial(), 1, barB);
   const changedReviews = mockVenues.map((venue) => ({
-    ...venue, communityRating: { average: 5, count: 10000 }, bathroomCleanliness: 5,
+    ...venue, bathroomCleanliness: 5,
     crowd: { level: 5, label: 'Packed' }, startingPriceCents: 50,
   }));
   assert.deepEqual(view(state, changedReviews), view(state));
   const withViolet = vote(seekPair(state, barC, barD), 2, barD);
-  assert.equal(mockVenues[3].communityRating, null);
+  assert.ok(!('communityRating' in mockVenues[3]));
   assert.ok(view(withViolet).entries.some((entry) => entry.venue.id === barD));
 });
 
@@ -153,10 +153,14 @@ test('Back from a ranked venue pops to Rankings and never redirects to Explore',
   assert.deepEqual(directLink.calls, [['replace', { pathname: '/rankings' }]]);
 });
 
-test('Compare and Explore retain their previous back behavior', () => {
-  const compare = fakeNavigation(false);
-  navigateBackFromBarDetails(resolveBarDetailsBack('compare', null), compare.router);
-  assert.deepEqual(compare.calls, [['replace', { pathname: '/compare' }]]);
+test('obsolete Compare return contexts dismiss to Rankings while Explore retains its previous Back behavior', () => {
+  const plan = resolveBarDetailsBack('compare', null);
+  assert.equal(plan.label, 'Back to Rankings');
+  for (const hasHistory of [false, true]) {
+    const compare = fakeNavigation(hasHistory);
+    navigateBackFromBarDetails(plan, compare.router);
+    assert.deepEqual(compare.calls, [['dismissTo', { pathname: '/rankings' }]]);
+  }
   const explore = fakeNavigation(true);
   navigateBackFromBarDetails(resolveBarDetailsBack(undefined, null), explore.router);
   assert.deepEqual(explore.calls, [['dismissTo', { pathname: '/explore' }]]);

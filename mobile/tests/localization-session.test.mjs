@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { createLanguageStore } from '../src/localization/language-store.ts';
 import { createTranslator } from '../src/localization/translation.ts';
-import { venueRatingsReducer } from '../src/features/ratings/rating-state.ts';
+import { saveVenueImpression } from '../src/features/impressions/impression-state.ts';
 import { contributionsReducer, initialContributionsState, SESSION_USER_ID } from '../src/features/contributions/contribution-state.ts';
 import { venueExtrasReducer, initialVenueExtrasState } from '../src/features/contributions/venue-extras-state.ts';
 import { createPersonalComparisonState, personalComparisonReducer } from '../src/features/comparisons/comparison-state.ts';
@@ -26,10 +26,10 @@ function voted(state, number) {
   } });
 }
 
-test('language subscriptions leave ratings, contribution history, pending/private records and personal rankings intact', async () => {
+test('language subscriptions leave impressions, contribution history, pending/private records and personal rankings intact', async () => {
   const language = createLanguageStore({ persistent: true, getItem: async () => null, setItem: async () => {} });
   await language.initialize();
-  let ratings = venueRatingsReducer({}, { venueId: barId, rating: 4 });
+  let impressions = saveVenueImpression({}, { user_id: SESSION_USER_ID, bar_id: barId, impression: 'liked', source: 'demo', updated_at: date });
   let contributions = contributionsReducer(initialContributionsState, { type: 'submit-crowd', report: {
     id: id(1), bar_id: barId, user_id: SESSION_USER_ID, level: 3, created_at: date,
   } });
@@ -47,16 +47,16 @@ test('language subscriptions leave ratings, contribution history, pending/privat
     occurred_at: null, status: 'pending', created_at: date,
   } });
   let personal = voted(createPersonalComparisonState(SESSION_USER_ID, ids), 6);
-  const activity = () => selectProfileContributions({ ratings, ...contributions, priceObservations: extras.priceObservations }, SESSION_USER_ID, mockVenues, mockDrinkCatalog);
+  const activity = () => selectProfileContributions({ impressions, ...contributions, priceObservations: extras.priceObservations }, SESSION_USER_ID, mockVenues, mockDrinkCatalog);
   const ranking = () => selectPersonalRankings(personal, mockVenues);
-  const baseline = { activity: activity(), ranking: ranking(), ratings, contributions, extras, personal };
+  const baseline = { activity: activity(), ranking: ranking(), impressions, contributions, extras, personal };
   const snapshot = JSON.stringify(baseline);
   let renders = 0;
   const unsubscribe = language.subscribe(() => {
     renders++;
     assert.deepEqual(activity(), baseline.activity);
     assert.deepEqual(ranking(), baseline.ranking);
-    assert.equal(JSON.stringify({ activity: activity(), ranking: ranking(), ratings, contributions, extras, personal }), snapshot);
+    assert.equal(JSON.stringify({ activity: activity(), ranking: ranking(), impressions, contributions, extras, personal }), snapshot);
     const t = createTranslator(language.getSnapshot().language);
     assert.equal(t('Profile'), language.getSnapshot().language === 'it' ? 'Profilo' : 'Profile');
   });
@@ -67,7 +67,7 @@ test('language subscriptions leave ratings, contribution history, pending/privat
   unsubscribe();
 
   // The existing edit/vote/skip contracts still work after changing interface language.
-  ratings = venueRatingsReducer(ratings, { venueId: barId, rating: 5 });
+  impressions = saveVenueImpression(impressions, { user_id: SESSION_USER_ID, bar_id: barId, impression: 'disliked', source: 'demo', updated_at: '2026-11-15T20:31:00Z' });
   contributions = contributionsReducer(contributions, { type: 'save-bathroom', review: {
     ...contributions.bathroomReviews[0], cleanliness: 5, updated_at: '2026-11-15T20:31:00Z',
   } });
@@ -76,8 +76,8 @@ test('language subscriptions leave ratings, contribution history, pending/privat
   assert.equal(personal.history.length, 1);
   personal = voted(personal, 7);
   assert.equal(personal.history.length, 2);
-  assert.deepEqual(activity().counts, { ratings: 1, crowdReports: 1, bathroomReviews: 1, priceObservations: 1 });
-  assert.equal(activity().ratings[0].rating, 5);
+  assert.deepEqual(activity().counts, { impressions: 1, crowdReports: 1, bathroomReviews: 1, priceObservations: 1 });
+  assert.equal(activity().impressions[0].impression, 'disliked');
   assert.equal(activity().bathrooms[0].cleanliness, 5);
   assert.ok(!JSON.stringify(activity()).includes('Private demo content'));
   assert.equal(extras.languageSuggestions[0].language_code, 'fr');
@@ -85,7 +85,7 @@ test('language subscriptions leave ratings, contribution history, pending/privat
 
 test('localized back labels preserve route origins, venue UUIDs and selected drinks', () => {
   const t = createTranslator('it');
-  const routes = { profile: '/profile', rankings: '/rankings', compare: '/compare', prices: '/prices' };
+  const routes = { profile: '/profile', rankings: '/rankings', compare: '/rankings', prices: '/prices' };
   for (const [origin, pathname] of Object.entries(routes)) {
     const plan = resolveBarDetailsBack(origin, mockDrinkCatalog[0].id, barId);
     assert.equal(plan.href.pathname, pathname);

@@ -10,7 +10,10 @@ import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import { VenueRatingOverlay } from '@/features/ratings/venue-rating-overlay';
-import { useVenueContributions, useVenueExtras, useVenueRating } from '@/features/ratings/venue-ratings-provider';
+import { useVenueContributions, useVenueExtras } from '@/features/ratings/venue-ratings-provider';
+import { useVenueOpinion } from '@/features/comparisons/personal-comparisons-provider';
+import { CommunityOpinionSummary } from '@/features/impressions/community-opinion-summary';
+import { impressionLabels } from '@/features/impressions/impression-selector';
 import { venueLanguageLabel, venueServingLabel } from '@/localization/venue-copy';
 import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
 import type { BathroomCategorySummary, Venue, VenueDetails } from '@/types/venue';
@@ -32,7 +35,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
   const demoCrowd = details?.crowd;
   const { crowdSummary: crowd, bathroomSummary: bathrooms, ownBathroomReview, now } = useVenueContributions(venue.id, details?.bathrooms);
   const crowdKnown = crowd.classification !== null;
-  const { communityRating: rating } = useVenueRating(venue);
+  const { community, ownImpression } = useVenueOpinion(venue.id);
   const { drinks, pendingLanguages } = useVenueExtras(venue.id);
   const languages = details?.languages ?? [];
 
@@ -65,7 +68,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('Open actions for {name}', { name: venue.name })}
-              accessibilityHint={t("Open overall rating and optional bar actions")}
+              accessibilityHint={t('Open experience, personal comparisons and optional bar actions')}
               onPress={() => setRatingOverlayOpen(true)}
               style={({ pressed }) => [styles.plusButton, pressed && styles.plusPressed]}>
               <AppIcon name="plus" size={20} color={theme.colors.text} />
@@ -134,14 +137,14 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
 
         <View style={styles.infoGrid}>
           <View style={[styles.card, styles.infoCard]}>
-            <Text style={styles.starIcon} accessible={false}>★</Text>
-            <Text style={styles.sectionLabel}>{t("BAR RATING")}</Text>
-            {rating && rating.count > 0 ? (
+            <CommunityOpinionSummary opinion={community} />
+            {ownImpression && (
               <>
-                <Text style={styles.ratingValue}>{format.decimal(rating.average)} <Text style={styles.outOfFive}>/ 5</Text></Text>
-                <Text style={styles.meta}>{t('{count} community bar ratings', { count: rating.count })}</Text>
+                <Text style={styles.sectionLabel}>{t('Your impression')}</Text>
+                <Text style={styles.description}>{t(impressionLabels[ownImpression])}</Text>
+                <Text style={styles.meta}>{t('Demo session only · Separate from community opinions')}</Text>
               </>
-            ) : <Text style={styles.description}>{t("No community bar ratings yet.")}</Text>}
+            )}
           </View>
           <View style={[styles.card, styles.infoCard]}>
             <AppIcon name="languages" size={22} color={theme.colors.purpleLight} />
@@ -173,7 +176,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
             <BathroomSummary label={t("Accessibility")} summary={bathrooms?.accessibility} />
             <BathroomSummary label={t("Waiting time")} summary={bathrooms?.waitTime} />
           </View>
-          <Text style={styles.meta}>{t("Separate from the overall bar rating. A waiting-time score of 5 means a shorter wait.")}</Text>
+          <Text style={styles.meta}>{t('A waiting-time score of 5 means a shorter wait.')}</Text>
           {ownBathroomReview && <Text style={styles.meta}>{details?.bathrooms ? t('Includes your session review and the fictional demo baseline.') : t('Includes your session review.')}</Text>}
         </View>
 
@@ -443,19 +446,6 @@ const styles = StyleSheet.create({
     flexBasis: 140,
     minHeight: 140,
     alignItems: 'flex-start'
-  },
-  starIcon: {
-    color: theme.colors.star,
-    fontSize: 22
-  },
-  ratingValue: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.heading,
-    fontSize: 26
-  },
-  outOfFive: {
-    color: theme.colors.star,
-    fontSize: 15
   },
   languageList: {
     flexDirection: 'row',

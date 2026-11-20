@@ -85,7 +85,7 @@ Backend code is outside the mobile lint scope.
 
 - UUID-based fictional venues and a structured drink catalog are in `src/fixtures/`.
   Prices use integer EUR cents internally.
-- Ratings, crowd reports, bathroom reviews, prices, language suggestions, private
+- Impressions, crowd reports, bathroom reviews, prices, language suggestions, private
   incident submissions and personal comparisons are shared in memory. Saved
   activity survives navigation and language switching, but resets on full reload.
 - Form drafts are local to their screen or overlay. Closing a form may discard
@@ -99,8 +99,57 @@ Backend code is outside the mobile lint scope.
   remain pending. Private incident reports are demo-only and are never published.
 - Crowd classification needs three distinct recent contributors. This demo uses
   one contributor; repeated submissions cannot establish a live consensus.
-- Community overall stars, bathroom categories and personal rankings are
-  independent. Elo is internal; rankings display ordinal positions.
+- The `+` journey saves an impression, offers up to three distinct comparisons
+  (none for the first experienced venue), then reveals the five optional forms.
+  Skip one or all comparisons without creating votes. Reopening can resume a
+  pending comparison flow; editing an impression does not automatically repeat it.
+- Impression choices use one row of muted green, yellow and pink 56-point circles
+  with wrapping EN/IT labels, check/minus/X symbols and a selected outline/badge.
+  The long introductory paragraph is removed; the modal still scrolls at larger
+  text sizes and retains its top-down animation and reduced-motion behavior.
+- A saved, unchanged impression offers **Resume comparisons** for pending work,
+  or **Compare this bar again** when a new batch has eligible opponents. These
+  actions do not resave the impression. **Continue to contributions** preserves
+  pending work and creates no votes. Changed selections keep the existing Save
+  action. New batches reuse the bounded controller, including previous opponents
+  when appropriate; no opponents produces an honest message instead of a dead action.
+- Overall bar stars and their fixture baselines have been removed. Explore and
+  Bar Details say community opinions are unavailable in the demo. Your saved
+  impression is separate, and Profile counts one current impression per venue.
+- Impressions do not change Elo. Only explicit comparison choices affect personal
+  rankings, which display ordinal positions.
+- Explore, Rankings and Profile are the three persistent tabs. Tab changes keep
+  the bottom bar mounted and disable scene animations. Rankings and Profile lead
+  to Explore and a bar's `+` action to add impressions or resume comparisons.
+- Bathroom categories and crowd reports retain their separate five-point scales.
+
+The pure community-opinion helper supports future genuine data: each distinct
+user's latest eligible impression counts once, and `liked / total * 100` includes
+fine and disliked in the denominator. There is no minimum opinion threshold.
+Real zero opinions displays **No opinions yet**; any positive count displays a
+rounded liked percentage and the distinct opinion count, including 0% or 100%
+for one opinion. Demo impressions and retired star fixtures are excluded. The
+current app has no real multi-user source, so it displays availability rather
+than a fabricated percentage or a measured-zero claim.
+
+### Physical iPhone checks for Stage 9C-1
+
+These are manual checks, separate from Node component-prop tests and iOS export:
+
+1. In Explore and Bar Details, confirm there is no overall bar star score and
+   that community opinions are unavailable in the demo. Bathroom stars remain.
+2. Save an impression via `+`, skip or complete the bounded comparisons, and
+   confirm the same five optional forms and their Cancel behavior still work.
+3. Dismiss and reopen the overlay, navigate away and switch English/Italian.
+   Confirm saved impressions and pending comparisons survive in this app session.
+4. Edit an impression. Confirm **Your impression** and Profile update, Profile
+   still counts that venue once, and comparison history/ranking positions do not
+   change merely from editing. Community statistics must remain unavailable.
+5. Check bathroom category selection/validation, crowd reports, ordinal Rankings
+   and read-only Compare Drink Prices.
+6. Check both languages with VoiceOver and larger text, including opinion and
+   impression labels, safe areas and card wrapping. A full reload resets demo
+   activity while retaining the selected native interface language.
 
 The [localization guide](src/localization/README.md) explains dictionary updates,
 formatting and persistence. The [asset inventory](assets/README.md) documents
@@ -110,7 +159,7 @@ bundled assets and the remaining app-icon requirements.
 
 ```text
 src/app/              Routes and root provider layout
-src/app/(tabs)/       Explore, Compare, Rankings and Profile tabs
+src/app/(tabs)/       Explore, Rankings and Profile tabs
 src/components/       Reusable native components and bottom navigation
 src/constants/        bevve colors, typography and spacing
 src/features/         Screens, state providers, reducers and selectors
@@ -121,9 +170,76 @@ tests/                Node-based mobile tests
 assets/               Bundled fonts, imagery and platform icon placeholders
 ```
 
-The main routes are `/`, `/login`, `/signup`, `/explore`, `/compare`, `/rankings`,
-`/profile`, `/bars/[barId]` and `/prices`. Contribution forms stay inside Bar
-Details rather than navigating to separate pages.
+The main routes are `/`, `/login`, `/signup`, `/explore`, `/rankings`, `/profile`,
+`/bars/[barId]` and `/prices`. Contribution forms stay inside Bar Details rather
+than navigating to separate pages.
+
+`/compare` remains only as a compatibility redirect outside the tab group. Its
+focus handler calls `dismissTo('/rankings')`: an existing tab stack is reused,
+and a direct link replaces the compatibility route instead of keeping it as a
+Back destination. Legacy Bar Details links with `returnTo=compare` dismiss to
+Rankings too. Current Explore, Rankings, Profile and price-comparison return
+contexts are unchanged. Shared comparison state, pending overlay flows and Elo
+still belong to the same root provider.
+
+### Physical iPhone checks for Stage 9C-2
+
+1. Start Expo Go with `npm start -- --go`. Open the demo and verify exactly
+   **Explore, Rankings, Profile**. Tap each tab repeatedly: the bar stays still,
+   the active indicator follows selection, and no screen slides horizontally.
+2. From empty and populated Rankings and Profile, tap **Explore bars**. Open a
+   bar and tap `+`. Confirm the first impression offers no comparison, the next
+   offers one, and a fourth experienced bar offers at most three opponents.
+3. Dismiss a pending comparison, switch tabs and language, then reopen that bar
+   and tap **Resume comparisons**. Test Skip one and Skip remaining;
+   only choosing a winner changes history and ordinal Rankings. Rapidly double
+   tap a choice and confirm only one comparison is saved.
+4. Reach Bar Details from each of the three tabs. Open Compare Drink Prices,
+   choose a drink, open another bar and return through prices and the original
+   bar. Confirm the selected drink, source venue and originating tab survive.
+5. Use the current Expo Go development URL from the terminal, retaining its
+   scheme and host but replacing the path after `/--/` with `compare`. Open it
+   both after a full reload and with the demo already open: it must land on
+   Rankings, with three tabs and no Compare screen on Back. Repeat with
+   `bars/<valid fixture UUID>?returnTo=compare`; Back must go to Rankings.
+6. Repeat tab, Explore-button and contextual Back checks in Italian. Check
+   VoiceOver tab labels/selection, larger text and bottom safe-area spacing.
+
+### Physical iPhone checks for Stage 9D
+
+These checks are separate from Node tests and iOS JavaScript export:
+
+1. Start Expo Go with `npm start -- --go`. Reload to start a fresh demo session.
+   Open Luna Rossa and tap `+`. Confirm all three circles share one row, labels
+   sit beneath them, and tapping the circle or label adds an outline/check badge
+   and selects exactly one value. Save an impression: no opponent means a clear
+   message and the five optional cards, without a Compare action.
+2. Open Basso Club, tap `+`, save **I liked it**, then **Skip remaining
+   comparisons**. Close and reopen `+`: the saved choice is preselected and
+   **Compare this bar again** and **Continue to contributions** are available.
+   Reopening alone must leave the comparison count unchanged.
+3. Choose **Continue to contributions**, close and reopen again, then choose
+   **Compare this bar again**. A fresh comparison with Luna Rossa appears without
+   another impression submission. Double tap a preference: only one vote should
+   be counted. Reopen and compare again after completion; the earlier vote and
+   ordinal Rankings must survive. Starting the new batch alone adds no vote.
+4. Save impressions for Nottetempo and Violet Room. In a batch with multiple
+   opponents, answer one comparison, dismiss, switch tabs/language and reopen.
+   **Resume comparisons** must appear instead of Compare again, retaining the
+   next prompt and count. **Continue to contributions** must keep that batch
+   available for a later resume. Exercise both Skip controls; no batch repeats
+   an opponent or exceeds three comparisons.
+5. Repeat in Italian, including **Riprendi i confronti** and **Confronta di nuovo
+   questo locale**. Check all three impression values and edit/save one without
+   adding an activity count or an automatic comparison vote.
+6. On the smallest available iPhone, test default and largest accessibility text
+   sizes with VoiceOver. Labels must wrap without clipping or horizontal overflow;
+   check radio labels/checked state, scrolling to actions, camera/home safe areas,
+   normal top-down animation and Reduce Motion. Decorative symbols stay fixed
+   size while labels follow Dynamic Type.
+7. Confirm all five optional forms still validate, submit and Cancel as before,
+   including bathroom stars and crowd scores. Check three tabs and Compare Drink
+   Prices remain intact. Saved demo activity still resets on full reload.
 
 ## Application identity
 

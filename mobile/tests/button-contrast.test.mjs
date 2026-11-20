@@ -33,7 +33,7 @@ const contrast = (foreground, background) => {
 
 test('filled buttons retain at least 4.5:1 text contrast in normal, pressed and disabled states in EN/IT', () => {
   for (const language of ['en', 'it']) {
-    const label = createTranslator(language)('Save rating and continue');
+    const label = createTranslator(language)('Save impression and continue');
     for (const [pressed, disabled] of [[false, false], [true, false], [false, true], [true, true]]) {
       const button = PrimaryButton({ label, disabled });
       const container = flatten(button.props.style({ pressed }));

@@ -208,7 +208,7 @@ test('two venues can be compared repeatedly without ever producing a self-pair',
 test('quick-pick batches never reset comparison history or exclude a venue with no community reviews', () => {
   const fixtureBefore = JSON.stringify(mockVenues);
   let state = initial();
-  assert.equal(mockVenues[3].communityRating, null);
+  assert.ok(mockVenues.every((venue) => !('communityRating' in venue)));
   assert.ok(state.venueIds.includes(barD));
   for (let index = 0; index < 15; index++) state = advance(castVote(state, index + 1));
   assert.equal(state.history.length, 15);

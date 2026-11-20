@@ -1,7 +1,7 @@
-import type { StarRating } from '../ratings/rating-state';
+import type { FivePointScore } from '../../types/five-point-score';
 import type { BathroomScores, CrowdLevel } from './contribution-state';
 
-export type BathroomDraft = { [Key in keyof BathroomScores]: StarRating | null };
+export type BathroomDraft = { [Key in keyof BathroomScores]: FivePointScore | null };
 
 export function bathroomDraftFromSaved(saved: BathroomScores | null): BathroomDraft {
   return {
@@ -13,7 +13,7 @@ export function bathroomDraftFromSaved(saved: BathroomScores | null): BathroomDr
 
 export function bathroomDraftReducer(
   draft: BathroomDraft,
-  action: { type: 'rate'; category: keyof BathroomScores; rating: StarRating }
+  action: { type: 'rate'; category: keyof BathroomScores; rating: FivePointScore }
     | { type: 'cancel'; saved: BathroomScores | null },
 ): BathroomDraft {
   return action.type === 'cancel' ? bathroomDraftFromSaved(action.saved) : { ...draft, [action.category]: action.rating };

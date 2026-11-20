@@ -13,7 +13,6 @@ export const mockVenues: Venue[] = [
     image: {
       uri: 'https://images.unsplash.com/photo-1546847596-b6c8086514d0?auto=format&fit=crop&w=900&q=85',
     },
-    communityRating: { average: 4.7, count: 86 },
     crowd: { level: 4, label: 'Buzzing' },
     startingPriceCents: 500,
     bathroomCleanliness: 4.7,
@@ -29,7 +28,6 @@ export const mockVenues: Venue[] = [
     image: {
       uri: 'https://images.unsplash.com/photo-1744928869793-3908b4649ad6?auto=format&fit=crop&w=900&q=85',
     },
-    communityRating: { average: 4.4, count: 64 },
     crowd: { level: 2, label: 'Easygoing' },
     startingPriceCents: 600,
     bathroomCleanliness: 4.3,
@@ -45,7 +43,6 @@ export const mockVenues: Venue[] = [
     image: {
       uri: 'https://images.unsplash.com/photo-1707208097739-e3bdf439acb2?auto=format&fit=crop&w=900&q=85',
     },
-    communityRating: { average: 4.3, count: 51 },
     crowd: { level: 3, label: 'Lively' },
     startingPriceCents: 400,
     bathroomCleanliness: 4.0,
@@ -62,7 +59,6 @@ export const mockVenues: Venue[] = [
       uri: 'https://images.unsplash.com/photo-1764270720089-63e2a918b51f?auto=format&fit=crop&w=900&q=85',
     },
     // Deliberately incomplete demo venue to exercise honest missing-data states.
-    communityRating: null,
     crowd: null,
     startingPriceCents: null,
     bathroomCleanliness: null,
