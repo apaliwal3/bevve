@@ -1,7 +1,8 @@
-import type { en } from './en.ts';
+import { en } from './en.ts';
 import type { Message } from './translation.ts';
 
 export const it: Record<keyof typeof en, Message> = {
+  ...en, // Legacy helper fallback; the running app uses English only.
   "Venue activity below uses sample data and resets when this session ends.": "Le attività qui sotto usano dati di esempio e si azzerano al termine della sessione.",
   "Try again": "Riprova",
   "Sign in to your account. Venue activity is currently a demo.": "Accedi al tuo account. Le attività nei locali sono attualmente una demo.",

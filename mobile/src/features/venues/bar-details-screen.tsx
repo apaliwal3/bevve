@@ -17,6 +17,7 @@ import { impressionLabels } from '@/features/impressions/impression-selector';
 import { venueLanguageLabel, venueServingLabel } from '@/localization/venue-copy';
 import { crowdClassificationLabels } from '@/features/contributions/contribution-state';
 import type { BathroomCategorySummary, Venue, VenueDetails } from '@/types/venue';
+import type { AccountVenueData } from '@/features/catalog/catalog-adapters';
 
 
 type BarDetailsScreenProps = {
@@ -25,18 +26,27 @@ type BarDetailsScreenProps = {
   onBack: () => void;
   backLabel?: string;
   onComparePrices: () => void;
+  account?: AccountVenueData;
+  onEditImpression?: () => void;
 };
 
-export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices }: BarDetailsScreenProps) {
+export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices, account, onEditImpression }: BarDetailsScreenProps) {
   const { t, format, describe } = useTranslation();
   const insets = useSafeAreaInsets();
   const [imageFailed, setImageFailed] = useState(false);
   const [ratingOverlayOpen, setRatingOverlayOpen] = useState(false);
-  const demoCrowd = details?.crowd;
-  const { crowdSummary: crowd, bathroomSummary: bathrooms, ownBathroomReview, now } = useVenueContributions(venue.id, details?.bathrooms);
+  const demoCrowd = account ? undefined : details?.crowd;
+  const demoContributions = useVenueContributions(venue.id, account ? null : details?.bathrooms);
+  const crowd = account?.crowd ?? demoContributions.crowdSummary;
+  const bathrooms = account ? account.bathrooms : demoContributions.bathroomSummary;
+  const ownBathroomReview = account ? null : demoContributions.ownBathroomReview;
+  const now = demoContributions.now;
   const crowdKnown = crowd.classification !== null;
-  const { community, ownImpression } = useVenueOpinion(venue.id);
-  const { drinks, pendingLanguages } = useVenueExtras(venue.id);
+  const demoOpinion = useVenueOpinion(venue.id);
+  const { community, ownImpression } = account ?? demoOpinion;
+  const demoExtras = useVenueExtras(venue.id);
+  const drinks = account?.drinks ?? demoExtras.drinks;
+  const pendingLanguages = account ? [] : demoExtras.pendingLanguages;
   const languages = details?.languages ?? [];
 
   return (
@@ -68,8 +78,8 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('Open actions for {name}', { name: venue.name })}
-              accessibilityHint={t('Open experience, personal comparisons and optional bar actions')}
-              onPress={() => setRatingOverlayOpen(true)}
+              accessibilityHint={account ? t('Save or edit your impression') : t('Open experience, personal comparisons and optional bar actions')}
+              onPress={account ? onEditImpression : () => setRatingOverlayOpen(true)}
               style={({ pressed }) => [styles.plusButton, pressed && styles.plusPressed]}>
               <AppIcon name="plus" size={20} color={theme.colors.text} />
             </Pressable>
@@ -83,12 +93,12 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
       </View>
 
       <View style={[styles.body, { paddingBottom: Math.max(42, insets.bottom + theme.spacing.xxl) }]}>
-        <Text style={styles.demoLabel}>{t("DEMO DATA · Sample venue information")}</Text>
+        <Text style={styles.demoLabel}>{account ? account.isDemo ? t('Sample venue · Your impression is saved to your account') : t('Venue catalog · Community-reported information') : t("DEMO DATA · Sample venue information")}</Text>
 
         <View style={[styles.card, styles.crowdCard]}>
           <View style={styles.summaryRow}>
             <View style={styles.flexCopy}>
-              <Text style={styles.sectionLabel}>{t("LIVE CROWD · SESSION REPORTS")}</Text>
+              <Text style={styles.sectionLabel}>{account ? t('Community crowd') : t("LIVE CROWD · SESSION REPORTS")}</Text>
               <Text accessibilityRole="header" style={styles.sectionTitle}>
                 {crowd.classification ? describe(crowdClassificationLabels[crowd.classification]) : t("Not enough recent reports")}
                 {crowdKnown && crowd.score !== null && <Text style={styles.crowdScore}> {format.number(crowd.score)}/5</Text>}
@@ -112,7 +122,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
 
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Drink prices")}</Text>
-          <Text style={styles.meta}>{t("Community-reported · Not verified · Demo session")}</Text>
+          <Text style={styles.meta}>{account ? t('Community-reported · Not verified') : t("Community-reported · Not verified · Demo session")}</Text>
           <View style={[styles.card, styles.drinkList]}>
             {drinks.length === 0 && <Text style={styles.description}>{t("No drink prices reported yet.")}</Text>}
             {drinks.map((drink, index) => (
@@ -129,8 +139,8 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               </View>
             ))}
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={t("Compare drink prices")} accessibilityHint={t("View community-reported prices across Milan")} onPress={onComparePrices} style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
-            <Text style={styles.actionLabel}>{t("Compare prices across Milan")}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("Compare drink prices")} accessibilityHint={account ? t('View community-reported prices across venues') : t("View community-reported prices across Milan")} onPress={onComparePrices} style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+            <Text style={styles.actionLabel}>{account ? t('Compare prices across venues') : t("Compare prices across Milan")}</Text>
             <AppIcon name="chevron" size={16} color={theme.colors.purpleLight} />
           </Pressable>
         </View>
@@ -142,7 +152,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               <>
                 <Text style={styles.sectionLabel}>{t('Your impression')}</Text>
                 <Text style={styles.description}>{t(impressionLabels[ownImpression])}</Text>
-                <Text style={styles.meta}>{t('Demo session only · Separate from community opinions')}</Text>
+                <Text style={styles.meta}>{account ? t('Saved to your account') : t('Demo session only · Separate from community opinions')}</Text>
               </>
             )}
           </View>
@@ -184,7 +194,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
           <View style={styles.summaryRow}>
             <AppIcon name="safety" size={24} color={theme.colors.success} />
             <View style={styles.flexCopy}>
-              <Text style={[styles.sectionLabel, styles.safetyLabel]}>{t("DEMO DATA")}</Text>
+              <Text style={[styles.sectionLabel, styles.safetyLabel]}>{account ? t('Safety information') : t("DEMO DATA")}</Text>
               <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Safety information")}</Text>
             </View>
           </View>
@@ -194,12 +204,12 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               <Text style={styles.description}>{note}</Text>
             </View>
           ))}
-          {!details?.demoSafetyNotes.length && <Text style={styles.description}>{t("No published safety information.")}</Text>}
-          <Text style={styles.description}>{t("This preview contains no real verified safety records. Missing information does not guarantee safety.")}</Text>
+          {!details?.demoSafetyNotes.length && <Text style={styles.description}>{account ? t('Safety information is not available here yet.') : t("No published safety information.")}</Text>}
+          <Text style={styles.description}>{account ? t('Missing information does not guarantee safety.') : t("This preview contains no real verified safety records. Missing information does not guarantee safety.")}</Text>
         </View>
       </View>
     </ScreenContainer>
-    {ratingOverlayOpen && <VenueRatingOverlay venue={venue} onClose={() => setRatingOverlayOpen(false)} />}
+    {!account && ratingOverlayOpen && <VenueRatingOverlay venue={venue} onClose={() => setRatingOverlayOpen(false)} />}
     </>
   );
 }

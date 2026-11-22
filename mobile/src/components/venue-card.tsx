@@ -9,25 +9,31 @@ import { useVenueOpinion } from '@/features/comparisons/personal-comparisons-pro
 import { CommunityOpinionSummary, communityOpinionLabel } from '@/features/impressions/community-opinion-summary';
 import { impressionLabels } from '@/features/impressions/impression-selector';
 import type { Venue } from '@/types/venue';
+import type { AccountVenueData } from '@/features/catalog/catalog-adapters';
 
 import { AppIcon } from './app-icon';
 import { CrowdMeter } from './crowd-meter';
 
-type VenueCardProps = { venue: Venue; onPress?: () => void };
+type VenueCardProps = { venue: Venue; onPress?: () => void; account?: AccountVenueData };
 
-export function VenueCard({ venue, onPress }: VenueCardProps) {
+export function VenueCard({ venue, onPress, account }: VenueCardProps) {
   const { t, format, describe } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
-  const { community, ownImpression } = useVenueOpinion(venue.id);
-  const { bathroomSummary } = useVenueContributions(venue.id);
+  const demoOpinion = useVenueOpinion(venue.id);
+  const { community, ownImpression } = account ?? demoOpinion;
+  const demoContributions = useVenueContributions(venue.id);
+  const bathroomSummary = account ? account.bathrooms : demoContributions.bathroomSummary;
   const crowdFor = useVenueCrowdSelector();
-  const crowd = crowdFor(venue);
-  const { startingPriceCents } = useVenueExtras(venue.id);
+  const crowd = account ? { source: 'backend', level: account.crowd.classification ? account.crowd.score : null,
+    label: account.crowd.classification, isQuiet: account.crowd.classification === 'quiet' } : crowdFor(venue);
+  const extras = useVenueExtras(venue.id);
+  const startingPriceCents = account ? account.startingPriceCents : extras.startingPriceCents;
   const crowdLabel = crowd.label !== null ? describe(crowd.label)
-    : crowd.source === 'session' ? t('Not enough recent reports') : t('No reports yet');
+    : crowd.source !== 'demo' ? t('Not enough recent reports') : t('No reports yet');
   const bathroomCleanliness = bathroomSummary?.cleanliness.average ?? null;
   const impressionLabel = ownImpression
-    ? t('Your impression: {impression} · Demo session', { impression: t(impressionLabels[ownImpression]) })
+    ? account ? t('Your impression: {impression} · Saved to your account', { impression: t(impressionLabels[ownImpression]) })
+      : t('Your impression: {impression} · Demo session', { impression: t(impressionLabels[ownImpression]) })
     : t('No saved impression');
   const priceLabel =
     startingPriceCents === null
@@ -75,7 +81,7 @@ export function VenueCard({ venue, onPress }: VenueCardProps) {
               <AppIcon name="crowd" size={15} color={theme.colors.purpleLight} />
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>{crowd.source === 'session' ? t("Session crowd") : t("Demo crowd")}</Text>
+              <Text style={styles.metricLabel}>{account ? t('Community crowd') : crowd.source === 'session' ? t("Session crowd") : t("Demo crowd")}</Text>
               <Text style={styles.metricValue}>{crowdLabel}</Text>
               {crowd.level !== null && <CrowdMeter level={crowd.level} />}
             </View>

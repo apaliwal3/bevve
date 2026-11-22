@@ -1,7 +1,7 @@
 # Backend architecture
 
 ```text
-Future mobile app (not included)
+Expo mobile app
         |
 TypeScript service functions
         |
@@ -26,14 +26,34 @@ Pairwise comparisons are private and append-only. Personal Elo ratings start at 
 
 Safety reports remain private to their reporter and moderators. A privileged database function checks a separate moderator allowlist, locks the report, records the decision, and creates a separate public summary in one transaction. Each report can be reviewed once. A private table links reports to publications. Corrections, withdrawal, and appeals need a later audited workflow. Do not include personal information in public summaries.
 
+## Connected catalog and impressions
+
+Migration 002 adds nullable venue metadata and a paginated catalog RPC that returns
+public summaries, languages and latest EUR prices per exact catalog drink. Raw
+submitter IDs are not exposed. Clients preserve database UUIDs; guest fixtures
+never act as database records. Native app reads use validated shared DTOs.
+
+`venue_impressions` stores one answer per user/venue. Authenticated clients can
+read/write only their own rows and cannot set timestamps or community eligibility.
+Edits replace the answer and receive a server timestamp. Public opinion reads
+expose only eligible counts/percentages, exclude sample venues, include neutral
+and disliked answers in the denominator, and require no minimum opinion count.
+Impression writes never create comparison votes.
+
+Mobile source state is scoped to the signed-in account. Confirmed writes update
+cards/Profile, failed writes keep drafts, and stale requests cannot overwrite a
+newer acknowledged save or populate the next account. Guest fixtures/session
+submissions are separate and are never uploaded. The hosted catalog remains
+administrator-maintained; missing metadata/distance values are not fabricated.
+
 ## Not yet implemented
 
-- Deployment to a Supabase project and database integration verification.
+- Remaining contribution-write and personal-comparison integration in mobile.
 - Full generated TypeScript database types. Current service queries rely on Supabase's default client typing; generate types from the deployed schema and parameterize the client before expanding the project.
 - Submission throttling, account abuse prevention, and operational monitoring. Latest-per-account crowd aggregation is not a rate limiter.
 - Account deletion/export, retention rules, moderation audit history, and publication withdrawal.
 - Venue catalog editing tools and provenance for real venue data.
 - Proximity search, geographic indexes, push notifications, image storage, and Realtime subscriptions.
-- Expo secure token persistence, token refresh lifecycle, and app UI.
+- Additional offline caching and realtime updates; catalog reads currently refresh on demand/foreground.
 
-The initial SQL deliberately restricts access, protects server timestamps through column-level grants, and keeps moderators outside user-editable profiles. These rules still need execution and testing against a real database.
+The initial SQL deliberately restricts access, protects server timestamps through column-level grants, and keeps moderators outside user-editable profiles. Hosted read checks, the two SQL access scripts and the impression API write check passed on 2026-11-22; remaining API/device scenarios still need their own checks.

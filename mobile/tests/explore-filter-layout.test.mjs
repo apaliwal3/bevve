@@ -10,7 +10,9 @@ import { elements, flattenStyle, loadNativeModule, nativeStub } from './helpers/
 
 const theme = loadNativeModule('src/constants/theme.ts');
 function explore(language) {
-  const { default: Screen } = loadNativeModule('src/app/(tabs)/explore.tsx', {
+  const { DemoExploreScreen: Screen } = loadNativeModule('src/app/(tabs)/explore.tsx', {
+    '@/features/catalog/catalog-provider': { useVenueCatalog: () => ({ mode: 'demo' }) },
+    '@/features/catalog/account-explore-screen': { AccountExploreScreen: 'AccountExploreScreen' },
     react: { useState: (value) => [value, () => {}], useMemo: (factory) => factory() },
     'react-native': { ...nativeStub, ScrollView: 'ScrollView' },
     'expo-router': { Link: 'Link', router: {} },

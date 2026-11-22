@@ -179,7 +179,7 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
             <Text style={styles.switchAccent}>{isSignup ? t("Sign In") : t("Create Account")}</Text>
           </Text>
         </Pressable>
-        <Text style={styles.demoNote}>{t('Sign in to your account. Venue activity is currently a demo.')}</Text>
+        <Text style={styles.demoNote}>{t('Sign in to save impressions and access your venue catalog.')}</Text>
       </ScreenContainer>
     </KeyboardAvoidingView>
   );

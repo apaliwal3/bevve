@@ -50,7 +50,7 @@ export function AccountPanel() {
     <Text accessibilityRole="header" style={styles.title}>{t('Your account')}</Text>
     <Text style={styles.text}>{currentProfile?.username ?? t('Signed in')}</Text>
     <Text style={styles.text}>{session.user.email}</Text>
-    <Text style={styles.text}>{t('Your account is saved online. The activity below is demo data for this session.')}</Text>
+    <Text style={styles.text}>{t('Your impressions are saved to your account.')}</Text>
     {currentProfile?.error && <>
       <Text accessibilityRole="alert" style={styles.text}>{t('Your profile could not be loaded.')}</Text>
       <PrimaryButton variant="secondary" label={t('Try again')} onPress={() => setRetry(value => value + 1)} />

@@ -134,7 +134,7 @@ export function latestPriceObservation(rows: readonly SessionPriceObservation[],
   }, null);
 }
 
-export type VenueDrinkPrice = VenueDetails['drinks'][number] & { observedAt: string | null; source: 'demo' | 'session' };
+export type VenueDrinkPrice = VenueDetails['drinks'][number] & { observedAt: string | null; source: 'demo' | 'session' | 'backend' };
 
 export function venueDrinkPrices(rows: readonly SessionPriceObservation[], barId: string, demo: readonly VenueDetails['drinks'][number][] = []): VenueDrinkPrice[] {
   const result: VenueDrinkPrice[] = demo.map((drink) => ({ ...drink, observedAt: null, source: 'demo' }));

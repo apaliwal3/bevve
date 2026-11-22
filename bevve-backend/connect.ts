@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import {
   createBarHopClient, authService, barsService, crowdService,
   bathroomsService, drinksService, rankingsService, safetyService,
+  impressionsService,
 } from './src/index.ts';
+import { decodeCatalogVenue } from '../shared/venue-contracts.ts';
 
 function required(name: string) {
   const value = process.env[name];
@@ -34,6 +36,12 @@ async function checkConnection() {
     const drinks = await drinksService(client).listDrinks();
     assert.ok(drinks && drinks.length > 0, 'No drinks found; apply the catalog seed first');
     pass('drink catalog read');
+    const catalog = await barsService(client).getVenueCatalog();
+    assert.ok(catalog && catalog.length > 0);
+    catalog.forEach(row => decodeCatalogVenue(row.venue));
+    pass('mobile venue catalog and summary contract');
+    await impressionsService(client).listMyImpressions();
+    pass('own saved impressions read');
     await barsService(client).getLanguages(bars[0].id);
     pass('venue language read');
     const crowd = await crowdService(client).getBarCrowd(bars[0].id);
@@ -53,7 +61,7 @@ async function checkConnection() {
     pass('incident read paths');
 
     for (const table of ['profiles', 'bars', 'drinks', 'bar_languages', 'crowd_reports',
-      'bathroom_reviews', 'bar_comparisons', 'incident_reports', 'published_incidents']) {
+      'bathroom_reviews', 'bar_comparisons', 'incident_reports', 'published_incidents','venue_impressions']) {
       const { data, error } = await anonymous.from(table).select('*').limit(1);
       assert.ok(error || data?.length === 0, `Signed-out client unexpectedly read ${table}`);
       pass(`signed-out ${table} access denied or empty`);
@@ -62,6 +70,8 @@ async function checkConnection() {
       ['get_bar_crowd', { p_bar_id: bars[0].id }],
       ['get_bathroom_summary', { p_bar_id: bars[0].id }],
       ['compare_drink_prices', { p_drink_id: drinks[0].id, p_bar_ids: [bars[0].id], p_currency: 'EUR' }],
+      ['get_venue_catalog', { p_offset: 0 }],
+      ['get_venue_opinions', { p_bar_id: bars[0].id }],
     ] as const) {
       const { error } = await anonymous.rpc(name, args);
       assert.equal(error?.code, '42501', `Signed-out ${name} must fail with insufficient privilege`);

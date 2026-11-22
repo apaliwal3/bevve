@@ -5,6 +5,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
 ## Files to start with
 
 - `supabase/migrations/001_backend.sql`: tables, constraints, authentication profile trigger, row-level security, crowd/bathroom aggregates, price comparison, and moderation.
+- `supabase/migrations/002_catalog_impressions.sql`: mobile catalog metadata, aggregate reads and private per-user impressions.
 - `supabase/seed.sql`: three fictional venues and two standardized drinks.
 - `src/services/`: functions the future mobile app can call.
 - `src/logic/eloRanking.ts`: personal rankings from pairwise comparisons.
@@ -24,7 +25,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
    npm run check
    ```
 
-3. Create an empty Supabase project. In its SQL Editor, run `supabase/migrations/001_backend.sql`, followed by `supabase/seed.sql`. The migration is a one-time initial migration; use a fresh database rather than rerunning it. The seed script can be rerun.
+3. Create an empty Supabase project. In its SQL Editor, run `supabase/migrations/001_backend.sql`, then `002_catalog_impressions.sql`, followed by `supabase/seed.sql`. The migration is a one-time initial migration; use a fresh database rather than rerunning it. The seed script can be rerun.
 4. Create `.env` in this directory with the project URL and **publishable** key, using the variable names in the connection check below. This starter does not load `.env` automatically; the check uses Node's `--env-file` option.
 5. Use `authService` to create an account. Confirm the email when required by your project's authentication settings, then sign in. New accounts automatically receive a profile.
 6. Complete `docs/database-checks.md` before sharing the app with others.
@@ -54,7 +55,7 @@ Never use a service-role or secret key in the mobile app. For a future web serve
 
 ## Check the Supabase connection
 
-`connect.ts` signs in with an existing test account and runs 22 read-only
+`connect.ts` signs in with an existing test account and runs 27 read-only
 checks against the seeded project: profiles, catalogs, summaries, rankings,
 incident reads, signed-out table access and signed-out RPC rejection. It prints
 only check names and counts, never account records or credentials. Its local-scope
@@ -77,13 +78,23 @@ From `bevve-backend`, using Node.js 24 or newer, run:
 npm run check:connection
 ```
 
-With the unchanged demo seed, expect three venues and 22 passing checks. Missing Supabase configuration usually means the `.env` variable names do not match those read by the script. Authentication errors require checking the test credentials and account confirmation status.
+With the unchanged demo seed, expect three venues and 27 passing checks. Missing Supabase configuration usually means the `.env` variable names do not match those read by the script. Authentication errors require checking the test credentials and account confirmation status.
 
-For ownership, write permissions and moderation, run the entire
+For the original ownership, write permissions and moderation checks, run the entire
 `supabase/tests/access.sql` in the project SQL Editor as postgres. It uses one
 command for dependent checks and rolls back its test users, catalog entries,
 contributions and helpers on success or failure. Saving the query in the dashboard
 is optional; keep this repository file as the maintained version.
+
+After applying migration 002, also run the entire
+`supabase/tests/catalog-impressions.sql`. It verifies impression privacy/upserts,
+server-controlled fields, demo exclusion, community percentages and catalog
+serving/price contracts, rolling back all fixtures.
+
+`npm run check:impressions` is a separate API write check using the existing test
+account and an existing sample venue. It saves, signs in through a second client,
+reloads and edits an impression. It restores a previous impression if one existed;
+otherwise one sample impression remains. Other device sessions are not revoked.
 
 `npm test` also runs the migration, seed and access script in an isolated PGlite
 PostgreSQL runtime with a minimal Supabase Auth schema/role shim. It checks repeat
@@ -110,15 +121,16 @@ Use `safetyService(client).moderateIncident(reportId, 'approved', publicSummary)
 
 ## Validation status
 
-On 2026-11-22, the hosted read-only connection checks passed (22 checks).
-The project owner also ran the SQL access check successfully against Supabase.
-Local TypeScript and algorithm/service/database tests are run with the commands
-above. No feature-schema migration was required for this authentication step;
-`001_backend.sql` was already deployed. The SQL access check leaves no test data.
+On 2026-11-22, all 27 hosted read-only checks passed. The project owner applied
+migration 002 and passed the hosted catalog/impression SQL check. The API write
+check also confirmed save, reload through a second sign-in session, and edit
+without adding a second row. One sample impression remains on the test account.
 
-Mobile authentication is connected separately in `../mobile/`; venue features
-still use demo state. Price latest/serving cases, large-history service pagination,
-full signup/email delivery and physical-device behavior remain separate checks.
+Local PostgreSQL tests cover both migrations, repeatable rollback checks, a broken
+ownership policy, and catalog pagination beyond fifty rows. These do not replace
+physical-device checks or full GoTrue/PostgREST write coverage for the remaining
+features. Mobile catalog reads and impression writes are now connected; other
+contribution writes and personal comparisons remain guest-demo-only.
 
 ## References
 

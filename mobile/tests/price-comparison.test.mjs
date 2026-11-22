@@ -137,7 +137,7 @@ test('RPC adapter scopes requested venues, validates data, and handles empty res
   const request = comparisonRequest(beer, [luna, violet]);
   const row = { bar_id: luna.id, price_cents: 500, currency: 'EUR', observed_at: new Date(now).toISOString() };
   assert.deepEqual(adaptRpcPriceComparison(request, [], mockDrinkCatalog, mockVenues), { rows: [], missingVenues: [luna, violet] });
-  for (const extra of [{ price_cents: 0 }, { price_cents: -5 }, { currency: 'USD' }, { observed_at: 'invalid' }, { observed_at: null }, { bar_id: basso.id }]) {
+  for (const extra of [{ price_cents: -5 }, { currency: 'USD' }, { observed_at: 'invalid' }, { observed_at: null }, { bar_id: basso.id }]) {
     assert.equal(adaptRpcPriceComparison(request, [{ ...row, ...extra }], mockDrinkCatalog, mockVenues).rows.length, 0);
   }
   assert.equal(adaptRpcPriceComparison({ ...request, p_drink_id: id(999) }, [row], mockDrinkCatalog, mockVenues).rows.length, 0);

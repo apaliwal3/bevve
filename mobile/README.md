@@ -28,8 +28,8 @@ npm start -- --go
 2. Put the computer and iPhone on the same Wi-Fi network for LAN mode.
 3. Scan the terminal QR code with the iPhone Camera and open the link in Expo Go.
    Allow local network access if iOS requests it.
-4. Choose **Explore demo** to browse without an account, or configure Supabase
-   below and use **Sign In** / **Create Account** for a real account.
+4. Choose **Explore demo** while signed out for fictional fixtures, or use
+   **Sign In** / **Create Account** for the connected catalog and saved impressions.
 
 ### Network troubleshooting
 
@@ -70,15 +70,55 @@ memory only. Profile's **Sign Out** clears this device's session; other devices
 stay signed in. Changing accounts also resets demo contribution/comparison state.
 The app interface is English-only and ignores old saved language preferences.
 
-Venue screens still use fictional fixtures. Authenticated users see an explicit
-notice that their activity remains a demo. Saving an impression, comparison,
-price, review, suggestion or incident does not yet write to Supabase.
+Signed-in venue screens use the Supabase catalog and persist impressions.
+Signed-out screens keep the original fictional demo. Guest submissions are never
+uploaded or merged into a real account. See the connected catalog section below.
 
 Manual device checks: sign in with a confirmed test account, reload the app and
 verify restoration; confirm Profile's account name/email; sign out and check that
 account details/demo state clear. Check invalid credentials, offline requests,
 email-confirmation signup, rapid double submission, and a previously saved Italian
 preference (the interface must remain English).
+
+## Connected venue catalog and impressions
+
+The existing project has migrations `001_backend.sql` and
+`002_catalog_impressions.sql` applied. For a fresh project, apply both in order,
+then the optional fictional seed. The second migration preserves existing rows
+and adds optional area/city/vibe/photo/opening-hours metadata plus impressions.
+Administrators can populate metadata in Supabase's `bars` table; missing fields
+show unavailable states. The current seed contains three sample venues, which
+are different from the four guest fixtures. No names or serving sizes are used
+as database join keys.
+
+Sign in, open Explore, select a venue, tap `+`, choose an impression and tap
+**Save impression**. The modal confirms only a successful server response.
+**Cancel** saves nothing. A failure keeps the selected draft and allows retry.
+Profile shows one current impression per venue, including edits. Reload the app,
+open the same venue/Profile and confirm the saved answer remains. Sign out/in
+or use a second device to verify account persistence. A different account must
+not see the first account's private saved answers.
+
+Loading and failures have explicit states, with refresh/retry controls and no
+fallback to guest fixtures. Public summaries and exact-serving EUR prices are
+read from the database. Real venues use eligible community aggregates; sample
+venues never display purported real community percentages. Distances remain
+unavailable until real location support exists. All/Cheap/Quiet/Popular filters
+use catalog metadata and reported summaries.
+
+This step connects catalog reads and impression writes. Authenticated `+` opens
+the impression editor; comparisons and crowd/bathroom/price/language/incident
+writes remain available only in the separate guest demo. Signed-in Rankings
+explains that personal comparisons are coming soon. Price comparison is read-only
+and uses the database drink catalog. Guest state resets when accounts change;
+server impressions remain intact.
+
+Manual device checks: save all three choices, edit one venue, reload, sign out/in,
+verify Profile counts once, cancel a draft, retry a failed network save and check
+that rapid taps write once. Check an empty catalog, missing metadata, deleted or
+invalid venue links, foreground refresh, account switching and direct Profile/
+Bar Details/price links. Run the guest demo flow separately to verify it remains
+unchanged. The following older manual journeys describe **guest demo mode**.
 
 ## Validation
 
@@ -111,7 +151,7 @@ The lint command checks mobile source, tests and scripts without applying fixes.
 Generated native folders, Expo caches, build outputs and dependencies are ignored.
 Backend code is outside the mobile lint scope.
 
-## Demo session and English interface
+## Guest demo session and English interface
 
 - UUID-based fictional venues and a structured drink catalog are in `src/fixtures/`.
   Prices use integer EUR cents internally.
@@ -151,14 +191,15 @@ Backend code is outside the mobile lint scope.
   to Explore and a bar's `+` action to add impressions or resume comparisons.
 - Bathroom categories and crowd reports retain their separate five-point scales.
 
-The pure community-opinion helper supports future genuine data: each distinct
+The pure community-opinion helper supports genuine data: each distinct
 user's latest eligible impression counts once, and `liked / total * 100` includes
 fine and disliked in the denominator. There is no minimum opinion threshold.
 Real zero opinions displays **No opinions yet**; any positive count displays a
 rounded liked percentage and the distinct opinion count, including 0% or 100%
 for one opinion. Demo impressions and retired star fixtures are excluded. The
-current app has no real multi-user source, so it displays availability rather
-than a fabricated percentage or a measured-zero claim.
+guest demo has no real multi-user source, so it displays availability rather
+than a fabricated percentage or a measured-zero claim. Signed-in real venues use
+the database aggregate; sample venues remain excluded.
 
 ### Physical iPhone checks for Stage 9C-1
 

@@ -4,11 +4,31 @@ bevve is a nightlife discovery project focused on Milan. The maintained frontend
 is the native React Native application in `mobile/`, with bevve's approved dark
 navy and purple interface.
 
-Supabase authentication and account-profile reads are connected. Venue discovery,
-contributions and personal rankings still use fictional fixtures and shared
-in-memory demo state; these features are not yet persisted to the database.
+Signed-in users load the venue catalog from Supabase and save one editable
+impression per venue to their account. Authentication, profile reads, public venue
+summaries and read-only drink price comparison are connected. Guest browsing keeps
+the original fictional, in-memory demo. The interface is English-only.
 
-## Implemented features
+## Connected account features
+
+- Database venue IDs, optional metadata, photographs, languages, crowd/bathroom
+  summaries and latest EUR prices. Missing metadata stays unavailable.
+- Search by name/neighborhood and All, Cheap, Quiet and Popular filters. Nearby
+  is omitted until a real user location is available; fixture distances are not used.
+- A venue's `+` action saves/edits an impression. Profile and cards update only
+  after the server confirms the write. Failures retain the draft for retry.
+- Impressions reload across sessions/devices, remain private to their owner, and
+  count once per venue. Server timestamps and eligibility cannot be set by clients.
+- Community percentages use eligible distinct-user database impressions. Sample
+  venues are excluded; genuine zero opinions stays separate from unavailable data.
+- Catalog loading/error/retry states, manual refresh, foreground refresh and
+  account-change isolation. Failed reads never fall back to guest fixtures.
+
+Signed-in comparisons and other contribution writes are not connected in this
+stage. Rankings shows a coming-soon state; the full demo flow remains available
+when signed out. Price comparison uses the database drink UUID and serving size.
+
+## Guest demo features
 
 - Explore venues by name or neighborhood, with Nearby, Cheap, Quiet and Popular
   filters, venue photographs and missing-data states.
@@ -108,11 +128,12 @@ The interface is English-only. The former language switch is removed and any
 previously saved Italian preference is ignored. Venue spoken-language information
 remains venue data. See the [copy and formatting guide](mobile/src/localization/README.md).
 
-Impressions, reports, price observations, pending language suggestions, private
-incident drafts/submissions and personal comparisons are local demo data.
-Demo activity survives navigation; a full reload or an account change clears it.
-Accounts are real, but venue activity has no cross-device persistence or live
-multi-user source yet. Sign-out clears the local session and demo activity.
+While signed out, impressions, reports, price observations, language suggestions,
+private incidents and comparisons are local demo data. A reload or account change
+clears them. Guest demo activity is never uploaded or merged into an account.
+Signed-in impressions are persisted and survive reload/sign-out; signing out clears
+only their local view. Sample venues remain explicitly labeled even when their
+catalog rows and personal impressions come from the database.
 
 Rankings and Profile guide users to Explore and a bar's `+` action. The former
 standalone personal Compare screen is retired. Legacy `/compare` links redirect
@@ -132,8 +153,8 @@ counts each user's latest eligible answer once per venue, and calculates
 `liked / total distinct opinions * 100`. Fine and disliked answers remain in the
 denominator. There is no minimum: a genuine zero shows **No opinions yet**, and
 one or more genuine opinions shows the rounded percentage with the opinion count.
-Demo answers and historical star fixtures cannot supply those statistics. There
-is currently no genuine community source connected to the frontend.
+Demo answers and historical star fixtures cannot supply those statistics. Signed-in
+real venues use the database aggregate; guest and sample venues show unavailable.
 
 Crowd classification uses the latest report per contributor within 45 minutes
 and requires three distinct contributors. The demo has one session user, so
@@ -149,19 +170,25 @@ access unless cached; the Welcome image and fonts are bundled.
 The visible app name is bevve. Approved platform icon assets are still needed;
 see the [asset inventory](mobile/assets/README.md).
 
-## Supabase integration boundary
+## Supabase integration
 
-`bevve-backend/` contains database migrations, services and executable checks.
-Mobile authentication connects to the same project using public configuration in
-`mobile/.env.local`; passwords and backend test credentials are never copied there.
-See [mobile setup](mobile/README.md#supabase-authentication). Venue integration must
-still replace fixture reads and session writes with authenticated services,
-server-owned identifiers/timestamps, typed adapters and loading/error handling.
+`bevve-backend/` contains migrations, services and checks. Apply migrations in
+order on a fresh project; on the existing project, only
+`002_catalog_impressions.sql` was needed for this stage. The hosted project owner
+applied it and passed `supabase/tests/catalog-impressions.sql` on 2026-11-22.
+These test scripts roll back their fixtures.
 
-Outstanding contracts include authenticated per-user venue impressions and eligible
-community-opinion reads, pending
-venue-language suggestions, frontend venue metadata and authorized contribution
-history reads. Mobile fixture UUIDs and drink servings differ from the backend
-seed and must not be matched by display name. Guest venue-read policy and the missing feature contracts remain future work.
-The hosted connection check and SQL access check passed on 2026-11-22; full
-GoTrue/PostgREST write scenarios and mobile device checks remain separate validation.
+`mobile/.env.local` contains public project configuration only. No backend test
+credentials or privileged keys belong there. `shared/venue-contracts.ts` contains
+portable DTOs and runtime decoders; Metro watches that folder explicitly because
+the two projects use separate dependency installs.
+
+Run `npm --prefix bevve-backend run check:connection` for read-only checks. The
+separate `check:impressions` command tests actual API writes and session reloads
+on a sample venue, restoring a previous impression if one existed. Otherwise it
+leaves one sample impression on the configured test account.
+
+Remaining integration includes authenticated personal comparisons, crowd/bathroom/
+price writes, pending venue-language suggestions, incident submission/moderation
+UI, and contribution-history views. The legacy guest fixture UUIDs/servings are
+not database IDs and are never matched to catalog rows by name.

@@ -13,8 +13,15 @@ import { EXPLORE_HORIZONTAL_PADDING, filterChipLayout } from '@/features/explore
 import { exploreMockUser, mockVenues } from '@/fixtures/venues';
 import { usePriceComparisonSelection, useVenueCrowdSelector, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
 import { priceComparisonHref } from '@/features/prices/price-navigation';
+import { useVenueCatalog } from '@/features/catalog/catalog-provider';
+import { AccountExploreScreen } from '@/features/catalog/account-explore-screen';
 
 export default function ExploreScreen() {
+  const catalog = useVenueCatalog();
+  return catalog.mode === 'account' ? <AccountExploreScreen catalog={catalog} /> : <DemoExploreScreen />;
+}
+
+export function DemoExploreScreen() {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VenueFilter>('All');

@@ -20,9 +20,10 @@ type PriceComparisonScreenProps = PriceComparison & {
   onBack: () => void;
   onSelectDrink: (drink: CatalogDrink) => void;
   onOpenVenue: (venue: Venue) => void;
+  account?: boolean;
 };
 
-export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, backLabel, onBack, onSelectDrink, onOpenVenue }: PriceComparisonScreenProps) {
+export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, backLabel, onBack, onSelectDrink, onOpenVenue, account = false }: PriceComparisonScreenProps) {
   const { t, format } = useTranslation();
   const lowest = rows[0];
   const highest = rows[rows.length - 1];
@@ -32,7 +33,7 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
       <FlowHeader eyebrow={t('SMARTER NIGHTS')} title={t('Drink prices')} backLabel={backLabel} onBack={onBack} />
       <View style={styles.intro}>
         <Text accessibilityRole="header" style={styles.title}>{t("What are you drinking?")}</Text>
-        <Text style={styles.description}>{t("Community-reported prices from bars across Milan.")}</Text>
+        <Text style={styles.description}>{account ? t('Community-reported prices across venues.') : t("Community-reported prices from bars across Milan.")}</Text>
       </View>
 
       <DrinkSelector catalog={catalog} selectedId={drink?.id ?? null} onSelect={onSelectDrink} />
@@ -42,7 +43,7 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
           <Text style={styles.meta}>{drinkCategoryLabel(drink.category, t)} · {t('Same catalog drink and serving at every venue')}</Text>
         </View>
       ) : <Text style={[styles.description, styles.selection]}>{t("Choose an available drink above to see matching prices.")}</Text>}
-      <Text style={styles.demoLabel}>{t("READ-ONLY · DEMO DATA · COMMUNITY-REPORTED")}</Text>
+      <Text style={styles.demoLabel}>{account ? t('Read-only · Community-reported') : t("READ-ONLY · DEMO DATA · COMMUNITY-REPORTED")}</Text>
 
       {lowest && highest && (
         <View style={styles.summary}>
@@ -99,7 +100,7 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
           </View>
         </>
       )}
-      <Text style={styles.note}>{t("Community-reported, not verified. Observation dates are shown when available. Open a venue and use + to report a price.")}</Text>
+      <Text style={styles.note}>{account ? t('Prices are community-reported observations, not verified offers.') : t("Community-reported, not verified. Observation dates are shown when available. Open a venue and use + to report a price.")}</Text>
     </ScreenContainer>
   );
 }

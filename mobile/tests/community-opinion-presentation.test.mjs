@@ -156,3 +156,23 @@ test('Profile renders the current saved impression once, without stars, in both 
     assert.ok(!textValues(section).some((value) => String(value).includes('★')));
   }
 });
+
+test('account venue cards and details override all demo metrics and use the account impression editor', () => {
+  const { card, details } = ui('en','liked');
+  let opened=0;
+  const account={ isDemo:false,community:{status:'ready',percentage:25,count:4},ownImpression:'fine',
+    crowd:{score:1,report_count:3,newest_report_at:'2026-11-22T18:00:00Z',classification:'quiet'},
+    bathrooms:null,drinks:[],startingPriceCents:0 };
+  const cardTree=card.VenueCard({venue,account,onPress(){}});
+  assert.ok(cardTree.props.accessibilityLabel.includes('It was fine'));
+  assert.ok(cardTree.props.accessibilityLabel.includes('25%'));
+  assert.ok(textValues(cardTree).some(value=>String(value).includes('Saved to your account')));
+  assert.ok(!textValues(cardTree).some(value=>String(value).includes('Demo session')));
+  const tree=details.BarDetailsScreen({venue,details:mockVenueDetails[venue.id],account,onBack(){},onComparePrices(){},onEditImpression(){opened++;}});
+  const nodes=[...elements(tree)];
+  nodes.find(node=>node.props.accessibilityHint==='Save or edit your impression').props.onPress();
+  assert.equal(opened,1);
+  assert.ok(textValues(tree).includes('Saved to your account'));
+  assert.ok(!textValues(tree).some(value=>String(value).includes('Fictional demo snapshot')));
+  assert.ok(!textValues(tree).some(value=>String(value).includes('Demo session')));
+});

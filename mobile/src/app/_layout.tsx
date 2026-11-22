@@ -9,6 +9,7 @@ import { VenueRatingsProvider } from '@/features/ratings/venue-ratings-provider'
 import { PersonalComparisonsProvider } from '@/features/comparisons/personal-comparisons-provider';
 import { LanguageProvider, useTranslation } from '@/localization/language-provider';
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
+import { VenueCatalogProvider } from '@/features/catalog/catalog-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -47,11 +48,13 @@ function AppLayout() {
         },
       }}>
       <StatusBar style="light" />
+      <VenueCatalogProvider>
       <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
         <PersonalComparisonsProvider>
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
         </PersonalComparisonsProvider>
       </VenueRatingsProvider>
+      </VenueCatalogProvider>
     </ThemeProvider>
   );
 }

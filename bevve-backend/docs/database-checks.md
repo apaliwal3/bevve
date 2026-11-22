@@ -1,6 +1,6 @@
 # Database integration checks
 
-The read-only `npm run check:connection` and hosted `supabase/tests/access.sql`
+The read-only `npm run check:connection` (27 checks) and hosted `supabase/tests/access.sql`
 passed on 2026-11-22. The access script rolls back its fixtures and can be rerun in
 the SQL Editor. Local `npm test` exercises it against PostgreSQL with an Auth shim.
 
@@ -28,3 +28,18 @@ Use three independently signed-in clients: user A, user B, and moderator M. Regi
 11. **Anonymous RPCs:** signed-out clients cannot call crowd, bathroom, price comparison, or moderation functions. Ordinary signed-in clients can call the first three but cannot moderate.
 
 Record outcomes and any database errors before treating the scaffold as an integrated backend.
+
+## Catalog and impressions (migration 002)
+
+The project owner applied migration 002 and passed
+`supabase/tests/catalog-impressions.sql` on 2026-11-22. This script rolls back its
+fixtures. It checks private per-user rows, ownership spoofing, upsert/edit,
+protected timestamps/eligibility, true-zero/one-opinion aggregates, neutral and
+disliked denominators, sample-venue exclusion, exact servings/latest EUR prices,
+private submitter identities and signed-out access. Local tests also cover catalog
+pagination beyond fifty rows and unchanged data after rollback.
+
+`npm run check:impressions` verified actual PostgREST save, reload in a second
+session and editing one current row. One sample impression remains on the test
+account. This is separate from the read-only connection check. Physical-device
+persistence, error handling and navigation checks are listed in the mobile README.
