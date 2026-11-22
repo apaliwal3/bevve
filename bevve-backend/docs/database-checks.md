@@ -43,3 +43,18 @@ pagination beyond fifty rows and unchanged data after rollback.
 session and editing one current row. One sample impression remains on the test
 account. This is separate from the read-only connection check. Physical-device
 persistence, error handling and navigation checks are listed in the mobile README.
+
+## Personal comparisons (migration 003)
+
+Apply only `supabase/migrations/003_personal_comparisons.sql` on the existing
+project, then run the whole `supabase/tests/personal-comparisons.sql` as postgres.
+The latter rolls back all fixtures and is included in local PGlite tests. It
+checks owner-derived writes, required impressions, request validation, immutable
+timestamps/votes, identical retries, conflicting request reuse, cross-account
+privacy and anonymous denial. Earlier migrations must not be rerun.
+
+Hosted application and actual comparison RPC/device checks are pending. After
+deployment, use two saved sample-venue impressions on the test account, explicitly
+choose a winner, and verify a new session restores its ranking. Retry with the
+same request ID and verify the history count increases only once. A new request
+ID is a new vote; these append-only test votes cannot be deleted by the client.

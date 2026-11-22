@@ -1,6 +1,9 @@
 // Portable database DTOs shared by the backend and mobile adapters. No native
 // modules or service credentials belong in this module.
 export type ImpressionValue = 'liked' | 'fine' | 'disliked';
+export type SavedComparisonRow = {
+  id: string; user_id: string; winner_bar_id: string; loser_bar_id: string; created_at: string;
+};
 export type SavedImpressionRow = {
   user_id: string; bar_id: string; impression: ImpressionValue;
   eligible_for_community: boolean; created_at: string; updated_at: string;
@@ -24,6 +27,14 @@ const count = (value: unknown): value is number => finite(value) && Number.isSaf
 const time = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const score = (value: unknown) => value === null || (finite(value) && value >= 1 && value <= 5);
 const nullableText = (value: unknown) => value === null || typeof value === 'string';
+
+export function decodeSavedComparison(value: unknown, userId: string): SavedComparisonRow {
+  if (!record(value) || !uuid(value.id) || !uuid(value.user_id) || value.user_id !== userId ||
+    !uuid(value.winner_bar_id) || !uuid(value.loser_bar_id) || value.winner_bar_id === value.loser_bar_id ||
+    !time(value.created_at)) throw new Error('Invalid comparison response');
+  return { id: value.id, user_id: value.user_id, winner_bar_id: value.winner_bar_id,
+    loser_bar_id: value.loser_bar_id, created_at: new Date(value.created_at).toISOString() };
+}
 
 export function decodeDrink(value: unknown): CatalogDrinkRow {
   if (!record(value) || !uuid(value.id) || typeof value.name !== 'string' || typeof value.category !== 'string' ||

@@ -1,5 +1,22 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  "Personal comparisons": "Personal comparisons",
+  "Close": "Close",
+  "Which do you prefer?": "Which do you prefer?",
+  "Start comparisons": "Start comparisons",
+  "Your comparisons could not be loaded.": "Your comparisons could not be loaded.",
+  "Loading your comparisons…": "Loading your comparisons…",
+  "Retry comparisons": "Retry comparisons",
+  "Only your explicit picks build your ranking. Skipping creates no vote.": "Only your explicit picks build your ranking. Skipping creates no vote.",
+  "Save your impression before comparing this venue.": "Save your impression before comparing this venue.",
+  "Save an impression for another venue to start comparing.": "Save an impression for another venue to start comparing.",
+  "A venue in this comparison is unavailable. Refresh venues and try again.": "A venue in this comparison is unavailable. Refresh venues and try again.",
+  "Saving your choice…": "Saving your choice…",
+  "Your choice could not be confirmed. Retry the same choice to avoid a duplicate vote.": "Your choice could not be confirmed. Retry the same choice to avoid a duplicate vote.",
+  "Retry choice": "Retry choice",
+  "Comparison batch finished.": "Comparison batch finished.",
+  "Saved choices survive reloads. Unfinished batches reset when the app restarts or you sign out.": "Saved choices survive reloads. Unfinished batches reset when the app restarts or you sign out.",
+  "Refresh rankings": "Refresh rankings",
   "Compare prices across venues": "Compare prices across venues",
   "View community-reported prices across venues": "View community-reported prices across venues",
 

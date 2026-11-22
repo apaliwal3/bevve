@@ -24,6 +24,20 @@ Bathroom reviews have one row per user and venue. Users can replace their own ra
 
 Pairwise comparisons are private and append-only. Personal Elo ratings start at 1000 and use K=32. Services retrieve all pages and replay in timestamp/ID order. This is a prototype algorithm; a very large history should move to server-side calculation or a maintained ranking snapshot. Concurrent submissions during pagination can require a subsequent refresh.
 
+Migration 003 adds `submit_personal_comparison`: a definer RPC with an empty search
+path that derives ownership from Auth, requires saved impressions for both venues,
+assigns time on the server and returns an immutable vote. A UUID identifies one
+explicit choice; identical retries return that vote and conflicting reuse fails.
+The original table grants are unchanged. The mobile store confirms writes before
+updating rankings and retains uncertain choices for retry with the same ID.
+History refresh can also recover a committed vote whose response was lost.
+
+Account batches offer at most three distinct experienced opponents. They remain
+in memory across route/modal changes, reset on restart/sign-out, and never upload
+guest history. Rankings restore exclusively from owned server votes; impression
+edits and skips do not alter Elo. Raw scores remain outside the account UI context.
+Migration 003 is locally tested; hosted deployment/API checks are pending.
+
 Safety reports remain private to their reporter and moderators. A privileged database function checks a separate moderator allowlist, locks the report, records the decision, and creates a separate public summary in one transaction. Each report can be reviewed once. A private table links reports to publications. Corrections, withdrawal, and appeals need a later audited workflow. Do not include personal information in public summaries.
 
 ## Connected catalog and impressions
@@ -48,7 +62,7 @@ administrator-maintained; missing metadata/distance values are not fabricated.
 
 ## Not yet implemented
 
-- Remaining contribution-write and personal-comparison integration in mobile.
+- Remaining crowd/bathroom/price/language/incident contribution-write integration in mobile.
 - Full generated TypeScript database types. Current service queries rely on Supabase's default client typing; generate types from the deployed schema and parameterize the client before expanding the project.
 - Submission throttling, account abuse prevention, and operational monitoring. Latest-per-account crowd aggregation is not a rate limiter.
 - Account deletion/export, retention rules, moderation audit history, and publication withdrawal.

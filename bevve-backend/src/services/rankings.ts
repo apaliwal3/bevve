@@ -1,12 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { currentUser, result } from './shared.ts';
 import { calculateRankings, type Comparison } from '../logic/eloRanking.ts';
+import { decodeSavedComparison } from '../../../shared/venue-contracts.ts';
 export function rankingsService(client: SupabaseClient) {
   return {
-    async submitComparison(winnerBarId: string, loserBarId: string) {
+    // Generate requestId once per explicit choice and reuse it for retries.
+    async submitComparison(winnerBarId: string, loserBarId: string, requestId: string) {
       if (winnerBarId === loserBarId) throw new Error('Choose two different bars');
-      return result(client.from('bar_comparisons').insert({ user_id: await currentUser(client),
-        winner_bar_id: winnerBarId, loser_bar_id: loserBarId }));
+      const userId = await currentUser(client);
+      const data = await result(client.rpc('submit_personal_comparison', {
+        p_request_id: requestId, p_winner_bar_id: winnerBarId, p_loser_bar_id: loserBarId,
+      }).single());
+      const row = decodeSavedComparison(data, userId);
+      if (row.id !== requestId || row.winner_bar_id !== winnerBarId || row.loser_bar_id !== loserBarId)
+        throw new Error('Mismatched comparison response');
+      return row;
     },
     async getMyRankings() {
       const userId = await currentUser(client);

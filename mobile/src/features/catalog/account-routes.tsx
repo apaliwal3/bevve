@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import { AccountPanel } from '@/features/auth/account-panel';
 import { BarDetailsScreen, MissingVenueScreen } from '@/features/venues/bar-details-screen';
-import { navigateBackFromBarDetails, resolveBarDetailsBack, venueFromProfileHref } from '@/features/venues/bar-details-navigation';
+import { navigateBackFromBarDetails, resolveBarDetailsBack, venueFromProfileHref, venueFromRankingsHref } from '@/features/venues/bar-details-navigation';
 import { PriceComparisonScreen } from '@/features/prices/price-comparison-screen';
 import { adaptRpcPriceComparison } from '@/features/prices/price-comparison';
 import { priceComparisonHref, priceOriginHref, resolvePriceNavigation, venueFromPricesHref, type PriceRouteParams } from '@/features/prices/price-navigation';
@@ -19,6 +19,9 @@ import { catalogDetails, catalogReadData, catalogVenue, savedImpressions } from 
 import { CatalogFeedback } from './catalog-feedback';
 import { AccountImpressionEditor } from './account-impression-editor';
 import type { AccountCatalogValue } from './catalog-provider';
+import { useAccountComparisons } from '@/features/comparisons/account-comparisons-provider';
+import { AccountComparisonFeedback, AccountComparisonPanel } from '@/features/comparisons/account-comparison-panel';
+import { RankedVenueRow } from '@/features/rankings/ranked-venue-row';
 
 export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogValue }) {
   const { t } = useTranslation();
@@ -36,17 +39,25 @@ export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogVal
     <BarDetailsScreen venue={result.venue} details={catalogDetails(row)} account={catalogReadData(row, catalog.impressions[row.id])}
       onBack={goBack} backLabel={t(back.label)} onEditImpression={() => setEditing(true)}
       onComparePrices={() => router.push(priceComparisonHref(navigation.drink?.id ?? catalog.drinks[0]?.id ?? null, row.id))} />
-    {editing && <AccountImpressionEditor key={row.id} catalog={catalog} barId={row.id} name={row.name} onClose={() => setEditing(false)} />}
+    {editing && <AccountImpressionEditor key={row.id} catalog={catalog} barId={row.id} name={row.name} onClose={() => setEditing(false)}>
+      <AccountComparisonPanel catalog={catalog} barId={row.id} />
+    </AccountImpressionEditor>}
   </>;
 }
 
 export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue }) {
   const { t, format } = useTranslation();
+  const comparisons = useAccountComparisons();
   const activity = selectProfileContributions({ impressions: savedImpressions(catalog.impressions, catalog.venues), crowdReports: [], bathroomReviews: [], priceObservations: [] }, catalog.userId, catalog.venues.map(catalogVenue), catalog.drinks);
   return <ScreenContainer contentContainerStyle={styles.content}>
     <Text accessibilityRole="header" style={styles.title}>{t('Profile')}</Text>
     <AccountPanel />
     <CatalogFeedback catalog={catalog} />
+    <AccountComparisonFeedback />
+    {comparisons.status === 'ready' && <>
+      <Text style={styles.note}>{t('{count} personal comparisons completed', { count: comparisons.rankings.completedCount })}</Text>
+      <PrimaryButton label={t('My Rankings')} variant="secondary" onPress={() => router.navigate('/rankings')} />
+    </>}
     {catalog.status === 'ready' && <ProfileActivitySection title={t('My impressions')} count={activity.counts.impressions}
       icon="profile" hint={t('One editable impression per venue, saved to your account.')} emptyHint={t('Open a venue and use + to share your impression.')}>
       {activity.impressions.map(entry => <ProfileActivityRow key={entry.venue.id} venue={entry.venue}
@@ -58,11 +69,25 @@ export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue
   </ScreenContainer>;
 }
 
-export function AccountRankingsScreen() {
+export function AccountRankingsScreen({ catalog }: { catalog: AccountCatalogValue }) {
   const { t } = useTranslation();
+  const comparisons = useAccountComparisons();
+  const { entries, completedCount } = comparisons.rankings;
   return <ScreenContainer contentContainerStyle={styles.content}>
     <Text accessibilityRole="header" style={styles.title}>{t('My Rankings')}</Text>
-    <Text style={styles.note}>{t('Impressions and rankings are separate. Personal comparisons are coming soon.')}</Text>
+    <Text style={styles.note}>{t('Your preferences, separate from community opinions and bathroom reviews.')}</Text>
+    <CatalogFeedback catalog={catalog} />
+    <AccountComparisonFeedback />
+    {comparisons.status === 'ready' && catalog.status === 'ready' && <>
+      <Text accessibilityLiveRegion="polite" style={styles.note}>{t('{count} personal comparisons completed', { count: completedCount })}</Text>
+      {entries.map(entry => <View key={entry.venue.id}>
+        {catalog.venues.find(row => row.id === entry.venue.id)?.is_demo && <Text style={styles.note}>{t('Sample venue')}</Text>}
+        <RankedVenueRow entry={entry} onPress={() => router.push(venueFromRankingsHref(entry.venue.id))} />
+      </View>)}
+      {entries.length === 0 && <Text style={styles.note}>{t('Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.')}</Text>}
+    </>}
+    <PrimaryButton label={comparisons.refreshing || catalog.refreshing ? t('Please wait…') : t('Refresh rankings')} disabled={comparisons.refreshing || catalog.refreshing} variant="secondary"
+      onPress={() => { void comparisons.refresh(); void catalog.refresh(); }} />
     <PrimaryButton label={t('My impressions')} onPress={() => router.navigate('/profile')} />
     <PrimaryButton label={t('Explore venues')} variant="secondary" onPress={() => router.navigate('/explore')} />
   </ScreenContainer>;

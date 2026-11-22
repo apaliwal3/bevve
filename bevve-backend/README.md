@@ -6,6 +6,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
 
 - `supabase/migrations/001_backend.sql`: tables, constraints, authentication profile trigger, row-level security, crowd/bathroom aggregates, price comparison, and moderation.
 - `supabase/migrations/002_catalog_impressions.sql`: mobile catalog metadata, aggregate reads and private per-user impressions.
+- `supabase/migrations/003_personal_comparisons.sql`: retry-safe explicit comparison submission with owner and timestamp assigned by the server. Prepared and locally tested; hosted application is pending.
 - `supabase/seed.sql`: three fictional venues and two standardized drinks.
 - `src/services/`: functions the future mobile app can call.
 - `src/logic/eloRanking.ts`: personal rankings from pairwise comparisons.
@@ -126,11 +127,26 @@ migration 002 and passed the hosted catalog/impression SQL check. The API write
 check also confirmed save, reload through a second sign-in session, and edit
 without adding a second row. One sample impression remains on the test account.
 
-Local PostgreSQL tests cover both migrations, repeatable rollback checks, a broken
+Local PostgreSQL tests cover all three migrations, repeatable rollback checks, a broken
 ownership policy, and catalog pagination beyond fifty rows. These do not replace
 physical-device checks or full GoTrue/PostgREST write coverage for the remaining
-features. Mobile catalog reads and impression writes are now connected; other
-contribution writes and personal comparisons remain guest-demo-only.
+features. Mobile catalog reads and impression writes are connected. Personal
+comparisons and ordinal rankings are implemented and require migration 003;
+other contribution writes remain guest-demo-only.
+
+On the existing hosted project, apply **only** migration 003, then run the entire
+`supabase/tests/personal-comparisons.sql` in SQL Editor. The check rolls back all
+fixtures and verifies ownership, required saved impressions, immutable votes,
+server time, duplicate retries, conflicting request IDs and anonymous denial.
+Do not rerun the already deployed 001/002 migrations. Local PostgreSQL checks pass;
+hosted comparison RPC and physical-device verification are pending.
+
+`rankingsService(client).submitComparison(winnerBarId, loserBarId, requestId)`
+requires a UUID generated once for the explicit choice and reused for retries.
+The RPC returns the confirmed vote and never updates an existing vote. Different
+request IDs represent different explicit choices. It requires the caller to have
+saved an impression for both venues. Existing history and original ownership/
+column-level restrictions are preserved.
 
 ## References
 

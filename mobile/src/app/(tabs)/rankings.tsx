@@ -7,7 +7,7 @@ import { AccountRankingsScreen } from '@/features/catalog/account-routes';
 
 export default function RankingsRoute() {
   const catalog = useVenueCatalog();
-  if (catalog.mode === 'account') return <AccountRankingsScreen />;
+  if (catalog.mode === 'account') return <AccountRankingsScreen catalog={catalog} />;
   return (
     <PersonalRankingsScreen
       onExplore={() => router.navigate('/explore')}

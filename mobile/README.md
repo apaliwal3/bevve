@@ -93,7 +93,8 @@ as database join keys.
 
 Sign in, open Explore, select a venue, tap `+`, choose an impression and tap
 **Save impression**. The modal confirms only a successful server response.
-**Cancel** saves nothing. A failure keeps the selected draft and allows retry.
+**Close** discards an unsaved impression draft; confirmed writes remain saved.
+A failure keeps the selected draft and allows retry.
 Profile shows one current impression per venue, including edits. Reload the app,
 open the same venue/Profile and confirm the saved answer remains. Sign out/in
 or use a second device to verify account persistence. A different account must
@@ -106,12 +107,34 @@ venues never display purported real community percentages. Distances remain
 unavailable until real location support exists. All/Cheap/Quiet/Popular filters
 use catalog metadata and reported summaries.
 
-This step connects catalog reads and impression writes. Authenticated `+` opens
-the impression editor; comparisons and crowd/bathroom/price/language/incident
-writes remain available only in the separate guest demo. Signed-in Rankings
-explains that personal comparisons are coming soon. Price comparison is read-only
-and uses the database drink catalog. Guest state resets when accounts change;
-server impressions remain intact.
+Authenticated `+` opens the impression editor and personal comparisons. Apply the
+new `003_personal_comparisons.sql` migration and run
+`supabase/tests/personal-comparisons.sql` in SQL Editor to enable retry-safe
+comparison writes; hosted application/verification is pending. Do not rerun 001
+or 002 on the existing project.
+
+Save impressions for two venues, then tap **Start comparisons**. Batches offer at
+most three distinct opponents from your saved database experience. Picking a
+venue saves one private vote before updating rankings. Skip one/all creates no
+vote, and editing an impression never affects Elo. New batches require an
+explicit **Compare this bar again** action. Reopening a venue resumes its current
+prompt without creating a new batch or vote. Closing a modal does not cancel an
+in-flight save. A failed/uncertain save retains the original choice and request
+ID; retry that choice or refresh comparison history to confirm it. Changing the
+choice/skipping is disabled until that uncertain write is confirmed.
+
+History restores across app restarts and sessions; unfinished batches are held
+only in the current session and reset on restart/sign-out. Rankings show ordinal
+positions without raw Elo. Profile shows confirmed comparison counts and links
+to Rankings. Crowd/bathroom/price/language/incident writes remain guest-demo-only.
+Price comparison remains read-only. Guest activity is never merged into an
+account.
+
+After deploying 003, manually verify rapid repeated choice taps, retry after a
+lost response, skip one/all, closing/reopening, navigation from Rankings back to
+Rankings, app restart and account switching. Confirm choices persist and batches
+reset on restart, and that editing an impression adds no vote. The app remains
+English-only. Physical-device and hosted comparison API verification are pending.
 
 Manual device checks: save all three choices, edit one venue, reload, sign out/in,
 verify Profile counts once, cancel a draft, retry a failed network save and check

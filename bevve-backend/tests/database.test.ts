@@ -8,6 +8,8 @@ const seed = readFileSync(new URL('../supabase/seed.sql', import.meta.url), 'utf
 const accessChecks = readFileSync(new URL('../supabase/tests/access.sql', import.meta.url), 'utf8');
 const catalogMigration = readFileSync(new URL('../supabase/migrations/002_catalog_impressions.sql', import.meta.url), 'utf8');
 const catalogChecks = readFileSync(new URL('../supabase/tests/catalog-impressions.sql', import.meta.url), 'utf8');
+const comparisonMigration = readFileSync(new URL('../supabase/migrations/003_personal_comparisons.sql', import.meta.url), 'utf8');
+const comparisonChecks = readFileSync(new URL('../supabase/tests/personal-comparisons.sql', import.meta.url), 'utf8');
 
 async function database() {
   const db = new PGlite();
@@ -25,9 +27,22 @@ async function database() {
   `);
   await db.exec(migration);
   await db.exec(catalogMigration);
+  await db.exec(comparisonMigration);
   await db.exec(seed);
   return db;
 }
+
+test('personal comparison requests are private, immutable and retry-safe, with rollback on repeat checks', async () => {
+  const db = await database();
+  try {
+    for (let run = 0; run < 2; run++) {
+      const results = await db.exec(comparisonChecks);
+      assert.deepEqual(results.at(-1)?.rows, [{ result: 'Personal comparison checks passed. All test data was rolled back.' }]);
+      assert.deepEqual((await db.query('select count(*)::int n from public.bar_comparisons')).rows, [{ n: 0 }]);
+      assert.deepEqual((await db.query('select count(*)::int n from auth.users')).rows, [{ n: 0 }]);
+    }
+  } finally { await db.close(); }
+});
 
 test('the database migration, seed, and access checks run repeatedly without leaving test data', async () => {
   const db = await database();

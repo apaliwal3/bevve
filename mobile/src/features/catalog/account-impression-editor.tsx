@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrimaryButton } from '@/components/primary-button';
@@ -8,8 +8,8 @@ import type { Impression } from '@/features/impressions/impression-state';
 import { useTranslation } from '@/localization/language-provider';
 import type { AccountCatalogValue } from './catalog-provider';
 
-export function AccountImpressionEditor({ catalog, barId, name, onClose }: {
-  catalog: AccountCatalogValue; barId: string; name: string; onClose: () => void;
+export function AccountImpressionEditor({ catalog, barId, name, onClose, children }: {
+  catalog: AccountCatalogValue; barId: string; name: string; onClose: () => void; children?: ReactNode;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -49,7 +49,8 @@ export function AccountImpressionEditor({ catalog, barId, name, onClose }: {
         {error && <Text accessibilityRole="alert" style={styles.note}>{t('Your impression could not be saved. Check your connection and try again.')}</Text>}
         {saved && <Text accessibilityLiveRegion="polite" style={styles.note}>{t('Saved to your account')}</Text>}
         <PrimaryButton label={saving ? t('Saving impression…') : t('Save impression')} disabled={saving || !draft || unchanged} onPress={() => { void save(); }} />
-        <PrimaryButton variant="secondary" label={saved ? t('Done') : t('Cancel')} disabled={saving} onPress={close} />
+        {children}
+        <PrimaryButton variant="secondary" label={children ? t('Close') : saved ? t('Done') : t('Cancel')} disabled={saving} onPress={close} />
       </ScrollView>
     </View>
   </Modal>;

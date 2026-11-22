@@ -24,9 +24,19 @@ the original fictional, in-memory demo. The interface is English-only.
 - Catalog loading/error/retry states, manual refresh, foreground refresh and
   account-change isolation. Failed reads never fall back to guest fixtures.
 
-Signed-in comparisons and other contribution writes are not connected in this
-stage. Rankings shows a coming-soon state; the full demo flow remains available
-when signed out. Price comparison uses the database drink UUID and serving size.
+Personal comparisons and rankings are implemented for signed-in accounts and
+require the new `003_personal_comparisons.sql` migration (hosted application is
+pending). The venue `+` editor offers **Start comparisons** after saving impressions
+for two venues. Only explicit picks affect rankings; impressions and skips do not.
+Other contribution writes remain in the guest demo. Price comparison uses the
+database drink UUID and serving size.
+
+Comparison history restores from Supabase across sessions. Each batch offers at
+most three distinct experienced opponents and survives navigation in the current
+session; unfinished batches reset on app restart or sign-out. Retried choices
+reuse a request ID, including when a server response was lost. Rankings and Profile
+show confirmed comparison counts, with raw Elo values hidden. Guest activity is
+never uploaded.
 
 ## Guest demo features
 
@@ -188,7 +198,14 @@ separate `check:impressions` command tests actual API writes and session reloads
 on a sample venue, restoring a previous impression if one existed. Otherwise it
 leaves one sample impression on the configured test account.
 
-Remaining integration includes authenticated personal comparisons, crowd/bathroom/
-price writes, pending venue-language suggestions, incident submission/moderation
+To enable authenticated comparison writes on the existing hosted project, apply
+only `bevve-backend/supabase/migrations/003_personal_comparisons.sql`, then run
+`bevve-backend/supabase/tests/personal-comparisons.sql` in SQL Editor. The check
+rolls back its fixtures. Both earlier migrations are already deployed and must
+not be rerun. Migration 003 passes local PostgreSQL checks; hosted RPC/device
+verification is pending.
+
+Remaining integration includes crowd/bathroom/price writes, pending
+venue-language suggestions, incident submission/moderation
 UI, and contribution-history views. The legacy guest fixture UUIDs/servings are
 not database IDs and are never matched to catalog rows by name.
