@@ -7,6 +7,7 @@ import { createCatalogStore } from './catalog-store';
 
 type CatalogValue = { mode: 'demo' } | ({ mode: 'account'; userId: string } & ReturnType<ReturnType<typeof createCatalogStore>['getSnapshot']> & {
   refresh: ReturnType<typeof createCatalogStore>['refresh']; save: ReturnType<typeof createCatalogStore>['save'];
+  invalidate: ReturnType<typeof createCatalogStore>['invalidate'];
 });
 const CatalogContext = createContext<CatalogValue | null>(null);
 const demo = { mode: 'demo' as const };
@@ -26,7 +27,7 @@ function AccountCatalog({ children, userId }: PropsWithChildren<{ userId: string
     const timer = setInterval(() => { if (AppState.currentState === 'active') void store.refresh(); }, 60_000);
     return () => { listener.remove(); clearInterval(timer); };
   }, [store]);
-  const value = useMemo<CatalogValue>(() => ({ mode: 'account', userId, ...snapshot, refresh: store.refresh, save: store.save }), [snapshot, store, userId]);
+  const value = useMemo<CatalogValue>(() => ({ mode: 'account', userId, ...snapshot, refresh: store.refresh, save: store.save, invalidate: store.invalidate }), [snapshot, store, userId]);
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }
 

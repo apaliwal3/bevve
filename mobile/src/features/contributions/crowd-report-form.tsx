@@ -8,6 +8,7 @@ import { crowdLevelKeys } from '@/localization/venue-copy';
 
 import { crowdDraftReducer } from './contribution-drafts';
 import type { CrowdLevel, SessionCrowdReport } from './contribution-state';
+import type { ContributionFormFeedback } from './contribution-form-feedback';
 
 const options: { level: CrowdLevel }[] = [
   { level: 1 },
@@ -22,12 +23,15 @@ type CrowdReportFormProps = {
   disabled?: boolean;
   onSubmit: (level: CrowdLevel) => void;
   onCancel: () => void;
+  feedback?: ContributionFormFeedback;
+  initialLevel?: CrowdLevel;
 };
 
-export function CrowdReportForm({ savedReport, disabled = false, onSubmit, onCancel }: CrowdReportFormProps) {
+export function CrowdReportForm({ savedReport, disabled: parentDisabled = false, onSubmit, onCancel, feedback, initialLevel }: CrowdReportFormProps) {
   const { t, format } = useTranslation();
-  const [level, dispatchDraft] = useReducer(crowdDraftReducer, savedReport?.level ?? null);
+  const [level, dispatchDraft] = useReducer(crowdDraftReducer, initialLevel ?? savedReport?.level ?? null);
   const [success, setSuccess] = useState(false);
+  const disabled = parentDisabled || Boolean(feedback?.pending);
 
   function cancel() {
     dispatchDraft({ type: 'cancel', saved: savedReport?.level ?? null });
@@ -59,11 +63,13 @@ export function CrowdReportForm({ savedReport, disabled = false, onSubmit, onCan
         ))}
       </View>
       {savedReport && <Text style={styles.hint}>{t('Last saved: {date}', { date: format.dateTime(savedReport.created_at) })}</Text>}
-      {success && <Text accessibilityLiveRegion="polite" style={styles.success}>{t("Crowd report saved for this session.")}</Text>}
+      {success && (!feedback || feedback.saved) && <Text accessibilityLiveRegion="polite" style={styles.success}>{feedback ? t('Crowd report saved to your account.') : t("Crowd report saved for this session.")}</Text>}
+      {feedback?.saving && <Text accessibilityLiveRegion="polite" style={styles.hint}>{t('Saving contribution…')}</Text>}
+      {feedback?.error && <Text accessibilityRole="alert" style={styles.hint}>{t('Your contribution could not be confirmed. Retry to save the same details without duplicates.')}</Text>}
       <Text style={styles.hint}>{t("Only your latest report counts. A crowd classification needs at least 3 recent contributors.")}</Text>
       <View style={styles.actions}>
         <PrimaryButton label={t("Cancel")} variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
-        <PrimaryButton label={t("Submit crowd")} disabled={level === null || disabled} onPress={submit} style={styles.button} />
+        <PrimaryButton label={feedback?.pending ? t('Retry save') : t("Submit crowd")} disabled={parentDisabled || feedback?.saving || (level === null && !feedback?.pending)} onPress={feedback?.pending ? feedback.retry : submit} style={styles.button} />
       </View>
     </View>
   );

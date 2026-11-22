@@ -7,6 +7,13 @@ function deferred() { let resolve, reject; const promise = new Promise((yes, no)
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const data = (impressions = []) => ({ venues: [venue()], drinks: [], impressions });
 
+test('a contribution invalidation during an older catalog read queues a fresh aggregate read', async () => {
+  const oldRead=deferred();let loads=0;
+  const store=createCatalogStore(userId,{load:async()=>++loads===2?oldRead.promise:{...data(),venues:[venue({crowd:{score:3,report_count:1,newest_report_at:'2026-11-22T18:00:00Z',classification:null}})]},save:async()=>impression()});
+  const stop=store.start();await tick();const refresh=store.refresh();store.invalidate();store.invalidate();
+  oldRead.resolve(data());await refresh;await tick();assert.equal(loads,3);assert.equal(store.getSnapshot().venues[0].crowd.report_count,1);stop();
+});
+
 test('load failures expose an error without demo fallback, and a retry loads database rows', async () => {
   let offline = true;
   const store = createCatalogStore(userId, { load: async () => { if (offline) throw new Error('offline'); return data(); }, save: async () => impression() });

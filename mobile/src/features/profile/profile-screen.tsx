@@ -67,7 +67,7 @@ export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }:
           emptyHint={t("Rate cleanliness, accessibility and waiting time in a venue’s + overlay.")}>
           {activity.bathrooms.map((entry) => (
             <ProfileActivityRow key={entry.venue.id} venue={entry.venue}
-              summary={t('Cleanliness {clean}/5 · Accessibility {access}/5 · Waiting time {wait}/5 · Updated {date}', { clean: entry.cleanliness, access: entry.accessibility, wait: entry.waitTime, date: format.dateTime(entry.updatedAt) })}
+              summary={t('Cleanliness {clean}/5 · Accessibility {access}/5 · Waiting time {wait}/5 · Updated {date}', { clean: entry.cleanliness, access: entry.accessibility ?? t('Unavailable'), wait: entry.waitTime ?? t('Unavailable'), date: format.dateTime(entry.updatedAt) })}
               onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>

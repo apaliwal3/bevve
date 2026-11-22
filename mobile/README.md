@@ -126,9 +126,43 @@ choice/skipping is disabled until that uncertain write is confirmed.
 History restores across app restarts and sessions; unfinished batches are held
 only in the current session and reset on restart/sign-out. Rankings show ordinal
 positions without raw Elo. Profile shows confirmed comparison counts and links
-to Rankings. Crowd/bathroom/price/language/incident writes remain guest-demo-only.
-Price comparison remains read-only. Guest activity is never merged into an
-account.
+to Rankings. Language/incident writes remain guest-demo-only. Price comparison
+remains read-only; price submissions use a separate optional form in the venue's
+`+` overlay. Guest activity is never merged into an account.
+
+Account crowd reports, bathroom reviews and drink prices require the new
+`004_venue_contributions.sql` migration, followed by
+`supabase/tests/venue-contributions.sql` in SQL Editor. Apply 003 first if still
+unapplied; do not rerun 001/002. Migration 004 is locally tested; hosted
+application/API checks are pending.
+
+The same inline **Report crowd**, **Rate bathrooms** and **Update drink prices**
+cards appear after the account comparison section, once an impression is saved.
+All are optional. Crowd submissions append history, prefill the latest own level,
+and count only the latest report per contributor in the 45-minute window; at
+least three contributors are required for a classification. Bathroom forms
+prefill the owner's existing review, keeping legacy unknown fields unselected.
+All three ratings are required to save an edit, which replaces the current
+review. Prices use the database catalog and exact serving UUID, prefill the
+latest reported venue price, and accept EUR amounts from €0.50 to €100. Each
+correction appends a new observation.
+
+Profile restores all crowd reports, one current bathroom review per venue and
+the user's EUR price history. Loading failures show retry controls, without
+showing empty success states or guest fixtures. Successful writes refresh venue
+summaries, Explore filters, and read-only price comparison. Rankings are unchanged.
+Pending/uncertain writes lock their submitted details and retain the request
+while navigating or reopening the form. Retry reuses the original request for
+append-only crowd/price writes; bathroom retry upserts the same review. Restart
+or sign-out clears local pending requests; confirmed server history restores.
+
+After deploying 004, check each form with a successful save, failed connection,
+retry, rapid double tap, closing/reopening and a full app reload. Edit a bathroom
+review and confirm its identity/count stays unchanged. Test legacy null category
+prefills, two database servings of the same drink name, comma/point decimals,
+empty catalogs and another account's history. Verify updated public summaries,
+the crowd contributor threshold, Profile history and unchanged ranking positions.
+Physical-device and hosted contribution API verification are pending.
 
 After deploying 003, manually verify rapid repeated choice taps, retry after a
 lost response, skip one/all, closing/reopening, navigation from Rankings back to

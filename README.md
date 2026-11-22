@@ -28,8 +28,9 @@ Personal comparisons and rankings are implemented for signed-in accounts and
 require the new `003_personal_comparisons.sql` migration (hosted application is
 pending). The venue `+` editor offers **Start comparisons** after saving impressions
 for two venues. Only explicit picks affect rankings; impressions and skips do not.
-Other contribution writes remain in the guest demo. Price comparison uses the
-database drink UUID and serving size.
+Crowd reports, bathroom reviews and drink-price submissions are implemented for
+accounts and require migration `004_venue_contributions.sql` (hosted application
+is pending). Price comparison uses the database drink UUID and serving size.
 
 Comparison history restores from Supabase across sessions. Each batch offers at
 most three distinct experienced opponents and survives navigation in the current
@@ -37,6 +38,15 @@ session; unfinished batches reset on app restart or sign-out. Retried choices
 reuse a request ID, including when a server response was lost. Rankings and Profile
 show confirmed comparison counts, with raw Elo values hidden. Guest activity is
 never uploaded.
+
+The same optional inline cards used in the demo appear below account comparisons.
+Crowd submissions retain report history; only the latest report per contributor
+within 45 minutes enters the crowd aggregate, with three contributors required
+for a classification. Bathroom forms prefill the user's current review and edits
+replace that review. Price submissions use database drink/serving IDs, accept EUR
+amounts from €0.50 to €100, and append corrections without deleting earlier prices.
+All three histories appear in Profile and restore across sessions. Confirmed
+saves refresh public summaries; errors retain the pending details for retry.
 
 ## Guest demo features
 
@@ -171,7 +181,7 @@ and requires three distinct contributors. The demo has one session user, so
 repeated reports cannot create that consensus. Fictional crowd snapshots stay
 separately labeled.
 
-Prices are community-reported demonstration values, not verified offers.
+Prices are community-reported, not verified offers. Guest values are fictional.
 Language suggestions remain pending. Incident reports are saved only in memory,
 are not published, and do not reach a real moderation service. Safety sections
 contain no real verified public records. Venue photographs require network
@@ -198,14 +208,14 @@ separate `check:impressions` command tests actual API writes and session reloads
 on a sample venue, restoring a previous impression if one existed. Otherwise it
 leaves one sample impression on the configured test account.
 
-To enable authenticated comparison writes on the existing hosted project, apply
-only `bevve-backend/supabase/migrations/003_personal_comparisons.sql`, then run
-`bevve-backend/supabase/tests/personal-comparisons.sql` in SQL Editor. The check
-rolls back its fixtures. Both earlier migrations are already deployed and must
-not be rerun. Migration 003 passes local PostgreSQL checks; hosted RPC/device
-verification is pending.
+On the existing hosted project, apply migration 003 if it is still unapplied,
+then `bevve-backend/supabase/migrations/004_venue_contributions.sql` in SQL Editor.
+Do not rerun deployed migrations 001/002. Run the corresponding
+`supabase/tests/personal-comparisons.sql` and `supabase/tests/venue-contributions.sql`
+checks; they roll back fixtures. Migrations 003/004 pass local PostgreSQL checks;
+hosted RPC/device verification is pending. The new own-price RPC exposes only
+the caller's EUR history; raw price-table reads remain denied.
 
-Remaining integration includes crowd/bathroom/price writes, pending
-venue-language suggestions, incident submission/moderation
-UI, and contribution-history views. The legacy guest fixture UUIDs/servings are
+Remaining integration includes pending venue-language suggestions and incident
+submission/moderation UI. The legacy guest fixture UUIDs/servings are
 not database IDs and are never matched to catalog rows by name.

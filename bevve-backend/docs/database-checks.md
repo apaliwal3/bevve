@@ -58,3 +58,23 @@ deployment, use two saved sample-venue impressions on the test account, explicit
 choose a winner, and verify a new session restores its ranking. Retry with the
 same request ID and verify the history count increases only once. A new request
 ID is a new vote; these append-only test votes cannot be deleted by the client.
+
+## Venue contributions (migration 004)
+
+Apply `supabase/migrations/004_venue_contributions.sql` after any unapplied earlier
+migrations, then run the entire `supabase/tests/venue-contributions.sql` as postgres
+in SQL Editor. Do not rerun deployed migrations. The check rolls back fixtures.
+It verifies retry-safe append-only writes, server identity/time, rejected conflicts,
+exact drink/serving identity, preserved crowd/price history, bathroom edits/nulls,
+updated public aggregates, own-only reads, anonymous denial and unchanged votes.
+Local PGlite tests also check own-price pagination beyond 500 records and ensure
+other owners/currencies remain excluded.
+
+Hosted migration application and actual contribution API/device checks are pending.
+Use sample venues on the configured test account for later write smoke checks.
+Repeat a request UUID to confirm only one crowd/price row is created. A fresh
+request UUID is a new observation. Editing a bathroom review must keep its UUID
+and creation time, and a new session must restore its current category values.
+Verify another account cannot read or edit these contributions. Check price
+comparisons by database drink ID and exact serving, never by name. These
+append-only reports/prices cannot be deleted by the ordinary client.

@@ -41,7 +41,8 @@ export function AccountImpressionEditor({ catalog, barId, name, onClose, childre
 
   return <Modal transparent animationType="fade" onRequestClose={close}>
     <View style={[styles.backdrop, { paddingTop: Math.max(72, insets.top + 20), paddingBottom: Math.max(24, insets.bottom + 16) }]}>
-      <ScrollView accessibilityViewIsModal style={styles.panel} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView accessibilityViewIsModal style={styles.panel} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
         <Text accessibilityRole="header" style={styles.title}>{name}</Text>
         <Text style={styles.question}>{t('How was it?')}</Text>
         <ImpressionSelector value={draft} disabled={saving} onChange={value => { if (!busy.current) { setDraft(value); setSaved(false); } }} />

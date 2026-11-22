@@ -60,9 +60,25 @@ newer acknowledged save or populate the next account. Guest fixtures/session
 submissions are separate and are never uploaded. The hosted catalog remains
 administrator-maintained; missing metadata/distance values are not fabricated.
 
+Migration 004 connects account crowd reports, bathroom edits and drink prices in
+the existing optional inline forms. Crowd and price RPCs bind a request UUID to
+one immutable owner/payload, allowing identical retries after lost responses.
+Bathroom writes use the existing per-owner/venue upsert with server timestamps.
+Legacy null category values stay unknown until the user selects them. The
+own-price history RPC filters by `auth.uid()` and EUR without granting raw table
+access. Crowd/bathroom reads retain their existing own-only policies.
+
+The account contribution store pages through histories, scopes its lifetime to
+one signed-in user, confirms writes before updating Profile, and invalidates
+catalog summaries after a save. Catalog invalidation queues a follow-up if an
+older read is still pending. Uncertain writes retain their payload/request ID
+within the session. Append-only writes can also recover from refreshed server
+history; bathroom retries upsert the same review. No contribution action changes
+Elo or uploads guest state. Hosted migration/RPC/device checks are pending.
+
 ## Not yet implemented
 
-- Remaining crowd/bathroom/price/language/incident contribution-write integration in mobile.
+- Remaining language/incident contribution-write integration in mobile.
 - Full generated TypeScript database types. Current service queries rely on Supabase's default client typing; generate types from the deployed schema and parameterize the client before expanding the project.
 - Submission throttling, account abuse prevention, and operational monitoring. Latest-per-account crowd aggregation is not a rate limiter.
 - Account deletion/export, retention rules, moderation audit history, and publication withdrawal.

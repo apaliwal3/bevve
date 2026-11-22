@@ -1,0 +1,96 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { hookHarness } from './helpers/hook-harness.mjs';
+import { elements,loadNativeModule } from './helpers/native-module.mjs';
+import { createTranslator } from '../src/localization/translation.ts';
+import * as formatting from '../src/localization/formatting.ts';
+import * as drafts from '../src/features/contributions/contribution-drafts.ts';
+import * as extraDrafts from '../src/features/contributions/extra-form-drafts.ts';
+import * as extras from '../src/features/contributions/venue-extras-state.ts';
+import * as copy from '../src/localization/venue-copy.ts';
+import * as fixtureCatalog from '../src/fixtures/contribution-catalog.ts';
+import { drink } from './helpers/catalog-fixtures.mjs';
+
+const theme=loadNativeModule('src/constants/theme.ts');
+const formStyles=loadNativeModule('src/features/contributions/inline-form-styles.ts',{'@/constants/theme':theme});
+const translation={t:createTranslator('en'),format:formatting.createLocaleFormatters('en')};
+function setup(kind,extraProps={}){
+  const harness=hookHarness();let closed=0;
+  const names={crowd:['crowd-report-form','CrowdReportForm'],bathroom:['bathroom-review-form','BathroomReviewForm'],price:['drink-price-form','DrinkPriceForm']};
+  const [file,name]=names[kind];
+  const module=loadNativeModule(`src/features/contributions/${file}.tsx`,{
+    react:harness.react,'@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/constants/theme':theme,
+    '@/features/ratings/star-selector':{StarSelector:'StarSelector'},'@/fixtures/contribution-catalog':fixtureCatalog,
+    '@/localization/language-provider':{useTranslation:()=>translation},'@/localization/venue-copy':copy,
+    './contribution-drafts':drafts,'./extra-form-drafts':extraDrafts,'./venue-extras-state':extras,'./inline-form-styles':formStyles,
+  });
+  const props={savedReport:null,savedReview:null,prices:[],catalog:[drink],onCancel:()=>closed++,onSubmit:()=>{},...extraProps};
+  function render(){const tree=harness.render(()=>module[name](props));harness.effects();return [...elements(tree)];}
+  return{props,render,harness,get closed(){return closed;},button(label){return render().find(node=>node.props.label===label);}};
+}
+const feedback=()=>({pending:false,saving:false,error:false,saved:false,retry:()=>{}});
+
+test('account crowd reports show success only after server confirmation, disable pending edits and expose retry',()=>{
+  let calls=0,retries=0;
+  const state=feedback();state.retry=()=>retries++;
+  const ui=setup('crowd',{feedback:state,onSubmit:()=>{calls++;state.pending=true;state.saving=true;}});
+  ui.render().find(node=>node.props.accessibilityLabel==='3 Moderate').props.onPress();
+  ui.button('Submit crowd').props.onPress();assert.equal(calls,1);
+  let nodes=ui.render();assert.ok(!nodes.some(node=>node.props.children==='Crowd report saved to your account.'));
+  assert.equal(ui.button('Retry save').props.disabled,true);assert.ok(nodes.filter(node=>node.props.accessibilityRole==='radio').every(node=>node.props.disabled));
+  state.saving=false;state.error=true;assert.ok(ui.render().some(node=>node.props.accessibilityRole==='alert'));
+  ui.button('Retry save').props.onPress();assert.equal(retries,1);
+  state.pending=false;state.error=false;state.saved=true;
+  assert.ok(ui.render().some(node=>node.props.children==='Crowd report saved to your account.'));
+  ui.harness.unmount();
+});
+
+test('bathroom reviews prefill all saved fields, keep null unknowns unselected, and cancel without a write',()=>{
+  let writes=0;
+  const ui=setup('bathroom',{savedReview:{cleanliness:4,accessibility:null,wait_time:5},feedback:feedback(),onSubmit:()=>writes++});
+  const stars=ui.render().filter(node=>node.type==='StarSelector');
+  assert.deepEqual(stars.map(node=>node.props.value),[4,null,5]);assert.equal(ui.button('Submit ratings').props.disabled,true);
+  stars[1].props.onChange(3);assert.equal(ui.button('Submit ratings').props.disabled,false);
+  ui.button('Cancel').props.onPress();assert.equal(writes,0);assert.equal(ui.closed,1);
+  assert.deepEqual(ui.render().filter(node=>node.type==='StarSelector').map(node=>node.props.value),[4,null,5]);ui.harness.unmount();
+});
+
+test('bathroom failures keep draft scores, disable uncertain edits and show no false success',()=>{
+  const state=feedback();let submitted;
+  const ui=setup('bathroom',{savedReview:{cleanliness:2,accessibility:3,wait_time:4},feedback:state,onSubmit:value=>{submitted=value;state.pending=true;state.error=true;}});
+  ui.render().filter(node=>node.type==='StarSelector')[0].props.onChange(5);ui.button('Submit ratings').props.onPress();
+  assert.deepEqual({...submitted},{cleanliness:5,accessibility:3,wait_time:4});
+  const nodes=ui.render();assert.ok(nodes.filter(node=>node.type==='StarSelector').every(node=>node.props.disabled));
+  assert.equal(nodes.find(node=>node.type==='StarSelector').props.value,5);assert.ok(!nodes.some(node=>node.props.children==='Bathroom ratings saved to your account.'));ui.harness.unmount();
+});
+
+test('price submission uses database drink IDs and serving sizes with exact comma-decimal cents and current-price prefill',()=>{
+  let submitted;
+  const larger={...drink,id:'10000000-0000-4000-8000-000000000500',serving_ml:500};
+  const ui=setup('price',{catalog:[drink,larger],prices:[{id:drink.id,priceCents:600}],feedback:feedback(),onSubmit:(...args)=>{submitted=args;}});
+  let radios=ui.render().filter(node=>node.props.accessibilityRole==='radio');assert.equal(radios.length,2);
+  assert.ok(radios[0].props.accessibilityLabel.includes('330'));assert.ok(radios[1].props.accessibilityLabel.includes('500'));
+  radios[0].props.onPress();assert.equal(ui.render().find(node=>node.props.accessibilityLabel==='Drink price in euros').props.value,'6.00');
+  ui.render().find(node=>node.props.accessibilityLabel==='Drink price in euros').props.onChangeText('6,50');ui.button('Submit price').props.onPress();
+  assert.deepEqual(submitted,[drink.id,650]);assert.ok(!ui.render().some(node=>typeof node.props.children==='string'&&node.props.children.includes('saved for this demo session')));
+  radios=ui.render().filter(node=>node.props.accessibilityRole==='radio');radios[1].props.onPress();assert.equal(ui.render().find(node=>node.props.accessibilityLabel==='Drink price in euros').props.value,'');ui.harness.unmount();
+});
+
+test('failed price saves preserve the original draft, and reopening restores the pending database selection without fictional fallback',()=>{
+  const state={...feedback(),pending:true,error:true};
+  const ui=setup('price',{catalog:[drink],feedback:state,initialPrice:{drinkId:drink.id,priceCents:675}});
+  const nodes=ui.render();assert.equal(nodes.find(node=>node.props.accessibilityRole==='radio').props.accessibilityState.checked,true);
+  const input=nodes.find(node=>node.props.accessibilityLabel==='Drink price in euros');assert.equal(input.props.value,'6.75');assert.equal(input.props.editable,false);assert.equal(ui.button('Retry save').props.disabled,false);
+  assert.ok(!nodes.some(node=>typeof node.props.children==='string'&&node.props.children.includes('saved to your account.')));ui.harness.unmount();
+});
+
+test('an empty database drink catalog stays empty and cannot submit a fixture price',()=>{
+  const ui=setup('price',{catalog:[],feedback:feedback()});assert.equal(ui.render().filter(node=>node.props.accessibilityRole==='radio').length,0);
+  assert.equal(ui.button('Submit price').props.disabled,true);assert.ok(ui.render().some(node=>node.props.children==='No drinks are available in the catalog yet.'));ui.harness.unmount();
+});
+
+test('guest forms retain synchronous session-only success behavior',()=>{
+  let saved;
+  const ui=setup('crowd',{onSubmit:value=>saved=value});ui.render().find(node=>node.props.accessibilityLabel==='3 Moderate').props.onPress();ui.button('Submit crowd').props.onPress();
+  assert.equal(saved,3);assert.ok(ui.render().some(node=>node.props.children==='Crowd report saved for this session.'));ui.harness.unmount();
+});

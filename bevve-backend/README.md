@@ -7,6 +7,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
 - `supabase/migrations/001_backend.sql`: tables, constraints, authentication profile trigger, row-level security, crowd/bathroom aggregates, price comparison, and moderation.
 - `supabase/migrations/002_catalog_impressions.sql`: mobile catalog metadata, aggregate reads and private per-user impressions.
 - `supabase/migrations/003_personal_comparisons.sql`: retry-safe explicit comparison submission with owner and timestamp assigned by the server. Prepared and locally tested; hosted application is pending.
+- `supabase/migrations/004_venue_contributions.sql`: retry-safe crowd/price writes and a private own-price history RPC. Prepared and locally tested; hosted application is pending.
 - `supabase/seed.sql`: three fictional venues and two standardized drinks.
 - `src/services/`: functions the future mobile app can call.
 - `src/logic/eloRanking.ts`: personal rankings from pairwise comparisons.
@@ -127,12 +128,13 @@ migration 002 and passed the hosted catalog/impression SQL check. The API write
 check also confirmed save, reload through a second sign-in session, and edit
 without adding a second row. One sample impression remains on the test account.
 
-Local PostgreSQL tests cover all three migrations, repeatable rollback checks, a broken
+Local PostgreSQL tests cover all four migrations, repeatable rollback checks, a broken
 ownership policy, and catalog pagination beyond fifty rows. These do not replace
 physical-device checks or full GoTrue/PostgREST write coverage for the remaining
 features. Mobile catalog reads and impression writes are connected. Personal
 comparisons and ordinal rankings are implemented and require migration 003;
-other contribution writes remain guest-demo-only.
+crowd/bathroom/price contributions require migration 004. Language/incident
+writes remain guest-demo-only.
 
 On the existing hosted project, apply **only** migration 003, then run the entire
 `supabase/tests/personal-comparisons.sql` in SQL Editor. The check rolls back all
@@ -147,6 +149,22 @@ The RPC returns the confirmed vote and never updates an existing vote. Different
 request IDs represent different explicit choices. It requires the caller to have
 saved an impression for both venues. Existing history and original ownership/
 column-level restrictions are preserved.
+
+For the next contribution stage, apply `004_venue_contributions.sql` after 003,
+then run `supabase/tests/venue-contributions.sql` in SQL Editor. Do not rerun
+already-deployed migrations. The check rolls back all fixtures. Local tests pass;
+hosted application and contribution RPC/device verification are pending.
+
+`submit_crowd_report(requestId, barId, level)` and
+`submit_drink_price(requestId, barId, drinkId, priceCents)` derive the owner from
+Auth and return the confirmed row. Reuse each request UUID when retrying the
+same submission. Conflicting reuse fails. Price writes accept only EUR values
+from 50 to 10000 cents and rely on catalog foreign keys for exact serving identity.
+`get_my_drink_prices(offset)` returns only the caller's EUR history in stable
+500-row pages. Raw price reads remain denied. Existing direct service writes
+remain available for legacy clients; the connected mobile repository uses the
+new retry-safe RPCs. Bathroom writes use the existing owned upsert/read contract,
+preserve the row identity and original creation time, and return the saved review.
 
 ## References
 

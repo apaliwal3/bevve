@@ -67,6 +67,11 @@ export function createCatalogStore(userId: string, repository: Repository) {
       return () => { active = false; generation++; loading = null; pending.clear(); };
     },
     refresh,
+    invalidate() {
+      if (!active) return;
+      if (loading) refreshAgain = true;
+      else void refresh();
+    },
     save(barId: string, value: ImpressionValue): Promise<void> {
       if (!active || snapshot.status !== 'ready' || !snapshot.venues.some(venue => venue.id === barId) ||
         !['liked','fine','disliked'].includes(value)) return Promise.reject(new Error('Venue unavailable'));
