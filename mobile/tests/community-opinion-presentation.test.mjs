@@ -140,6 +140,7 @@ test('Profile renders the current saved impression once, without stars, in both 
     const activity = selectProfileContributions({ impressions: edited, crowdReports: [], bathroomReviews: [], priceObservations: [] }, SESSION_USER_ID, mockVenues, mockDrinkCatalog);
     const profile = loadNativeModule('src/features/profile/profile-screen.tsx', {
       ...common, '@/components/logo': { Logo: 'Logo' }, '@/fixtures/venues': { exploreMockUser: {} },
+      '@/features/auth/account-panel': { AccountPanel: 'AccountPanel' },
       '@/localization/translation': translations, './language-preference-feedback': { languagePreferenceFeedback: () => 'DEMO SESSION' },
       './profile-activity-components': { ProfileActivitySection: 'ActivitySection', ProfileActivityRow: 'ActivityRow' },
       '@/features/comparisons/personal-comparisons-provider': { useSavedImpressions: () => edited, usePersonalRankings: () => ({ entries: [], completedCount: 0 }) },

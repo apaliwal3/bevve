@@ -1,7 +1,7 @@
 export type AuthMode = 'login' | 'signup';
 export type LoginValues = { email: string; password: string };
 export type SignupValues = LoginValues & { username: string };
-export type AuthValidationError = 'Email is required.' | 'Enter a valid email address.' | 'Password is required.' | 'Password must be at least 6 characters.' | 'Username must be at least 2 characters.';
+export type AuthValidationError = 'Email is required.' | 'Enter a valid email address.' | 'Password is required.' | 'Password must be at least 6 characters.' | 'Username must be at least 2 characters.' | 'Username must be at most 40 characters.';
 export type AuthFormErrors = Partial<Record<keyof SignupValues, AuthValidationError>>;
 
 export const MIN_PASSWORD_LENGTH = 6;
@@ -32,6 +32,7 @@ export function validateLogin(values: LoginValues): AuthFormErrors {
 export function validateSignup(values: SignupValues): AuthFormErrors {
   const errors = validateLogin(values);
   if (values.username.trim().length < MIN_USERNAME_LENGTH) errors.username = 'Username must be at least 2 characters.';
+  if (values.username.trim().length > 40) errors.username = 'Username must be at most 40 characters.';
   return errors;
 }
 

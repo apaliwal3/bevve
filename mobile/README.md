@@ -28,8 +28,8 @@ npm start -- --go
 2. Put the computer and iPhone on the same Wi-Fi network for LAN mode.
 3. Scan the terminal QR code with the iPhone Camera and open the link in Expo Go.
    Allow local network access if iOS requests it.
-4. Choose **Explore demo** on Welcome. Login and Signup are UI demonstrations;
-   they do not authenticate users or create accounts.
+4. Choose **Explore demo** to browse without an account, or configure Supabase
+   below and use **Sign In** / **Create Account** for a real account.
 
 ### Network troubleshooting
 
@@ -49,6 +49,36 @@ To clear a stale Metro cache:
 ```sh
 npm start -- --go --clear
 ```
+
+## Supabase authentication
+
+Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_SUPABASE_URL` and
+`EXPO_PUBLIC_SUPABASE_KEY` to the existing project URL and **publishable** key.
+The local workspace is already configured. Restart Expo after changing env files.
+Never copy `TEST_EMAIL`, `TEST_PASSWORD`, secret keys or database passwords into
+mobile configuration. With no valid public configuration, demo browsing still
+works and sign-in reports that it is unavailable.
+
+Login and Signup call Supabase Auth. When confirmation is enabled, Signup asks
+the user to confirm the email, then return to Sign In. An immediate session goes
+to Profile, where the account panel reads the signed-in user's database profile.
+This initial step does not use a mobile email-confirmation redirect callback.
+
+Native AsyncStorage persists the Supabase session; passwords remain transient.
+Token refresh follows the app foreground lifecycle. The web/SSR adapter uses
+memory only. Profile's **Sign Out** clears this device's session; other devices
+stay signed in. Changing accounts also resets demo contribution/comparison state.
+The app interface is English-only and ignores old saved language preferences.
+
+Venue screens still use fictional fixtures. Authenticated users see an explicit
+notice that their activity remains a demo. Saving an impression, comparison,
+price, review, suggestion or incident does not yet write to Supabase.
+
+Manual device checks: sign in with a confirmed test account, reload the app and
+verify restoration; confirm Profile's account name/email; sign out and check that
+account details/demo state clear. Check invalid credentials, offline requests,
+email-confirmation signup, rapid double submission, and a previously saved Italian
+preference (the interface must remain English).
 
 ## Validation
 
@@ -81,21 +111,19 @@ The lint command checks mobile source, tests and scripts without applying fixes.
 Generated native folders, Expo caches, build outputs and dependencies are ignored.
 Backend code is outside the mobile lint scope.
 
-## Demo session and languages
+## Demo session and English interface
 
 - UUID-based fictional venues and a structured drink catalog are in `src/fixtures/`.
   Prices use integer EUR cents internally.
 - Impressions, crowd reports, bathroom reviews, prices, language suggestions, private
   incident submissions and personal comparisons are shared in memory. Saved
-  activity survives navigation and language switching, but resets on full reload.
+  activity survives navigation, but resets on full reload or account changes.
 - Form drafts are local to their screen or overlay. Closing a form may discard
   unsaved input. Returning to Welcome does not sign out or clear saved activity.
-- English is the default. Select **English** or **Italiano** in Profile to change
-  the interface immediately.
-- Native AsyncStorage stores only the language preference, so it survives reloads.
-  It does not store passwords, reports or ranking history. The web adapter keeps
-  the language only in memory.
-- Venue spoken-language suggestions are separate from the interface setting and
+- English is the only interface language. There is no language selector and old
+  device language preferences are ignored. Native AsyncStorage now persists the
+  Supabase session, not demo reports or ranking history.
+- Venue spoken-language suggestions are separate from the English interface and
   remain pending. Private incident reports are demo-only and are never published.
 - Crowd classification needs three distinct recent contributors. This demo uses
   one contributor; repeated submissions cannot establish a live consensus.
@@ -140,16 +168,16 @@ These are manual checks, separate from Node component-prop tests and iOS export:
    that community opinions are unavailable in the demo. Bathroom stars remain.
 2. Save an impression via `+`, skip or complete the bounded comparisons, and
    confirm the same five optional forms and their Cancel behavior still work.
-3. Dismiss and reopen the overlay, navigate away and switch English/Italian.
+3. Dismiss and reopen the overlay, navigate away and return.
    Confirm saved impressions and pending comparisons survive in this app session.
 4. Edit an impression. Confirm **Your impression** and Profile update, Profile
    still counts that venue once, and comparison history/ranking positions do not
    change merely from editing. Community statistics must remain unavailable.
 5. Check bathroom category selection/validation, crowd reports, ordinal Rankings
    and read-only Compare Drink Prices.
-6. Check both languages with VoiceOver and larger text, including opinion and
+6. Check English with VoiceOver and larger text, including opinion and
    impression labels, safe areas and card wrapping. A full reload resets demo
-   activity while retaining the selected native interface language.
+   activity while retaining a valid native authentication session.
 
 The [localization guide](src/localization/README.md) explains dictionary updates,
 formatting and persistence. The [asset inventory](assets/README.md) documents
@@ -164,7 +192,7 @@ src/components/       Reusable native components and bottom navigation
 src/constants/        bevve colors, typography and spacing
 src/features/         Screens, state providers, reducers and selectors
 src/fixtures/         Mock venues and catalog data
-src/localization/     English/Italian dictionaries, persistence and formatting
+src/localization/     English UI copy and formatting helpers
 src/types/            Shared venue presentation types
 tests/                Node-based mobile tests
 assets/               Bundled fonts, imagery and platform icon placeholders
@@ -190,7 +218,7 @@ still belong to the same root provider.
 2. From empty and populated Rankings and Profile, tap **Explore bars**. Open a
    bar and tap `+`. Confirm the first impression offers no comparison, the next
    offers one, and a fourth experienced bar offers at most three opponents.
-3. Dismiss a pending comparison, switch tabs and language, then reopen that bar
+3. Dismiss a pending comparison, switch tabs, then reopen that bar
    and tap **Resume comparisons**. Test Skip one and Skip remaining;
    only choosing a winner changes history and ordinal Rankings. Rapidly double
    tap a choice and confirm only one comparison is saved.
@@ -202,7 +230,7 @@ still belong to the same root provider.
    both after a full reload and with the demo already open: it must land on
    Rankings, with three tabs and no Compare screen on Back. Repeat with
    `bars/<valid fixture UUID>?returnTo=compare`; Back must go to Rankings.
-6. Repeat tab, Explore-button and contextual Back checks in Italian. Check
+6. Repeat tab, Explore-button and contextual Back checks in English. Check
    VoiceOver tab labels/selection, larger text and bottom safe-area spacing.
 
 ### Physical iPhone checks for Stage 9D
@@ -224,13 +252,13 @@ These checks are separate from Node tests and iOS JavaScript export:
    be counted. Reopen and compare again after completion; the earlier vote and
    ordinal Rankings must survive. Starting the new batch alone adds no vote.
 4. Save impressions for Nottetempo and Violet Room. In a batch with multiple
-   opponents, answer one comparison, dismiss, switch tabs/language and reopen.
+   opponents, answer one comparison, dismiss, switch tabs and reopen.
    **Resume comparisons** must appear instead of Compare again, retaining the
    next prompt and count. **Continue to contributions** must keep that batch
    available for a later resume. Exercise both Skip controls; no batch repeats
    an opponent or exceeds three comparisons.
-5. Repeat in Italian, including **Riprendi i confronti** and **Confronta di nuovo
-   questo locale**. Check all three impression values and edit/save one without
+5. Check **Resume comparisons** and **Compare this bar again**. Check all three
+   impression values and edit/save one without
    adding an activity count or an automatic comparison vote.
 6. On the smallest available iPhone, test default and largest accessibility text
    sizes with VoiceOver. Labels must wrap without clipping or horizontal overflow;

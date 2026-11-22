@@ -14,7 +14,7 @@ export default function WelcomeScreen() {
   const { t } = useTranslation();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const notice = t('UI demo · Backend authentication is not connected');
+  const notice = t('Sign in to your account, or explore sample venues without an account.');
 
   return (
     <ScreenContainer edges={['left', 'right']} style={styles.screen}>

@@ -26,6 +26,7 @@ function screens(language, ranked) {
     '@/components/app-icon': { AppIcon: 'AppIcon' }, '@/components/logo': { Logo: 'Logo' },
     '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/components/screen-container': { ScreenContainer: 'ScreenContainer' },
     '@/components/crowd-meter': { CrowdMeter: 'CrowdMeter' }, '@/fixtures/venues': { exploreMockUser },
+    '@/features/auth/account-panel': { AccountPanel: 'AccountPanel' },
     '@/features/comparisons/personal-comparisons-provider': { usePersonalRankings: () => personal, useSavedImpressions: () => ({}) },
   };
   const rankings = loadNativeModule('src/features/rankings/personal-rankings-screen.tsx', {

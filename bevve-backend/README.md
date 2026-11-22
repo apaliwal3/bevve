@@ -54,15 +54,13 @@ Never use a service-role or secret key in the mobile app. For a future web serve
 
 ## Check the Supabase connection
 
-`connect.ts` is a manual connection check that uses the existing service functions against your Supabase project. It creates a client with session persistence disabled, signs in with an existing test account, and prints:
+`connect.ts` signs in with an existing test account and runs 22 read-only
+checks against the seeded project: profiles, catalogs, summaries, rankings,
+incident reads, signed-out table access and signed-out RPC rejection. It prints
+only check names and counts, never account records or credentials. Its local-scope
+sign-out leaves other sessions for that account intact.
 
-- The signed-in user's profile.
-- The first page of bars (up to 50).
-- The crowd summary for the first returned bar, if any bars exist.
-
-After sign-in succeeds, the script signs out in a `finally` block, including when a subsequent read fails. It does not create accounts, apply migrations, seed the database, or submit reports.
-
-Apply the migration and optional demo seed first, then create and confirm a test account as required by your Supabase Auth settings. Add the following to `barhop-backend/.env`:
+Apply the migration and optional demo seed first, then create and confirm a test account as required by your Supabase Auth settings. Add the following to `bevve-backend/.env`:
 
 ```dotenv
 EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
@@ -73,15 +71,25 @@ TEST_PASSWORD=your-test-account-password
 
 Keep `.env` out of Git. `TEST_EMAIL` and `TEST_PASSWORD` are local test credentials; do not give them an `EXPO_PUBLIC_` prefix or embed them in the mobile app.
 
-From `barhop-backend`, using Node.js 24 or newer, run:
+From `bevve-backend`, using Node.js 24 or newer, run:
 
 ```sh
-node --env-file=.env connect.ts
+npm run check:connection
 ```
 
-With the demo seed, expect a profile, three bars, and a crowd summary with `report_count: 0` and null score, timestamp, and classification until reports are submitted. Missing Supabase configuration usually means the `.env` variable names do not match those read by the script. Authentication errors require checking the test credentials and account confirmation status.
+With the unchanged demo seed, expect three venues and 22 passing checks. Missing Supabase configuration usually means the `.env` variable names do not match those read by the script. Authentication errors require checking the test credentials and account confirmation status.
 
-A successful run checks authentication and these read paths. Complete `docs/database-checks.md` separately to verify ownership restrictions, write permissions, and moderation behavior.
+For ownership, write permissions and moderation, run the entire
+`supabase/tests/access.sql` in the project SQL Editor as postgres. It uses one
+command for dependent checks and rolls back its test users, catalog entries,
+contributions and helpers on success or failure. Saving the query in the dashboard
+is optional; keep this repository file as the maintained version.
+
+`npm test` also runs the migration, seed and access script in an isolated PGlite
+PostgreSQL runtime with a minimal Supabase Auth schema/role shim. It checks repeat
+execution/rollback and deliberately breaks an ownership policy to ensure the
+check fails. This does not replace hosted Auth, PostgREST or device verification.
+See `docs/database-checks.md` for additional scenarios.
 
 ## Moderator setup
 
@@ -102,7 +110,15 @@ Use `safetyService(client).moderateIncident(reportId, 'approved', publicSummary)
 
 ## Validation status
 
-Four local algorithm/validation tests passed during creation. Dependency installation was blocked by unavailable network access, so the full TypeScript check was not run. No Supabase project or PostgreSQL runtime was available: the SQL migration, RPCs, authentication flow, and access rules still require the database checks provided here. No remote resources were created.
+On 2026-11-22, the hosted read-only connection checks passed (22 checks).
+The project owner also ran the SQL access check successfully against Supabase.
+Local TypeScript and algorithm/service/database tests are run with the commands
+above. No feature-schema migration was required for this authentication step;
+`001_backend.sql` was already deployed. The SQL access check leaves no test data.
+
+Mobile authentication is connected separately in `../mobile/`; venue features
+still use demo state. Price latest/serving cases, large-history service pagination,
+full signup/email delivery and physical-device behavior remain separate checks.
 
 ## References
 

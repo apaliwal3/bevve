@@ -61,8 +61,8 @@ test('one persistent navigator owns exactly three tab routes; providers, the leg
   }
   const groupSource = readFileSync(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8');
   const rootSource = readFileSync(new URL('../src/app/_layout.tsx', import.meta.url), 'utf8');
-  for (const provider of ['LanguageProvider', 'VenueRatingsProvider', 'PersonalComparisonsProvider']) {
-    assert.equal((rootSource.match(new RegExp('<' + provider + '(?:>|\\\\s)', 'g')) ?? []).length, 1);
+  for (const provider of ['LanguageProvider', 'AuthProvider', 'VenueRatingsProvider', 'PersonalComparisonsProvider']) {
+    assert.equal((rootSource.match(new RegExp('<' + provider + '(?:>|\\s)', 'g')) ?? []).length, 1);
     assert.equal(groupSource.includes(provider), false);
   }
   assert.equal(existsSync(new URL('../src/app/(tabs)/compare.tsx', import.meta.url)), false);

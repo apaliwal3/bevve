@@ -1,6 +1,17 @@
 # Database integration checks
 
-Run these against a disposable Supabase project after applying the migration and seeds. They have not been executed as part of generating this starter.
+The read-only `npm run check:connection` and hosted `supabase/tests/access.sql`
+passed on 2026-11-22. The access script rolls back its fixtures and can be rerun in
+the SQL Editor. Local `npm test` exercises it against PostgreSQL with an Auth shim.
+
+The script covers core profile/catalog ownership, server-controlled columns,
+bathroom upsert/null aggregation, crowd deduplication/expiry, currency isolation,
+comparison/incident privacy, moderation/publication and anonymous restrictions.
+The full scenarios below also include API pagination, price latest/serving rules
+and email-confirmation behavior that need separate verification.
+
+Run remaining write scenarios against a test project after applying the migration
+and seed.
 
 Use three independently signed-in clients: user A, user B, and moderator M. Register the moderator in `private.moderators` using the project SQL Editor. Use the publishable key in every client. Do not test ownership using a service-role client, which bypasses row-level security.
 

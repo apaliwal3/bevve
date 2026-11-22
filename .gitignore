@@ -10,9 +10,9 @@ node_modules/
 /build/
 /dist/
 /coverage/
-/barhop-backend/build/
-/barhop-backend/dist/
-/barhop-backend/coverage/
+/bevve-backend/build/
+/bevve-backend/dist/
+/bevve-backend/coverage/
 
 # Local tooling caches, debug logs and editor temporary files
 .eslintcache

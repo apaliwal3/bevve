@@ -6,7 +6,7 @@ import {
   validateEmail, validateLogin, validatePassword, validateSignup,
 } from '../src/features/auth/auth-validation.ts';
 import {
-  AUTH_DEMO_NOTICE, authFormReducer, createAuthFormState,
+  authFormReducer, createAuthFormState,
 } from '../src/features/auth/auth-form-state.ts';
 
 const sample = Object.freeze({ username: 'Alessia', email: 'alessia@example.com', password: 'demo123' });
@@ -60,10 +60,10 @@ test('Signup collects all field errors and matches the Figma form without a conf
   assert.deepEqual(Object.keys(createAuthFormState('signup').values).sort(), ['email', 'password', 'username']);
 });
 
-test('an invalid submission keeps its local draft and produces field errors without a demo completion notice', () => {
+test('an invalid submission keeps its local draft and produces field errors without starting a request', () => {
   const state = fill('signup', { username: 'A', email: 'invalid', password: 'short' });
   const next = submit(state);
-  assert.equal(next.demoNotice, false);
+  assert.equal(next.status, 'idle');
   assert.deepEqual(next.values, state.values);
   assert.deepEqual(Object.keys(next.errors).sort(), ['email', 'password', 'username']);
   assert.deepEqual(state.errors, {});
@@ -89,39 +89,40 @@ test('show/hide preserves the exact password draft, including meaningful spaces'
   assert.equal(hidden.values.password, ' demo123 ');
 });
 
-test('valid Login and Signup submissions only clear drafts and show the demo notice', () => {
+test('valid Login and Signup submissions clear passwords and wait for the backend result', () => {
   for (const mode of ['login', 'signup']) {
     const filled = fill(mode);
     const shown = authFormReducer(filled, { type: 'toggle-password' });
     const next = submit(shown);
-    assert.deepEqual(next, { ...createAuthFormState(mode), demoNotice: true });
-    assert.deepEqual(Object.keys(next).sort(), ['mode', 'values', 'errors', 'passwordVisible', 'demoNotice'].sort());
+    assert.equal(next.status, 'submitting');
+    assert.equal(next.passwordVisible, false);
+    assert.equal(next.values.email, sample.email);
+    assert.equal(next.values.password, '');
     assert.ok(!JSON.stringify(next).includes(sample.password));
-    assert.ok(!JSON.stringify(next).includes(sample.email));
-    assert.match(AUTH_DEMO_NOTICE, /Demo only/);
-    assert.match(AUTH_DEMO_NOTICE, /No credentials were sent or verified/);
-    assert.match(AUTH_DEMO_NOTICE, /no account or session was created/);
   }
 });
 
-test('repeated submission taps cannot turn the demo notice into an authenticated session', () => {
+test('repeated submission taps and field edits do not change a pending request', () => {
   const state = submit(fill('login'));
   assert.equal(submit(state), state);
-  assert.equal(state.demoNotice, true);
+  assert.equal(state.status, 'submitting');
   assert.equal(state.values.password, '');
+  assert.equal(authFormReducer(state, { type: 'change', field: 'email', value: 'other@example.com' }), state);
 });
 
-test('editing after a demo submission starts a fresh draft and clears the previous notice', () => {
-  const completed = submit(fill('signup'));
+test('email confirmation clears drafts and editing starts a new form', () => {
+  const completed = authFormReducer(submit(fill('signup')), { type: 'confirm-email' });
+  assert.equal(completed.status, 'confirm-email');
+  assert.deepEqual(completed.values, { username: '', email: '', password: '' });
   const editing = authFormReducer(completed, { type: 'change', field: 'username', value: 'New name' });
-  assert.equal(editing.demoNotice, false);
+  assert.equal(editing.status, 'idle');
   assert.deepEqual(editing.values, { username: 'New name', email: '', password: '' });
   const next = submit(editing);
   assert.ok(next.errors.email);
   assert.ok(next.errors.password);
 });
 
-test('the route-leave reset clears drafts, errors, visibility and notices while preserving form mode', () => {
+test('the route-leave reset clears drafts, errors, visibility and request state while preserving form mode', () => {
   for (const mode of ['login', 'signup']) {
     const filled = fill(mode);
     const shown = authFormReducer(filled, { type: 'toggle-password' });
@@ -133,8 +134,15 @@ test('the route-leave reset clears drafts, errors, visibility and notices while 
   }
 });
 
-test('the demo notice can be dismissed without retaining submitted values', () => {
-  const next = authFormReducer(submit(fill('login')), { type: 'dismiss-notice' });
-  assert.equal(next.demoNotice, false);
-  assert.deepEqual(next.values, { username: '', email: '', password: '' });
+test('a failed request allows retry without restoring the password', () => {
+  const next = authFormReducer(submit(fill('login')), { type: 'failed' });
+  assert.equal(next.status, 'idle');
+  assert.equal(next.values.email, sample.email);
+  assert.equal(next.values.password, '');
+  assert.ok(submit(next).errors.password);
+});
+
+test('Signup rejects usernames beyond the database limit without truncating them', () => {
+  assert.equal(validateSignup({ ...sample, username: 'x'.repeat(41) }).username, 'Username must be at most 40 characters.');
+  assert.equal(validateSignup({ ...sample, username: 'x'.repeat(40) }).username, undefined);
 });

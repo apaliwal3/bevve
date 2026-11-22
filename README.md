@@ -4,8 +4,9 @@ bevve is a nightlife discovery project focused on Milan. The maintained frontend
 is the native React Native application in `mobile/`, with bevve's approved dark
 navy and purple interface.
 
-The mobile app is an interactive demo using fictional venue fixtures and shared
-session state. It does not connect to Supabase or create authenticated accounts.
+Supabase authentication and account-profile reads are connected. Venue discovery,
+contributions and personal rankings still use fictional fixtures and shared
+in-memory demo state; these features are not yet persisted to the database.
 
 ## Implemented features
 
@@ -25,17 +26,17 @@ session state. It does not connect to Supabase or create authenticated accounts.
   hidden and independent of impressions and community opinions.
 - Three persistent main tabs: Explore, Rankings and Profile. Add impressions and
   comparisons through a venue's `+` overlay; drink price comparison stays separate.
-- A demo Profile with activity counts and English/Italian interface selection.
-- Login and Signup UI with validation and password visibility controls.
-  Valid submissions explain that authentication is not connected.
+- An English-only interface and a Profile with demo activity counts.
+- Real Supabase Login/Signup, email-confirmation handling, native session
+  restoration, account-profile reads and local-device sign-out.
 
 ## Technology
 
 - Frontend: Expo SDK 58, React Native 0.88, React 19 and TypeScript 6.
 - Navigation: Expo Router; native safe-area handling and reusable UI components.
 - Design: centralized theme, bundled DM Sans and Manrope fonts.
-- Localization: typed English/Italian dictionaries and native AsyncStorage for
-  the interface-language preference.
+- Copy and formatting: typed English messages and locale-aware number formatting.
+- Authentication: Supabase client with native AsyncStorage session persistence.
 - Tests: Node.js test runner for state, algorithms, validation and localization.
 - Backend foundation: separate Supabase/PostgreSQL migrations, services and tests.
 
@@ -52,7 +53,7 @@ mobile/                         Native Expo application
   src/localization/             Dictionaries, language state and formatters
   tests/                        Mobile tests
   assets/                       Fonts, images and icon assets
-barhop-backend/                 Supabase backend foundation
+bevve-backend/                 Supabase backend foundation
 ```
 
 ## Run the mobile frontend
@@ -83,11 +84,11 @@ npm run lint
 Backend logic tests are separate. From the repository root:
 
 ```sh
-npm --prefix barhop-backend test
+npm --prefix bevve-backend test
 ```
 
 These tests do not validate a deployed database or its access policies. Refer to
-the [backend README](barhop-backend/README.md) for its setup and database checks.
+the [backend README](bevve-backend/README.md) for its setup and database checks.
 Mobile bundling and configuration commands are in the [mobile README](mobile/README.md#validation).
 ESLint uses the official Expo flat configuration and reports findings without applying fixes.
 
@@ -96,22 +97,22 @@ ESLint uses the official Expo flat configuration and reports findings without ap
 1. Create a focused branch from the team's agreed integration branch.
 2. Keep frontend changes in `mobile/`. Agree API and data-contract changes with
    the backend maintainers.
-3. Run the relevant checks and test changed screens on an iPhone in both
-   languages, including keyboard, safe-area and larger-text behavior.
+3. Run the relevant checks and test changed screens on an iPhone in
+   English, including keyboard, safe-area and larger-text behavior.
 4. Submit a pull request describing the change, validation and remaining
    limitations. Review the diff for generated files and credentials before merging.
 
 ## Languages and demo boundaries
 
-English is the default interface language. Profile can switch immediately to
-Italian without resetting saved session activity. On native devices, only this
-language preference survives a full reload. See the
-[localization guide](mobile/src/localization/README.md).
+The interface is English-only. The former language switch is removed and any
+previously saved Italian preference is ignored. Venue spoken-language information
+remains venue data. See the [copy and formatting guide](mobile/src/localization/README.md).
 
 Impressions, reports, price observations, pending language suggestions, private
 incident drafts/submissions and personal comparisons are local demo data.
-Saved session activity survives navigation; a full reload clears it. No real
-accounts, cross-device persistence or multi-user backend behavior are implemented.
+Demo activity survives navigation; a full reload or an account change clears it.
+Accounts are real, but venue activity has no cross-device persistence or live
+multi-user source yet. Sign-out clears the local session and demo activity.
 
 Rankings and Profile guide users to Explore and a bar's `+` action. The former
 standalone personal Compare screen is retired. Legacy `/compare` links redirect
@@ -150,14 +151,17 @@ see the [asset inventory](mobile/assets/README.md).
 
 ## Supabase integration boundary
 
-`barhop-backend/` contains the backend foundation; its presence does not mean the
-mobile app uses it. Future integration must replace fixture reads and session
-writes with authenticated services, server-owned identifiers/timestamps, typed
-adapters, and loading/error handling.
+`bevve-backend/` contains database migrations, services and executable checks.
+Mobile authentication connects to the same project using public configuration in
+`mobile/.env.local`; passwords and backend test credentials are never copied there.
+See [mobile setup](mobile/README.md#supabase-authentication). Venue integration must
+still replace fixture reads and session writes with authenticated services,
+server-owned identifiers/timestamps, typed adapters and loading/error handling.
 
 Outstanding contracts include authenticated per-user venue impressions and eligible
 community-opinion reads, pending
 venue-language suggestions, frontend venue metadata and authorized contribution
 history reads. Mobile fixture UUIDs and drink servings differ from the backend
-seed and must not be matched by display name. Authentication/session handling,
-guest-read policy and database integration checks remain future work.
+seed and must not be matched by display name. Guest venue-read policy and the missing feature contracts remain future work.
+The hosted connection check and SQL access check passed on 2026-11-22; full
+GoTrue/PostgREST write scenarios and mobile device checks remain separate validation.
