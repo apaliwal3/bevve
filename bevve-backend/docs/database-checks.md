@@ -46,23 +46,23 @@ persistence, error handling and navigation checks are listed in the mobile READM
 
 ## Personal comparisons (migration 003)
 
-Apply only `supabase/migrations/003_personal_comparisons.sql` on the existing
-project, then run the whole `supabase/tests/personal-comparisons.sql` as postgres.
+The owner confirmed migration 003 was deployed through SQL Editor on 2026-11-23.
+Do not rerun it. Run the whole `supabase/tests/personal-comparisons.sql` as postgres.
 The latter rolls back all fixtures and is included in local PGlite tests. It
 checks owner-derived writes, required impressions, request validation, immutable
 timestamps/votes, identical retries, conflicting request reuse, cross-account
 privacy and anonymous denial. Earlier migrations must not be rerun.
 
-Hosted application and actual comparison RPC/device checks are pending. After
-deployment, use two saved sample-venue impressions on the test account, explicitly
+Hosted results for this SQL check and actual comparison RPC/device checks have
+not been reported. Use two saved sample-venue impressions on the test account, explicitly
 choose a winner, and verify a new session restores its ranking. Retry with the
 same request ID and verify the history count increases only once. A new request
 ID is a new vote; these append-only test votes cannot be deleted by the client.
 
 ## Venue contributions (migration 004)
 
-Apply `supabase/migrations/004_venue_contributions.sql` after any unapplied earlier
-migrations, then run the entire `supabase/tests/venue-contributions.sql` as postgres
+The owner confirmed migration 004 was deployed through SQL Editor on 2026-11-23.
+Run the entire `supabase/tests/venue-contributions.sql` as postgres
 in SQL Editor. Do not rerun deployed migrations. The check rolls back fixtures.
 It verifies retry-safe append-only writes, server identity/time, rejected conflicts,
 exact drink/serving identity, preserved crowd/price history, bathroom edits/nulls,
@@ -70,7 +70,8 @@ updated public aggregates, own-only reads, anonymous denial and unchanged votes.
 Local PGlite tests also check own-price pagination beyond 500 records and ensure
 other owners/currencies remain excluded.
 
-Hosted migration application and actual contribution API/device checks are pending.
+Hosted results for this SQL check and actual contribution API/device checks have
+not been reported.
 Use sample venues on the configured test account for later write smoke checks.
 Repeat a request UUID to confirm only one crowd/price row is created. A fresh
 request UUID is a new observation. Editing a bathroom review must keep its UUID
@@ -78,3 +79,66 @@ and creation time, and a new session must restore its current category values.
 Verify another account cannot read or edit these contributions. Check price
 comparisons by database drink ID and exact serving, never by name. These
 append-only reports/prices cannot be deleted by the ordinary client.
+
+## Venue-language suggestions (migration 005)
+
+The owner confirmed migration 005 deployment and the hosted
+[`language-suggestions.sql`](../supabase/tests/language-suggestions.sql) check passed
+on 2026-11-23. Do not rerun migrations 001–005. The check rolls back temporary users, suggestions, receipts,
+moderator membership and venue languages on success or failure. It can be rerun.
+Local tests also deliberately break the read policy and verify the check fails.
+
+Checks cover own-only history, explicit moderator history scope, pending-queue
+access, denied direct writes and role changes, unsupported codes, invalid venues,
+anonymous denial, request replay/conflict, coalesced pending requests and alias
+replay after review. Approval publishes one venue language and is retry-safe;
+rejection publishes nothing and preserves history. Preferences and votes stay
+unchanged. The agent performed no hosted writes for this feature.
+
+For remaining detailed PostgREST/device checks, use ordinary accounts A/B and
+moderator M. Submit from A, confirm B cannot read it, inspect Pending in A's Profile,
+then approve/reject as M. Refresh A's history and both clients' venue details;
+only approval should add a language. Verify M's own history excludes A/B submissions.
+Retry lost submission/review responses with unchanged IDs/decisions, and verify no
+duplicate suggestion or public association. Check navigation, restart, sign-out
+and another account. Pending operations remain session-only; confirmed statuses
+restore from the database. Record hosted SQL/API and physical-device outcomes
+separately; passing local PostgreSQL checks does not establish those outcomes.
+
+## Private incidents, reviews and published summaries (migration 006)
+
+Migration 006 is prepared and locally tested. On the existing project, run only
+[`006_account_safety.sql`](../supabase/migrations/006_account_safety.sql) as postgres
+in SQL Editor, then the entire [`account-safety.sql`](../supabase/tests/account-safety.sql).
+Do not rerun deployed 001–005. The check rolls back all test accounts, moderator
+membership, reports, publications, private links and the temporary venue on success
+or failure. Local tests also deliberately break report read privacy and verify
+the check fails with no retained fixtures. No hosted safety writes were performed.
+
+Checks cover owner-derived identity/time, required form category/description,
+invalid/future/non-finite dates, stable request retries, payload/owner conflicts,
+private history, explicit moderator personal-history scope, queue access, rejected
+role/status/publication writes and anonymous denial. Invalid reviews publish nothing.
+Approval creates one separately supplied summary, rejection creates none, and matching
+decision/summary retries cannot duplicate a publication. Conflicting review changes
+fail. Reporter IDs, private descriptions, review identity and original report IDs
+are absent from the public table schema; raw private-public links stay inaccessible.
+No report/review creates comparison votes. Legacy access/moderation checks still pass.
+
+After deployment, record these actual API/device outcomes with A/B/M accounts:
+
+1. A opens a database venue's `+` without saving an impression, writes a report draft,
+   closes/reopens it, and submits. A's history shows Pending and B cannot read it.
+2. M sees it in the private queue, while M's personal history excludes A's report.
+   The public-summary field starts blank. Approval requires separately written text
+   with no identifying details. A's history becomes Approved and venue details show
+   only that summary, review label and publication time. Rejection publishes nothing.
+3. Lost submission/review responses retry the same request ID/decision/summary and
+   do not add rows. Navigation preserves pending details; restart/sign-out resets
+   drafts/pending requests and restores confirmed history in a new session.
+4. Check rapid taps, stale reads during review, foreground/manual refresh, empty and
+   unavailable public information, optional date/timezone handling and account isolation.
+   Private details never appear in another ordinary account or the public view.
+
+Hosted 006 deployment, hosted SQL/API checks and physical-device behavior remain
+unconfirmed. Local PostgreSQL and component tests do not establish those outcomes.

@@ -176,3 +176,16 @@ test('account venue cards and details override all demo metrics and use the acco
   assert.ok(!textValues(tree).some(value=>String(value).includes('Fictional demo snapshot')));
   assert.ok(!textValues(tree).some(value=>String(value).includes('Demo session')));
 });
+
+test('account venue safety uses its public summary slot and cannot display guest demonstration notes', () => {
+  const { details } = ui('en');
+  const account = { isDemo:false,community:{status:'empty',count:0},ownImpression:null,
+    crowd:{score:null,report_count:0,newest_report_at:null,classification:null},bathrooms:null,drinks:[],startingPriceCents:null };
+  const provided = { ...mockVenueDetails[venue.id], demoSafetyNotes: ['Private or fictional note must not reach account safety'] };
+  const slot = { type: 'Text', props: { children: 'Separate public safety summary slot' } };
+  const tree = details.BarDetailsScreen({ venue, details:provided, account, accountSafety:slot, onBack(){}, onComparePrices(){} });
+  assert.ok(textValues(tree).includes('Separate public safety summary slot'));
+  assert.ok(!textValues(tree).includes(provided.demoSafetyNotes[0]));
+  const guest = details.BarDetailsScreen({ venue, details:provided, accountSafety:slot, onBack(){}, onComparePrices(){} });
+  assert.ok(textValues(guest).includes(provided.demoSafetyNotes[0])); assert.ok(!textValues(guest).includes('Separate public safety summary slot'));
+});

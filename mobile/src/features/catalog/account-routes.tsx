@@ -24,6 +24,8 @@ import { AccountComparisonFeedback, AccountComparisonPanel } from '@/features/co
 import { RankedVenueRow } from '@/features/rankings/ranked-venue-row';
 import { useAccountContributions } from '@/features/contributions/account-contributions-provider';
 import { AccountContributionFeedback, AccountContributionPanel } from '@/features/contributions/account-contribution-panel';
+import { AccountLanguageHistory, AccountLanguageModeration, AccountLanguagePanel } from '@/features/contributions/account-language-panel';
+import { AccountIncidentHistory, AccountIncidentModeration, AccountIncidentPanel, AccountPublishedSafety } from '@/features/contributions/account-safety-panel';
 
 export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogValue }) {
   const { t } = useTranslation();
@@ -39,11 +41,14 @@ export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogVal
   const row = catalog.venues.find(row => row.id === result.venue.id)!;
   return <>
     <BarDetailsScreen venue={result.venue} details={catalogDetails(row)} account={catalogReadData(row, catalog.impressions[row.id])}
+      accountSafety={<AccountPublishedSafety key={row.id} barId={row.id} />}
       onBack={goBack} backLabel={t(back.label)} onEditImpression={() => setEditing(true)}
       onComparePrices={() => router.push(priceComparisonHref(navigation.drink?.id ?? catalog.drinks[0]?.id ?? null, row.id))} />
     {editing && <AccountImpressionEditor key={row.id} catalog={catalog} barId={row.id} name={row.name} onClose={() => setEditing(false)}>
       <AccountComparisonPanel catalog={catalog} barId={row.id} />
       <AccountContributionPanel catalog={catalog} barId={row.id} />
+      <AccountLanguagePanel catalog={catalog} barId={row.id} />
+      <AccountIncidentPanel catalog={catalog} barId={row.id} />
     </AccountImpressionEditor>}
   </>;
 }
@@ -91,6 +96,10 @@ export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue
           onPress={()=>router.push(venueFromProfileHref(entry.venue.id))} />)}
       </ProfileActivitySection>
     </>}
+    <AccountLanguageHistory catalog={catalog} onOpenVenue={id => router.push(venueFromProfileHref(id))} />
+    <AccountLanguageModeration catalog={catalog} />
+    <AccountIncidentHistory catalog={catalog} />
+    <AccountIncidentModeration catalog={catalog} />
     <PrimaryButton label={t('Explore venues')} onPress={() => router.navigate('/explore')} />
     <PrimaryButton label={catalog.refreshing ? t('Please wait…') : t('Refresh impressions')} variant="secondary" disabled={catalog.refreshing} onPress={() => { void catalog.refresh(); }} />
     <PrimaryButton label={contributions.refreshing ? t('Please wait…') : t('Refresh contributions')} variant="secondary" disabled={contributions.refreshing} onPress={() => { void contributions.refresh(); catalog.invalidate(); }} />

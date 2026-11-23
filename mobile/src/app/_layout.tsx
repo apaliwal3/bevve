@@ -12,6 +12,8 @@ import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
 import { VenueCatalogProvider } from '@/features/catalog/catalog-provider';
 import { AccountComparisonsProvider } from '@/features/comparisons/account-comparisons-provider';
 import { AccountContributionsProvider } from '@/features/contributions/account-contributions-provider';
+import { AccountLanguagesProvider } from '@/features/contributions/account-languages-provider';
+import { AccountSafetyProvider } from '@/features/contributions/account-safety-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,15 +53,19 @@ function AppLayout() {
       }}>
       <StatusBar style="light" />
       <VenueCatalogProvider>
-        <AccountContributionsProvider>
-          <AccountComparisonsProvider>
-            <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
-              <PersonalComparisonsProvider>
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
-              </PersonalComparisonsProvider>
-            </VenueRatingsProvider>
-          </AccountComparisonsProvider>
-        </AccountContributionsProvider>
+        <AccountSafetyProvider>
+          <AccountLanguagesProvider>
+            <AccountContributionsProvider>
+              <AccountComparisonsProvider>
+                <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
+                  <PersonalComparisonsProvider>
+                    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
+                  </PersonalComparisonsProvider>
+                </VenueRatingsProvider>
+              </AccountComparisonsProvider>
+            </AccountContributionsProvider>
+          </AccountLanguagesProvider>
+        </AccountSafetyProvider>
       </VenueCatalogProvider>
     </ThemeProvider>
   );

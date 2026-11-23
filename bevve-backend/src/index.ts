@@ -7,3 +7,4 @@ export { rankingsService } from './services/rankings.ts';
 export { bathroomsService } from './services/bathrooms.ts';
 export { safetyService } from './services/safety.ts';
 export { impressionsService } from './services/impressions.ts';
+export { languagesService } from './services/languages.ts';

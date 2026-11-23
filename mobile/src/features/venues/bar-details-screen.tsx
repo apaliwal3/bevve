@@ -1,6 +1,6 @@
 import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,9 +28,10 @@ type BarDetailsScreenProps = {
   onComparePrices: () => void;
   account?: AccountVenueData;
   onEditImpression?: () => void;
+  accountSafety?: ReactNode;
 };
 
-export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices, account, onEditImpression }: BarDetailsScreenProps) {
+export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices, account, onEditImpression, accountSafety }: BarDetailsScreenProps) {
   const { t, format, describe } = useTranslation();
   const insets = useSafeAreaInsets();
   const [imageFailed, setImageFailed] = useState(false);
@@ -198,13 +199,17 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Safety information")}</Text>
             </View>
           </View>
-          {(details?.demoSafetyNotes ?? []).map((note, index) => (
-            <View key={index} style={styles.safetyNote}>
-              <Text style={styles.sectionLabel}>{t("FICTIONAL EXAMPLE · DEMO DATA")}</Text>
-              <Text style={styles.description}>{note}</Text>
-            </View>
-          ))}
-          {!details?.demoSafetyNotes.length && <Text style={styles.description}>{account ? t('Safety information is not available here yet.') : t("No published safety information.")}</Text>}
+          {account ? accountSafety ?? <Text style={styles.description}>{t('Safety information is not available here yet.')}</Text> : (
+            <>
+              {(details?.demoSafetyNotes ?? []).map((note, index) => (
+                <View key={index} style={styles.safetyNote}>
+                  <Text style={styles.sectionLabel}>{t("FICTIONAL EXAMPLE · DEMO DATA")}</Text>
+                  <Text style={styles.description}>{note}</Text>
+                </View>
+              ))}
+              {!details?.demoSafetyNotes.length && <Text style={styles.description}>{t("No published safety information.")}</Text>}
+            </>
+          )}
           <Text style={styles.description}>{account ? t('Missing information does not guarantee safety.') : t("This preview contains no real verified safety records. Missing information does not guarantee safety.")}</Text>
         </View>
       </View>

@@ -12,6 +12,10 @@ const comparisonMigration = readFileSync(new URL('../supabase/migrations/003_per
 const comparisonChecks = readFileSync(new URL('../supabase/tests/personal-comparisons.sql', import.meta.url), 'utf8');
 const contributionMigration = readFileSync(new URL('../supabase/migrations/004_venue_contributions.sql', import.meta.url), 'utf8');
 const contributionChecks = readFileSync(new URL('../supabase/tests/venue-contributions.sql', import.meta.url), 'utf8');
+const languageMigration = readFileSync(new URL('../supabase/migrations/005_language_suggestions.sql', import.meta.url), 'utf8');
+const languageChecks = readFileSync(new URL('../supabase/tests/language-suggestions.sql', import.meta.url), 'utf8');
+const safetyMigration = readFileSync(new URL('../supabase/migrations/006_account_safety.sql', import.meta.url), 'utf8');
+const safetyChecks = readFileSync(new URL('../supabase/tests/account-safety.sql', import.meta.url), 'utf8');
 
 async function database() {
   const db = new PGlite();
@@ -31,9 +35,57 @@ async function database() {
   await db.exec(catalogMigration);
   await db.exec(comparisonMigration);
   await db.exec(contributionMigration);
+  await db.exec(languageMigration);
+  await db.exec(safetyMigration);
   await db.exec(seed);
   return db;
 }
+
+test('private incident submission, own status history, safe review retries and public summaries roll back cleanly', async () => {
+  const db = await database();
+  try {
+    for (let run = 0; run < 2; run++) {
+      const results = await db.exec(safetyChecks);
+      assert.deepEqual(results.at(-1)?.rows, [{ result: 'Account safety checks passed. All test data was rolled back.' }]);
+      for (const table of ['auth.users', 'public.incident_reports', 'public.published_incidents', 'private.incident_publications']) {
+        assert.deepEqual((await db.query(`select count(*)::int n from ${table}`)).rows, [{ n: 0 }]);
+      }
+    }
+  } finally { await db.close(); }
+});
+
+test('safety checks detect a broken report privacy policy and roll back failed private fixtures', async () => {
+  const db = await database();
+  try {
+    await db.exec('alter policy incidents_read on public.incident_reports using (true)');
+    await assert.rejects(db.exec(safetyChecks), /FAIL: other accounts cannot read private incident history/);
+    assert.deepEqual((await db.query('select count(*)::int n from auth.users')).rows, [{ n: 0 }]);
+    assert.deepEqual((await db.query('select count(*)::int n from public.incident_reports')).rows, [{ n: 0 }]);
+  } finally { await db.close(); }
+});
+
+test('language submission, private history, moderator approval and replay pass with fixture rollback', async () => {
+  const db = await database();
+  try {
+    for (let run = 0; run < 2; run++) {
+      const results = await db.exec(languageChecks);
+      assert.deepEqual(results.at(-1)?.rows, [{ result: 'Language suggestion checks passed. All test data was rolled back.' }]);
+      for (const table of ['public.language_suggestions', 'private.language_suggestion_requests', 'auth.users']) {
+        assert.deepEqual((await db.query(`select count(*)::int n from ${table}`)).rows, [{ n: 0 }]);
+      }
+    }
+  } finally { await db.close(); }
+});
+
+test('language checks detect a broken privacy policy and roll back failed fixtures', async () => {
+  const db = await database();
+  try {
+    await db.exec('alter policy language_suggestions_read on public.language_suggestions using (true)');
+    await assert.rejects(db.exec(languageChecks), /FAIL: suggestion history is private to its owner/);
+    assert.deepEqual((await db.query('select count(*)::int n from auth.users')).rows, [{ n: 0 }]);
+    assert.deepEqual((await db.query('select count(*)::int n from private.language_suggestion_requests')).rows, [{ n: 0 }]);
+  } finally { await db.close(); }
+});
 
 test('crowd, bathroom and price writes preserve ownership, history, serving identity and rollback', async () => {
   const db=await database();

@@ -107,11 +107,11 @@ venues never display purported real community percentages. Distances remain
 unavailable until real location support exists. All/Cheap/Quiet/Popular filters
 use catalog metadata and reported summaries.
 
-Authenticated `+` opens the impression editor and personal comparisons. Apply the
-new `003_personal_comparisons.sql` migration and run
-`supabase/tests/personal-comparisons.sql` in SQL Editor to enable retry-safe
-comparison writes; hosted application/verification is pending. Do not rerun 001
-or 002 on the existing project.
+Authenticated `+` opens the impression editor and personal comparisons. The owner
+confirmed migration `003_personal_comparisons.sql` was deployed through SQL Editor
+on 2026-11-23. Hosted results for `supabase/tests/personal-comparisons.sql` and
+actual comparison API/device verification have not been reported. Do not rerun
+deployed migrations.
 
 Save impressions for two venues, then tap **Start comparisons**. Batches offer at
 most three distinct opponents from your saved database experience. Picking a
@@ -126,15 +126,15 @@ choice/skipping is disabled until that uncertain write is confirmed.
 History restores across app restarts and sessions; unfinished batches are held
 only in the current session and reset on restart/sign-out. Rankings show ordinal
 positions without raw Elo. Profile shows confirmed comparison counts and links
-to Rankings. Language/incident writes remain guest-demo-only. Price comparison
+to Rankings. Private incident writes use the account safety flow below. Price comparison
 remains read-only; price submissions use a separate optional form in the venue's
 `+` overlay. Guest activity is never merged into an account.
 
-Account crowd reports, bathroom reviews and drink prices require the new
-`004_venue_contributions.sql` migration, followed by
-`supabase/tests/venue-contributions.sql` in SQL Editor. Apply 003 first if still
-unapplied; do not rerun 001/002. Migration 004 is locally tested; hosted
-application/API checks are pending.
+Account crowd reports, bathroom reviews and drink prices use migration
+`004_venue_contributions.sql`, confirmed deployed by the owner through SQL Editor
+on 2026-11-23. Local tests pass; hosted results for
+`supabase/tests/venue-contributions.sql` and actual contribution API/device checks
+have not been reported. Do not rerun migrations 001–004.
 
 The same inline **Report crowd**, **Rate bathrooms** and **Update drink prices**
 cards appear after the account comparison section, once an impression is saved.
@@ -156,7 +156,7 @@ while navigating or reopening the form. Retry reuses the original request for
 append-only crowd/price writes; bathroom retry upserts the same review. Restart
 or sign-out clears local pending requests; confirmed server history restores.
 
-After deploying 004, check each form with a successful save, failed connection,
+With 004 deployed, check each form with a successful save, failed connection,
 retry, rapid double tap, closing/reopening and a full app reload. Edit a bathroom
 review and confirm its identity/count stays unchanged. Test legacy null category
 prefills, two database servings of the same drink name, comma/point decimals,
@@ -164,7 +164,75 @@ empty catalogs and another account's history. Verify updated public summaries,
 the crowd contributor threshold, Profile history and unchanged ranking positions.
 Physical-device and hosted contribution API verification are pending.
 
-After deploying 003, manually verify rapid repeated choice taps, retry after a
+### Account spoken-language suggestions
+
+Migration `005_language_suggestions.sql` adds account submissions, owned history
+and a moderator review queue. The owner confirmed that the language feature works
+and the hosted [rollback check](../bevve-backend/supabase/tests/language-suggestions.sql)
+passed on 2026-11-23. Migrations 001–005 are deployed and must not be rerun. Detailed
+API and physical-device verification outcomes have not been recorded.
+
+After saving an impression, open **Spoken languages** in the venue's `+` editor.
+Approved associations come only from the database. New suggestions remain private
+to the author and moderators, separate from approved associations. The form keeps
+uncertain details while navigating and retries the same request ID. Profile shows
+all owned Pending, Approved and Rejected rows; they do not enter update counts or
+rankings. Pending operations reset on restart/sign-out; confirmed history restores.
+Language loading/retry states are independent of crowd, bathroom and price forms.
+
+Accounts in `private.moderators` see a review queue in Profile. Approval atomically
+adds the language without replacing existing evidence; rejection publishes nothing.
+An uncertain review retains its selected decision for retry. Reviews and refreshed
+history invalidate the public catalog, including when an older read is in flight.
+Moderator own-history reads still explicitly filter by owner. All interface copy
+remains English, including when the suggested spoken language is Italian.
+
+Remaining device checks include submission, rapid taps, lost-response retry, close/reopen,
+restart and account switching on a device. With two accounts and a moderator, check
+private histories, approval/rejection, queue refresh and approved-language display
+on another device. Guest suggestions must stay local and never enter account history.
+
+### Account private incidents and published safety information
+
+The account flow requires only the new
+[migration 006](../bevve-backend/supabase/migrations/006_account_safety.sql), followed
+by the complete [rollback SQL check](../bevve-backend/supabase/tests/account-safety.sql).
+It passes local PostgreSQL checks. Hosted deployment, safety API writes, SQL check
+results and physical-device behavior have not been verified. Do not rerun 001–005.
+
+Open a venue's `+` action and **Optional private incident report**; saving an
+impression is optional for reporting. Category and private description are required,
+with an optional valid local calendar date. Drafts, uncertain submissions and
+moderator summary drafts stay scoped to the account for this app session. Closing
+the form preserves its draft; a confirmed submission clears it. Retries reuse the
+original request UUID and details. Restart/sign-out clears pending work; confirmed
+private history restores from Supabase. Reports never enter rankings or update counts.
+
+Profile shows **My private incident reports** with Pending/Approved/Rejected status,
+submission/review times and private details. Reads explicitly filter `reporter_id`,
+including for moderators. Accounts in the existing `private.moderators` allowlist
+see a separate pending review queue. Its public-summary field starts blank, persists
+on navigation, and is never prefilled from a private description or reporter identity.
+Approval requires a separate summary; rejection sends no public text. Uncertain
+reviews lock the decision and exact summary for retry. A repeated confirmed decision
+does not create another publication; changing that decision/summary fails.
+
+Venue details and the report form read only `published_incidents` through a
+dedicated public projection. It has no private report/reporter IDs or original
+description. Loading, unavailable reads and genuine empty results remain distinct;
+failed refreshes retain the last loaded summaries. Approval queues another public
+read if an older one is in flight. Foreground/periodic/manual refresh also updates
+history, access and viewed venues. Review is not independent verification and
+missing information does not guarantee safety. Guest incidents remain in memory.
+
+After deploying 006, use accounts A/B and moderator M on devices: submit as A,
+confirm B cannot read the private report, inspect M's queue and separate own history,
+approve with a public summary, then verify A's status and both clients' venue details.
+Repeat with rejection and lost-response retries. Check date/draft restoration,
+rapid taps, closing/reopening, restart/sign-out, account isolation, empty/error states,
+and that private text/identity is absent from the public view. These checks remain pending.
+
+With 003 deployed, manually verify rapid repeated choice taps, retry after a
 lost response, skip one/all, closing/reopening, navigation from Rankings back to
 Rankings, app restart and account switching. Confirm choices persist and batches
 reset on restart, and that editing an impression adds no vote. The app remains
@@ -221,7 +289,9 @@ Backend code is outside the mobile lint scope.
   device language preferences are ignored. Native AsyncStorage now persists the
   Supabase session, not demo reports or ranking history.
 - Venue spoken-language suggestions are separate from the English interface and
-  remain pending. Private incident reports are demo-only and are never published.
+  remain pending in the guest demo. Account suggestions use the review flow above.
+  Guest private incident reports are demo-only and are never published. Account
+  reports use the separate private-review/public-summary flow above.
 - Crowd classification needs three distinct recent contributors. This demo uses
   one contributor; repeated submissions cannot establish a live consensus.
 - The `+` journey saves an impression, offers up to three distinct comparisons

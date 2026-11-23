@@ -36,7 +36,8 @@ Account batches offer at most three distinct experienced opponents. They remain
 in memory across route/modal changes, reset on restart/sign-out, and never upload
 guest history. Rankings restore exclusively from owned server votes; impression
 edits and skips do not alter Elo. Raw scores remain outside the account UI context.
-Migration 003 is locally tested; hosted deployment/API checks are pending.
+Migration 003 is locally tested; the owner confirmed hosted deployment on
+2026-11-23. Actual hosted API/device checks remain unverified.
 
 Safety reports remain private to their reporter and moderators. A privileged database function checks a separate moderator allowlist, locks the report, records the decision, and creates a separate public summary in one transaction. Each report can be reviewed once. A private table links reports to publications. Corrections, withdrawal, and appeals need a later audited workflow. Do not include personal information in public summaries.
 
@@ -74,11 +75,65 @@ catalog summaries after a save. Catalog invalidation queues a follow-up if an
 older read is still pending. Uncertain writes retain their payload/request ID
 within the session. Append-only writes can also recover from refreshed server
 history; bathroom retries upsert the same review. No contribution action changes
-Elo or uploads guest state. Hosted migration/RPC/device checks are pending.
+Elo or uploads guest state. The owner confirmed migration 004 was deployed through
+SQL Editor on 2026-11-23. Actual hosted RPC/device checks remain unverified.
+
+## Venue-language suggestions
+
+Migration 005 adds `language_suggestions` with owned history and moderator read
+access. Direct client writes are denied. Submission derives ownership from Auth,
+validates a shared language vocabulary and assigns pending status/server time.
+Private request receipts bind IDs to suggestions, including when multiple devices'
+requests coalesce to one pending record. Replay after review returns that same
+record. Rejected history survives a later new suggestion. Account service reads
+explicitly filter the owner even when that owner is a moderator.
+
+The review RPC checks `private.moderators`, locks the suggestion, and atomically
+records approval/rejection. Approval inserts only the approved language into
+`bar_languages` without replacing existing evidence. Matching decision retries
+are idempotent; opposite decisions cannot replace an earlier review. Published
+venue languages contain no suggestion IDs or authors. Interface preferences and
+comparison votes are independent.
+
+The separate mobile language store preserves uncertain submission/review payloads,
+ignores late account results, protects writes from older reads and refreshes on
+foreground/periodic/manual reads. Own history and the moderator queue have separate
+load/error states; language failures cannot disable other contributions. Confirmed
+writes and history refresh invalidate catalog summaries. Guest forms remain local.
+The owner confirmed migration 005 deployment and its hosted SQL check passed on
+2026-11-23. Detailed API/device outcomes have not been recorded.
+
+## Connected private incidents and published safety
+
+Migration 006 retains the original report/publication tables, policies and legacy
+moderation behavior. Submission derives reporter identity/server time and binds a
+request UUID to the original venue/category/description/date. Identical retries
+return the same row, including after moderation. Invalid or conflicting payloads
+fail. Mobile forms use existing category/local-date validation. Account drafts and
+uncertain submissions stay in memory across navigation, reset on restart/sign-out,
+and clear only after a confirmed write. No guest data enters an account.
+
+Personal history explicitly filters `reporter_id`, even for moderators. The separate
+queue checks the private moderator allowlist and pages only pending reports. Its
+public-summary draft starts blank, never receives private text/identity automatically,
+and persists across navigation. Reviews lock the original decision and summary after
+an uncertain response. The new review RPC serializes on the report row and delegates
+pending decisions to the existing atomic moderation RPC. Identical decision/summary
+retries return the saved status; conflicting decisions or summaries cannot publish
+again. The legacy endpoint keeps its original behavior.
+
+Venue details read only a projected `published_incidents` DTO: publication/venue IDs,
+summary, review label and publication time. Private descriptions, reporter IDs and
+report IDs do not enter this public state. Own history, moderation access and each
+viewed venue have independent loading/error states and account lifetimes. Approval
+invalidates viewed public summaries and queues a fresh read if an older one remains
+in flight; stale reads cannot erase confirmed private writes/reviews. Foreground,
+periodic and manual refresh restore cross-device statuses and publications. No safety
+action changes Elo or public activity counts. Migration 006 and rollback checks pass
+locally; hosted deployment, SQL/API checks and device behavior remain unverified.
 
 ## Not yet implemented
 
-- Remaining language/incident contribution-write integration in mobile.
 - Full generated TypeScript database types. Current service queries rely on Supabase's default client typing; generate types from the deployed schema and parameterize the client before expanding the project.
 - Submission throttling, account abuse prevention, and operational monitoring. Latest-per-account crowd aggregation is not a rate limiter.
 - Account deletion/export, retention rules, moderation audit history, and publication withdrawal.

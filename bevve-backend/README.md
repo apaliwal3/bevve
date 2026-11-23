@@ -6,8 +6,10 @@ A backend foundation for the bevve plan: database schema, access rules, database
 
 - `supabase/migrations/001_backend.sql`: tables, constraints, authentication profile trigger, row-level security, crowd/bathroom aggregates, price comparison, and moderation.
 - `supabase/migrations/002_catalog_impressions.sql`: mobile catalog metadata, aggregate reads and private per-user impressions.
-- `supabase/migrations/003_personal_comparisons.sql`: retry-safe explicit comparison submission with owner and timestamp assigned by the server. Prepared and locally tested; hosted application is pending.
-- `supabase/migrations/004_venue_contributions.sql`: retry-safe crowd/price writes and a private own-price history RPC. Prepared and locally tested; hosted application is pending.
+- `supabase/migrations/003_personal_comparisons.sql`: retry-safe explicit comparison submission with owner and timestamp assigned by the server. Locally tested; owner confirmed hosted deployment on 2026-11-23.
+- `supabase/migrations/004_venue_contributions.sql`: retry-safe crowd/price writes and a private own-price history RPC. Locally tested; owner confirmed hosted deployment on 2026-11-23.
+- `supabase/migrations/005_language_suggestions.sql`: private language suggestions, retry receipts and moderator approval/rejection. Owner confirmed deployment and passing hosted SQL checks on 2026-11-23.
+- `supabase/migrations/006_account_safety.sql`: retry-safe private incident submission and review, plus moderator-access RPC. Locally tested; hosted deployment is unconfirmed.
 - `supabase/seed.sql`: three fictional venues and two standardized drinks.
 - `src/services/`: functions the future mobile app can call.
 - `src/logic/eloRanking.ts`: personal rankings from pairwise comparisons.
@@ -27,7 +29,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
    npm run check
    ```
 
-3. Create an empty Supabase project. In its SQL Editor, run `supabase/migrations/001_backend.sql`, then `002_catalog_impressions.sql`, followed by `supabase/seed.sql`. The migration is a one-time initial migration; use a fresh database rather than rerunning it. The seed script can be rerun.
+3. On a fresh empty Supabase project, run migrations 001–006 in order in SQL Editor, followed by `supabase/seed.sql`. Each migration is applied once. On the existing configured project, 001–005 are deployed; run only 006. The seed script can be rerun.
 4. Create `.env` in this directory with the project URL and **publishable** key, using the variable names in the connection check below. This starter does not load `.env` automatically; the check uses Node's `--env-file` option.
 5. Use `authService` to create an account. Confirm the email when required by your project's authentication settings, then sign in. New accounts automatically receive a profile.
 6. Complete `docs/database-checks.md` before sharing the app with others.
@@ -128,20 +130,22 @@ migration 002 and passed the hosted catalog/impression SQL check. The API write
 check also confirmed save, reload through a second sign-in session, and edit
 without adding a second row. One sample impression remains on the test account.
 
-Local PostgreSQL tests cover all four migrations, repeatable rollback checks, a broken
-ownership policy, and catalog pagination beyond fifty rows. These do not replace
+Local PostgreSQL tests cover all six migrations, repeatable rollback checks, broken
+ownership policies, and catalog pagination beyond fifty rows. These do not replace
 physical-device checks or full GoTrue/PostgREST write coverage for the remaining
 features. Mobile catalog reads and impression writes are connected. Personal
 comparisons and ordinal rankings are implemented and require migration 003;
-crowd/bathroom/price contributions require migration 004. Language/incident
-writes remain guest-demo-only.
+crowd/bathroom/price contributions require migration 004. Account language suggestions
+and review UI require migration 005. Account incident submission, private history,
+moderation and published-summary reads are implemented for migration 006.
 
-On the existing hosted project, apply **only** migration 003, then run the entire
-`supabase/tests/personal-comparisons.sql` in SQL Editor. The check rolls back all
+The owner confirmed migrations 003 and 004 were deployed through Supabase SQL
+Editor on 2026-11-23. Do not rerun migrations 001–004. The entire
+`supabase/tests/personal-comparisons.sql` can be run in SQL Editor. The check rolls back all
 fixtures and verifies ownership, required saved impressions, immutable votes,
 server time, duplicate retries, conflicting request IDs and anonymous denial.
-Do not rerun the already deployed 001/002 migrations. Local PostgreSQL checks pass;
-hosted comparison RPC and physical-device verification are pending.
+Local PostgreSQL checks pass; hosted results for this SQL check, actual comparison
+RPC checks and physical-device verification have not been reported.
 
 `rankingsService(client).submitComparison(winnerBarId, loserBarId, requestId)`
 requires a UUID generated once for the explicit choice and reused for retries.
@@ -150,10 +154,9 @@ request IDs represent different explicit choices. It requires the caller to have
 saved an impression for both venues. Existing history and original ownership/
 column-level restrictions are preserved.
 
-For the next contribution stage, apply `004_venue_contributions.sql` after 003,
-then run `supabase/tests/venue-contributions.sql` in SQL Editor. Do not rerun
-already-deployed migrations. The check rolls back all fixtures. Local tests pass;
-hosted application and contribution RPC/device verification are pending.
+Migration 004 is deployed. `supabase/tests/venue-contributions.sql` can be run in
+SQL Editor; it rolls back all fixtures. Local tests pass; hosted results for this
+SQL check and actual contribution RPC/device verification have not been reported.
 
 `submit_crowd_report(requestId, barId, level)` and
 `submit_drink_price(requestId, barId, drinkId, priceCents)` derive the owner from
@@ -165,6 +168,86 @@ from 50 to 10000 cents and rely on catalog foreign keys for exact serving identi
 remain available for legacy clients; the connected mobile repository uses the
 new retry-safe RPCs. Bathroom writes use the existing owned upsert/read contract,
 preserve the row identity and original creation time, and return the saved review.
+
+## Venue-language suggestions (migration 005)
+
+The owner confirmed migration 005 was deployed, the language feature works, and
+[`supabase/tests/language-suggestions.sql`](supabase/tests/language-suggestions.sql)
+passed on Supabase on 2026-11-23. Do not rerun migrations 001–005. The SQL check
+rolls back fixtures on success or failure and may be rerun. Detailed API/device
+verification outcomes have not been recorded. No SQL administration connection
+is available in this workspace.
+
+`languagesService(client)` offers `getMySuggestions()`, `submitSuggestion(request)`,
+`getModerationQueue()` and `moderateSuggestion(id, decision)`. A request contains
+`{ id, barId, code }`; create the UUID once and reuse it on retries. Auth derives
+the owner and the database supplies timestamps/status. Only the eight shared
+catalog codes are accepted. Duplicate pending suggestions from the same account,
+venue and language coalesce. Private receipts preserve every accepted request ID
+so a retry after review returns the same suggestion. Reusing an ID for another
+owner or payload fails. New requests after rejection preserve the older history.
+
+The existing `private.moderators` allowlist controls review access. To designate
+a moderator, deliberately choose a confirmed Auth user's UUID and run this in
+SQL Editor as administrator, replacing the placeholder:
+
+```sql
+insert into private.moderators(user_id)
+values ('YOUR_CONFIRMED_MODERATOR_AUTH_USER_UUID')
+on conflict do nothing;
+```
+
+Clients cannot edit the allowlist, suggestion status, timestamps or approved
+languages directly. Moderator own-history queries explicitly filter `user_id`;
+the separate queue reads pending rows across contributors. Approval inserts the
+language with community evidence without overwriting existing venue/demo evidence.
+Rejection changes only private review history. Identical review retries are
+idempotent; conflicting decisions fail. Pending/rejected rows never enter public
+catalog languages, interface preferences or rankings. Ordinary accounts cannot
+review; guests keep their separate in-memory forms.
+
+## Account safety flow (migration 006)
+
+On the existing hosted project, run only
+[`supabase/migrations/006_account_safety.sql`](supabase/migrations/006_account_safety.sql),
+then the whole [`supabase/tests/account-safety.sql`](supabase/tests/account-safety.sql)
+in SQL Editor as postgres. The check rolls back fixtures on success and failure.
+Migration 006, the original access check and a deliberately broken incident
+privacy policy have been exercised locally. Hosted 006 deployment, safety SQL/API
+results and physical-device verification are unconfirmed. No hosted safety writes
+were performed during implementation.
+
+Existing incident/publication tables, ownership policies, moderator allowlist and
+the atomic legacy `moderate_incident` RPC are retained. New functions:
+
+- `submit_incident_report(requestId, barId, category, description, occurredAt)` derives
+  the reporter and timestamp, requires one of the four form categories, validates
+  description/date and returns the private report. Identical request retries return
+  the same row, including after review. Conflicting owner/payload reuse fails.
+- `can_moderate_incidents()` checks the existing private allowlist. No client can
+  grant itself moderator access.
+- `review_incident_report(reportId, decision, publicSummary)` locks the report and
+  uses existing atomic moderation. Approval requires a separately supplied summary;
+  rejection requires null. Retrying the same decision/summary returns the reviewed
+  row without another publication. Conflicting decisions/summaries fail. The legacy
+  RPC retains its original one-decision behavior for existing clients.
+
+`safetyService(client).submitIncident(request)` now takes
+`{ id, barId, input: { category, description, occurred_at } }`. Retain its UUID for
+retries. `getMyIncidentReports()` explicitly filters the authenticated reporter and
+paginates beyond 500, including for moderators. `getModerationQueue()` separately
+checks access and pages pending reports. `moderateIncident(id, decision, summary)`
+uses the new retry-safe endpoint. `getPublishedIncidents(barId)` selects only the
+public publication ID, venue ID, summary, review label and publication time; it
+never requests a reporter, private description or original report ID.
+
+Mobile drafts and pending submission/review payloads stay account-scoped in memory.
+Confirmed writes update private state; failed/uncertain saves keep their details.
+Public summaries have an independent store and error states. Approval invalidates
+viewed venue summaries and queues a follow-up if an older read is pending. Guest
+activity is never uploaded, and reports/reviews do not affect rankings or counts.
+Moderators must write public text without identifying details; a private description
+is never prefilled or copied into the public field automatically.
 
 ## References
 

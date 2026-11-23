@@ -24,13 +24,12 @@ the original fictional, in-memory demo. The interface is English-only.
 - Catalog loading/error/retry states, manual refresh, foreground refresh and
   account-change isolation. Failed reads never fall back to guest fixtures.
 
-Personal comparisons and rankings are implemented for signed-in accounts and
-require the new `003_personal_comparisons.sql` migration (hosted application is
-pending). The venue `+` editor offers **Start comparisons** after saving impressions
+Personal comparisons and rankings are implemented for signed-in accounts using
+the deployed `003_personal_comparisons.sql` migration. The venue `+` editor offers **Start comparisons** after saving impressions
 for two venues. Only explicit picks affect rankings; impressions and skips do not.
 Crowd reports, bathroom reviews and drink-price submissions are implemented for
-accounts and require migration `004_venue_contributions.sql` (hosted application
-is pending). Price comparison uses the database drink UUID and serving size.
+accounts using the deployed `004_venue_contributions.sql` migration.
+Price comparison uses the database drink UUID and serving size.
 
 Comparison history restores from Supabase across sessions. Each batch offers at
 most three distinct experienced opponents and survives navigation in the current
@@ -47,6 +46,22 @@ replace that review. Price submissions use database drink/serving IDs, accept EU
 amounts from €0.50 to €100, and append corrections without deleting earlier prices.
 All three histories appear in Profile and restore across sessions. Confirmed
 saves refresh public summaries; errors retain the pending details for retry.
+
+Account spoken-language suggestions, private review history and a moderator
+queue use migration `005_language_suggestions.sql`. The owner confirmed deployment
+and passing hosted language-suggestion checks on 2026-11-23. Pending and rejected suggestions
+stay out of venue languages. Approval adds the language and refreshes the catalog;
+the interface remains English-only. Profile shows Pending, Approved and Rejected
+statuses separately from the existing activity counts.
+
+The account incident → moderation → published-summary flow is implemented for
+`006_account_safety.sql` (locally tested; hosted deployment is unconfirmed).
+Venue `+` offers a private report without requiring an impression. Drafts and
+uncertain submissions stay in the account session; Profile restores only that
+reporter's history/statuses, including for moderator accounts. A separate moderator
+queue requires a separately written public summary for approval. Only published
+summary records appear on venue details; raw descriptions and reporter IDs never
+feed that public view. No report or review affects rankings or activity counts.
 
 ## Guest demo features
 
@@ -182,7 +197,7 @@ repeated reports cannot create that consensus. Fictional crowd snapshots stay
 separately labeled.
 
 Prices are community-reported, not verified offers. Guest values are fictional.
-Language suggestions remain pending. Incident reports are saved only in memory,
+Guest language suggestions remain pending. Guest incident reports are saved only in memory,
 are not published, and do not reach a real moderation service. Safety sections
 contain no real verified public records. Venue photographs require network
 access unless cached; the Welcome image and fonts are bundled.
@@ -192,10 +207,10 @@ see the [asset inventory](mobile/assets/README.md).
 
 ## Supabase integration
 
-`bevve-backend/` contains migrations, services and checks. Apply migrations in
-order on a fresh project; on the existing project, only
-`002_catalog_impressions.sql` was needed for this stage. The hosted project owner
-applied it and passed `supabase/tests/catalog-impressions.sql` on 2026-11-22.
+`bevve-backend/` contains migrations, services and checks. Apply migrations 001–006
+in order on a fresh project. On the existing project, 001–005 are deployed and only
+006 is new. The hosted project owner applied migration 002 and passed
+`supabase/tests/catalog-impressions.sql` on 2026-11-22.
 These test scripts roll back their fixtures.
 
 `mobile/.env.local` contains public project configuration only. No backend test
@@ -208,14 +223,27 @@ separate `check:impressions` command tests actual API writes and session reloads
 on a sample venue, restoring a previous impression if one existed. Otherwise it
 leaves one sample impression on the configured test account.
 
-On the existing hosted project, apply migration 003 if it is still unapplied,
-then `bevve-backend/supabase/migrations/004_venue_contributions.sql` in SQL Editor.
-Do not rerun deployed migrations 001/002. Run the corresponding
+The project owner confirmed on 2026-11-23 that migrations 003 and 004 were deployed
+through Supabase SQL Editor. Migrations 001–004 must not be rerun on this project.
+The corresponding
 `supabase/tests/personal-comparisons.sql` and `supabase/tests/venue-contributions.sql`
-checks; they roll back fixtures. Migrations 003/004 pass local PostgreSQL checks;
-hosted RPC/device verification is pending. The new own-price RPC exposes only
+checks roll back fixtures; hosted results for these two checks have not been
+reported. Migrations 003/004 pass local PostgreSQL checks; hosted RPC/device
+verification remains pending. The new own-price RPC exposes only
 the caller's EUR history; raw price-table reads remain denied.
 
-Remaining integration includes pending venue-language suggestions and incident
-submission/moderation UI. The legacy guest fixture UUIDs/servings are
+The owner confirmed migration 005 and the hosted language-suggestion SQL check
+passed on 2026-11-23. Migrations 001–005 must not be rerun. Detailed language API/
+physical-device outcomes have not been recorded. Moderator accounts use the existing private allowlist;
+see the [backend setup](bevve-backend/README.md#venue-language-suggestions-migration-005).
+
+For the new account safety flow, run only
+[`006_account_safety.sql`](bevve-backend/supabase/migrations/006_account_safety.sql)
+in SQL Editor, then the complete rollback check
+[`account-safety.sql`](bevve-backend/supabase/tests/account-safety.sql).
+No hosted safety writes, migration or checks were performed here. Hosted and
+device verification remain pending.
+
+Remaining integration includes real nearby/location, profile editing, password
+recovery and catalog management. The legacy guest fixture UUIDs/servings are
 not database IDs and are never matched to catalog rows by name.

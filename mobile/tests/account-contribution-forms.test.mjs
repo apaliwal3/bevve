@@ -16,7 +16,7 @@ const formStyles=loadNativeModule('src/features/contributions/inline-form-styles
 const translation={t:createTranslator('en'),format:formatting.createLocaleFormatters('en')};
 function setup(kind,extraProps={}){
   const harness=hookHarness();let closed=0;
-  const names={crowd:['crowd-report-form','CrowdReportForm'],bathroom:['bathroom-review-form','BathroomReviewForm'],price:['drink-price-form','DrinkPriceForm']};
+  const names={crowd:['crowd-report-form','CrowdReportForm'],bathroom:['bathroom-review-form','BathroomReviewForm'],price:['drink-price-form','DrinkPriceForm'],language:['spoken-languages-form','SpokenLanguagesForm'],safety:['safety-information-form','SafetyInformationForm']};
   const [file,name]=names[kind];
   const module=loadNativeModule(`src/features/contributions/${file}.tsx`,{
     react:harness.react,'@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/constants/theme':theme,
@@ -24,11 +24,62 @@ function setup(kind,extraProps={}){
     '@/localization/language-provider':{useTranslation:()=>translation},'@/localization/venue-copy':copy,
     './contribution-drafts':drafts,'./extra-form-drafts':extraDrafts,'./venue-extras-state':extras,'./inline-form-styles':formStyles,
   });
-  const props={savedReport:null,savedReview:null,prices:[],catalog:[drink],onCancel:()=>closed++,onSubmit:()=>{},...extraProps};
+  const props={demoNotes:[],languages:[],pending:[],savedReport:null,savedReview:null,prices:[],catalog:[drink],onCancel:()=>closed++,onSubmit:()=>{},...extraProps};
   function render(){const tree=harness.render(()=>module[name](props));harness.effects();return [...elements(tree)];}
   return{props,render,harness,get closed(){return closed;},button(label){return render().find(node=>node.props.label===label);}};
 }
 const feedback=()=>({pending:false,saving:false,error:false,saved:false,retry:()=>{}});
+
+test('account private forms use controlled drafts, preserve details on close, and show success only after confirmation',()=>{
+  const state=feedback();let submitted,retries=0;
+  state.retry=()=>retries++;
+  const ui=setup('safety',{feedback:state,draft:{category:'Other',description:'Private synthetic details',date:'2020-01-02'},
+    onSubmit:value=>{submitted=value;state.pending=true;state.saving=true;}});
+  ui.props.onDraftAction=action=>{ui.props.draft=extraDrafts.incidentDraftReducer(ui.props.draft,action);};
+  ui.render().find(node=>node.props.accessibilityLabel==='Private incident description').props.onChangeText('Changed private details');
+  ui.button('Close').props.onPress();assert.equal(ui.props.draft.description,'Changed private details');assert.equal(ui.closed,1);
+  ui.button('Submit report').props.onPress();assert.equal(submitted.description,'Changed private details');
+  assert.ok(ui.render().filter(node=>node.type==='TextInput').every(node=>node.props.editable===false));
+  assert.ok(!ui.render().some(node=>node.props.children==='Saved in demo only — pending moderation'));
+  assert.ok(!ui.render().some(node=>node.props.children==='Private report saved to your account. Check its review status in Profile.'));
+  state.saving=false;state.error=true;assert.ok(ui.render().some(node=>node.props.accessibilityRole==='alert'));
+  ui.button('Retry save').props.onPress();assert.equal(retries,1);
+  state.pending=false;state.error=false;state.saved=true;ui.props.draft={...extraDrafts.emptyIncidentDraft};
+  assert.ok(ui.render().some(node=>node.props.children==='Private report saved to your account. Check its review status in Profile.'));
+  assert.ok(!ui.render().some(node=>node.props.children==='DEMO DATA'));ui.harness.unmount();
+});
+
+test('guest safety submissions remain synchronous, session-only and reset their local draft',()=>{
+  let submitted;
+  const ui=setup('safety',{onSubmit:value=>{submitted=value;}});
+  ui.render().find(node=>node.props.accessibilityRole==='radio').props.onPress();
+  ui.render().find(node=>node.props.accessibilityLabel==='Private incident description').props.onChangeText('Guest synthetic details');
+  ui.button('Submit report').props.onPress();assert.equal(submitted.description,'Guest synthetic details');
+  assert.equal(ui.render().find(node=>node.props.accessibilityLabel==='Private incident description').props.value,'');
+  assert.ok(ui.render().some(node=>node.props.children==='Saved in demo only — pending moderation'));ui.harness.unmount();
+});
+
+test('account language drafts retain their selection until confirmation and offer retry without a false demo success',()=>{
+  const state=feedback();let code,retries=0;
+  state.retry=()=>retries++;
+  const ui=setup('language',{feedback:state,onSubmit:value=>{code=value;state.pending=true;state.error=true;}});
+  ui.render().filter(node=>node.props.accessibilityRole==='radio')[1].props.onPress();
+  ui.button('Suggest language').props.onPress();assert.equal(code,'it');
+  assert.ok(ui.render().filter(node=>node.props.accessibilityRole==='radio').every(node=>node.props.disabled));
+  assert.ok(ui.render().some(node=>node.props.accessibilityRole==='radio'&&node.props.accessibilityState.checked));
+  assert.ok(!ui.render().some(node=>typeof node.props.children==='string'&&node.props.children.includes('saved')));
+  ui.button('Retry save').props.onPress();assert.equal(retries,1);
+  state.pending=false;state.error=false;state.saved=true;ui.props.pending=[{id:'saved',language_code:'it'}];
+  assert.ok(ui.render().some(node=>node.props.children==='Language suggestion saved to your account. Check its review status in Profile.'));
+  assert.ok(!ui.render().some(node=>node.props.children==='Currently associated · Demo data'));ui.harness.unmount();
+});
+
+test('reopened uncertain language forms restore the request and show approved and pending languages separately',()=>{
+  const ui=setup('language',{languages:[{code:'en',name:'English'}],pending:[{id:'pending',language_code:'fr'}],initialCode:'it',feedback:{...feedback(),pending:true,error:true}});
+  const radios=ui.render().filter(node=>node.props.accessibilityRole==='radio');assert.equal(radios.length,6);
+  assert.equal(radios.filter(node=>node.props.accessibilityState.checked).length,1);
+  assert.equal(ui.button('Retry save').props.disabled,false);assert.equal(ui.button('Cancel').props.disabled,true);ui.harness.unmount();
+});
 
 test('account crowd reports show success only after server confirmation, disable pending edits and expose retry',()=>{
   let calls=0,retries=0;

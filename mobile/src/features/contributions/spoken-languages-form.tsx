@@ -10,19 +10,23 @@ import type { VenueDetails } from '@/types/venue';
 import { languageDraftReducer } from './extra-form-drafts';
 import { inlineFormStyles as styles } from './inline-form-styles';
 import type { SessionLanguageSuggestion } from './venue-extras-state';
+import type { ContributionFormFeedback } from './contribution-form-feedback';
 
 type SpokenLanguagesFormProps = {
   languages: VenueDetails['languages'];
-  pending: readonly SessionLanguageSuggestion[];
+  pending: readonly Pick<SessionLanguageSuggestion, 'id' | 'language_code'>[];
   disabled?: boolean;
   onSubmit: (code: typeof languageCatalog[number]['code']) => void;
   onCancel: () => void;
+  feedback?: ContributionFormFeedback;
+  initialCode?: VenueLanguageCode;
 };
 
-export function SpokenLanguagesForm({ languages, pending, disabled = false, onSubmit, onCancel }: SpokenLanguagesFormProps) {
+export function SpokenLanguagesForm({ languages, pending, disabled: parentDisabled = false, onSubmit, onCancel, feedback, initialCode }: SpokenLanguagesFormProps) {
   const { t } = useTranslation();
-  const [draft, dispatchDraft] = useReducer(languageDraftReducer, null);
+  const [draft, dispatchDraft] = useReducer(languageDraftReducer, initialCode ?? null);
   const [success, setSuccess] = useState<VenueLanguageCode | null>(null);
+  const disabled = parentDisabled || Boolean(feedback?.pending);
   const options = languageCatalog.filter((language) => !languages.some((associated) => associated.code === language.code) &&
     !pending.some((suggestion) => suggestion.language_code === language.code));
   const canSubmit = draft !== null && options.some((language) => language.code === draft);
@@ -37,13 +41,13 @@ export function SpokenLanguagesForm({ languages, pending, disabled = false, onSu
     if (!draft || !canSubmit || disabled) return;
     onSubmit(draft);
     setSuccess(draft);
-    dispatchDraft({ type: 'reset' });
+    if (!feedback) dispatchDraft({ type: 'reset' });
   }
 
   return (
     <View style={styles.form}>
       <View style={styles.info}>
-        <Text style={styles.label}>{t("Currently associated · Demo data")}</Text>
+        <Text style={styles.label}>{feedback ? t('Currently associated') : t("Currently associated · Demo data")}</Text>
         <View style={styles.options}>
           {languages.map((language) => <Text key={language.code} style={styles.tag}>{venueLanguageLabel(language.code, t, language.name)}</Text>)}
         </View>
@@ -73,10 +77,15 @@ export function SpokenLanguagesForm({ languages, pending, disabled = false, onSu
       </View>
       {options.length === 0 && <Text style={styles.hint}>{t("All catalog languages are already associated or pending.")}</Text>}
       <Text style={styles.hint}>{t("Suggestions remain Pending until reviewed. This does not change the app’s interface language.")}</Text>
-      {success && <Text accessibilityLiveRegion="polite" style={styles.success}>{t('{language} suggestion saved in demo only — Pending.', { language: venueLanguageLabel(success, t) })}</Text>}
+      {success && (!feedback || feedback.saved) && <Text accessibilityLiveRegion="polite" style={styles.success}>{feedback
+        ? t('Language suggestion saved to your account. Check its review status in Profile.')
+        : t('{language} suggestion saved in demo only — Pending.', { language: venueLanguageLabel(success, t) })}</Text>}
+      {feedback?.pending && <Text style={styles.hint}>{t('Unconfirmed suggestion: {language}', { language: venueLanguageLabel(initialCode ?? draft ?? '', t) })}</Text>}
+      {feedback?.saving && <Text accessibilityLiveRegion="polite" style={styles.hint}>{t('Saving contribution…')}</Text>}
+      {feedback?.error && <Text accessibilityRole="alert" style={styles.hint}>{t('Your contribution could not be confirmed. Retry to save the same details without duplicates.')}</Text>}
       <View style={styles.actions}>
         <PrimaryButton label={t("Cancel")} variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
-        <PrimaryButton label={t("Suggest language")} disabled={!canSubmit || disabled} onPress={submit} style={styles.button} />
+        <PrimaryButton label={feedback?.pending ? t('Retry save') : t("Suggest language")} disabled={parentDisabled || feedback?.saving || (!canSubmit && !feedback?.pending)} onPress={feedback?.pending ? feedback.retry : submit} style={styles.button} />
       </View>
     </View>
   );
