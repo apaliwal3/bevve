@@ -26,12 +26,15 @@ import { useAccountContributions } from '@/features/contributions/account-contri
 import { AccountContributionFeedback, AccountContributionPanel } from '@/features/contributions/account-contribution-panel';
 import { AccountLanguageHistory, AccountLanguageModeration, AccountLanguagePanel } from '@/features/contributions/account-language-panel';
 import { AccountIncidentHistory, AccountIncidentModeration, AccountIncidentPanel, AccountPublishedSafety } from '@/features/contributions/account-safety-panel';
+import { useAccountLocation } from '@/features/location/account-location-provider';
+import { locatedCatalogVenue } from '@/features/location/venue-distance';
 
 export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogValue }) {
-  const { t } = useTranslation();
+  const { t, format } = useTranslation();
+  const location = useAccountLocation();
   const params = useLocalSearchParams<PriceRouteParams & { barId?: string | string[]; returnTo?: string | string[] }>();
   const [editing, setEditing] = useState(false);
-  const venues = catalog.venues.map(catalogVenue);
+  const venues = catalog.venues.map(row => locatedCatalogVenue(row, location.fix, t, format));
   const result = resolveVenueById(params.barId, venues);
   const navigation = resolvePriceNavigation(params, catalog.drinks, venues, catalog.drinks[0]?.id ?? null);
   const back = resolveBarDetailsBack(params.returnTo, navigation.drink?.id ?? null, navigation.sourceVenue?.id);

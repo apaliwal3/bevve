@@ -103,9 +103,54 @@ not see the first account's private saved answers.
 Loading and failures have explicit states, with refresh/retry controls and no
 fallback to guest fixtures. Public summaries and exact-serving EUR prices are
 read from the database. Real venues use eligible community aggregates; sample
-venues never display purported real community percentages. Distances remain
-unavailable until real location support exists. All/Cheap/Quiet/Popular filters
-use catalog metadata and reported summaries.
+venues never display purported real community percentages. All/Cheap/Quiet/Popular
+filters use catalog metadata and reported summaries. Nearby and real distances
+use optional foreground device location, as described below.
+
+### Nearby and device location
+
+In signed-in Explore, tap **Nearby** to enable foreground location. No permission
+request, permission check or GPS subscription runs automatically at account startup.
+Nearby shows real database venues within 1 km, sorted by unrounded straight-line
+distance, then name/ID for ties. Search still applies. Cards and venue details show
+approximate metric distances from the same device fix. Sample venues (`is_demo`)
+have unavailable real distances and are excluded from Nearby. Guest demo distances
+and its fictional Nearby filter are unchanged; the demo never requests location.
+
+`expo-location` is installed for SDK 58 using Expo's compatible dependency map.
+Restart Expo after installing dependencies. Foreground location is included in
+Expo Go; its permission dialog uses Expo Go's native configuration. Existing custom
+development/release binaries need rebuilding to include the module and bevve's
+permission wording. App configuration enables foreground permissions only, with
+background location, foreground services, Always access and motion tracking disabled.
+
+The account-scoped store watches foreground changes (balanced accuracy, 25 m
+movement threshold), stops and clears coordinates when backgrounded, and rechecks
+existing permission on return without prompting automatically. Brief inactive
+events from system permission dialogs do not cancel the request. **Stop using
+location** clears the point/subscription and returns Nearby to All. Sign-out or
+account changes destroy local location state; a new session requires opting in again.
+Coordinates are neither persisted nor sent to Supabase. Existing venue latitude/
+longitude columns supply destination coordinates; no new migration is required.
+
+An accepted reading must have valid coordinates, be less than two minutes old,
+and report accuracy within 500 m. The first acceptable fix has a 20-second timeout;
+denied/blocked permission, disabled services, insufficient accuracy, stale fixes,
+native failures and timeouts have explicit recovery states. Precise-location and
+blocked-permission states provide settings access. Coarse/unknown readings never
+supply invented distances. A previously accepted point expires after two minutes
+without a fresh acceptable update. Until a fix is available, Nearby shows the
+location state instead of claiming zero venues. Other filters remain usable.
+
+Local tests exercise geographic boundaries, filtering/order, native adapter/provider
+wiring, permission recovery, timers, cleanup, account isolation and UI states. Native
+configuration introspection checks permission declarations without generating native
+folders. Physical-device verification remains pending: test Allow Once/While Using,
+denial, permanent blocking/settings return, approximate/precise access, services off,
+indoors timeout, movement, background/foreground, Stop, restart and account switching.
+Use a real `is_demo = false` venue with correct coordinates; the fictional seed
+venues are deliberately excluded. Check real devices in Expo Go and rebuilt custom
+binaries, including permission text and larger text/safe-area behavior.
 
 Authenticated `+` opens the impression editor and personal comparisons. The owner
 confirmed migration `003_personal_comparisons.sql` was deployed through SQL Editor
@@ -194,11 +239,10 @@ on another device. Guest suggestions must stay local and never enter account his
 
 ### Account private incidents and published safety information
 
-The account flow requires only the new
-[migration 006](../bevve-backend/supabase/migrations/006_account_safety.sql), followed
-by the complete [rollback SQL check](../bevve-backend/supabase/tests/account-safety.sql).
-It passes local PostgreSQL checks. Hosted deployment, safety API writes, SQL check
-results and physical-device behavior have not been verified. Do not rerun 001–005.
+The owner confirmed [migration 006](../bevve-backend/supabase/migrations/006_account_safety.sql)
+was deployed and verified on 2026-11-23. Do not rerun migrations 001–006. The complete
+[rollback SQL check](../bevve-backend/supabase/tests/account-safety.sql) may be rerun.
+Detailed API/device scenarios were not enumerated in the confirmation.
 
 Open a venue's `+` action and **Optional private incident report**; saving an
 impression is optional for reporting. Category and private description are required,
@@ -225,12 +269,13 @@ read if an older one is in flight. Foreground/periodic/manual refresh also updat
 history, access and viewed venues. Review is not independent verification and
 missing information does not guarantee safety. Guest incidents remain in memory.
 
-After deploying 006, use accounts A/B and moderator M on devices: submit as A,
+For detailed device coverage, use accounts A/B and moderator M: submit as A,
 confirm B cannot read the private report, inspect M's queue and separate own history,
 approve with a public summary, then verify A's status and both clients' venue details.
 Repeat with rejection and lost-response retries. Check date/draft restoration,
 rapid taps, closing/reopening, restart/sign-out, account isolation, empty/error states,
-and that private text/identity is absent from the public view. These checks remain pending.
+and that private text/identity is absent from the public view. Record these individual
+outcomes separately from the confirmed hosted deployment/verification.
 
 With 003 deployed, manually verify rapid repeated choice taps, retry after a
 lost response, skip one/all, closing/reopening, navigation from Rankings back to

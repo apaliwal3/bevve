@@ -14,6 +14,7 @@ import { AccountComparisonsProvider } from '@/features/comparisons/account-compa
 import { AccountContributionsProvider } from '@/features/contributions/account-contributions-provider';
 import { AccountLanguagesProvider } from '@/features/contributions/account-languages-provider';
 import { AccountSafetyProvider } from '@/features/contributions/account-safety-provider';
+import { AccountLocationProvider } from '@/features/location/account-location-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,19 +54,21 @@ function AppLayout() {
       }}>
       <StatusBar style="light" />
       <VenueCatalogProvider>
-        <AccountSafetyProvider>
-          <AccountLanguagesProvider>
-            <AccountContributionsProvider>
-              <AccountComparisonsProvider>
-                <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
-                  <PersonalComparisonsProvider>
-                    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
-                  </PersonalComparisonsProvider>
-                </VenueRatingsProvider>
-              </AccountComparisonsProvider>
-            </AccountContributionsProvider>
-          </AccountLanguagesProvider>
-        </AccountSafetyProvider>
+        <AccountLocationProvider>
+          <AccountSafetyProvider>
+            <AccountLanguagesProvider>
+              <AccountContributionsProvider>
+                <AccountComparisonsProvider>
+                  <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
+                    <PersonalComparisonsProvider>
+                      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
+                    </PersonalComparisonsProvider>
+                  </VenueRatingsProvider>
+                </AccountComparisonsProvider>
+              </AccountContributionsProvider>
+            </AccountLanguagesProvider>
+          </AccountSafetyProvider>
+        </AccountLocationProvider>
       </VenueCatalogProvider>
     </ThemeProvider>
   );

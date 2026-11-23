@@ -13,8 +13,9 @@ the original fictional, in-memory demo. The interface is English-only.
 
 - Database venue IDs, optional metadata, photographs, languages, crowd/bathroom
   summaries and latest EUR prices. Missing metadata stays unavailable.
-- Search by name/neighborhood and All, Cheap, Quiet and Popular filters. Nearby
-  is omitted until a real user location is available; fixture distances are not used.
+- Search by name/neighborhood and All, Nearby, Cheap, Quiet and Popular filters.
+  Nearby requests foreground location on tap, shows real venues within 1 km and
+  sorts closest first. Cards/details show approximate straight-line distances.
 - A venue's `+` action saves/edits an impression. Profile and cards update only
   after the server confirms the write. Failures retain the draft for retry.
 - Impressions reload across sessions/devices, remain private to their owner, and
@@ -55,13 +56,21 @@ the interface remains English-only. Profile shows Pending, Approved and Rejected
 statuses separately from the existing activity counts.
 
 The account incident → moderation → published-summary flow is implemented for
-`006_account_safety.sql` (locally tested; hosted deployment is unconfirmed).
+`006_account_safety.sql`. The owner confirmed deployment and verification on 2026-11-23.
 Venue `+` offers a private report without requiring an impression. Drafts and
 uncertain submissions stay in the account session; Profile restores only that
 reporter's history/statuses, including for moderator accounts. A separate moderator
 queue requires a separately written public summary for approval. Only published
 summary records appear on venue details; raw descriptions and reporter IDs never
 feed that public view. No report or review affects rankings or activity counts.
+
+Account location access starts only after selecting Nearby. Permission denial,
+blocked access, disabled services, imprecise/stale readings and timeouts have
+retry/settings controls. Foreground updates use device coordinates and real
+database venue coordinates. Location stays in memory on the device, clears on
+background/sign-out, and is never uploaded to Supabase. Sample venues have no real
+distances; guest Nearby retains its explicitly fictional demo distances. No new
+database migration is needed. Physical-device location verification remains pending.
 
 ## Guest demo features
 
@@ -208,8 +217,8 @@ see the [asset inventory](mobile/assets/README.md).
 ## Supabase integration
 
 `bevve-backend/` contains migrations, services and checks. Apply migrations 001–006
-in order on a fresh project. On the existing project, 001–005 are deployed and only
-006 is new. The hosted project owner applied migration 002 and passed
+in order on a fresh project. On the existing project, 001–006 are deployed and must
+not be rerun. The hosted project owner applied migration 002 and passed
 `supabase/tests/catalog-impressions.sql` on 2026-11-22.
 These test scripts roll back their fixtures.
 
@@ -237,13 +246,12 @@ passed on 2026-11-23. Migrations 001–005 must not be rerun. Detailed language 
 physical-device outcomes have not been recorded. Moderator accounts use the existing private allowlist;
 see the [backend setup](bevve-backend/README.md#venue-language-suggestions-migration-005).
 
-For the new account safety flow, run only
-[`006_account_safety.sql`](bevve-backend/supabase/migrations/006_account_safety.sql)
-in SQL Editor, then the complete rollback check
-[`account-safety.sql`](bevve-backend/supabase/tests/account-safety.sql).
-No hosted safety writes, migration or checks were performed here. Hosted and
-device verification remain pending.
+The owner confirmed migration 006 was deployed and verified on 2026-11-23. Its
+[`account-safety.sql`](bevve-backend/supabase/tests/account-safety.sql) check rolls
+back fixtures and may be rerun; the migration must not be rerun. Detailed API and
+physical-device scenarios were not enumerated in the confirmation. The agent
+performed no hosted safety writes.
 
-Remaining integration includes real nearby/location, profile editing, password
+Remaining integration includes profile editing, password
 recovery and catalog management. The legacy guest fixture UUIDs/servings are
 not database IDs and are never matched to catalog rows by name.

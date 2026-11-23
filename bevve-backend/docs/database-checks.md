@@ -107,10 +107,9 @@ separately; passing local PostgreSQL checks does not establish those outcomes.
 
 ## Private incidents, reviews and published summaries (migration 006)
 
-Migration 006 is prepared and locally tested. On the existing project, run only
-[`006_account_safety.sql`](../supabase/migrations/006_account_safety.sql) as postgres
-in SQL Editor, then the entire [`account-safety.sql`](../supabase/tests/account-safety.sql).
-Do not rerun deployed 001–005. The check rolls back all test accounts, moderator
+The owner confirmed migration 006 was deployed and verified on 2026-11-23. Do not
+rerun migrations 001–006. The entire [`account-safety.sql`](../supabase/tests/account-safety.sql)
+may be rerun as postgres in SQL Editor. The check rolls back all test accounts, moderator
 membership, reports, publications, private links and the temporary venue on success
 or failure. Local tests also deliberately break report read privacy and verify
 the check fails with no retained fixtures. No hosted safety writes were performed.
@@ -125,7 +124,7 @@ fail. Reporter IDs, private descriptions, review identity and original report ID
 are absent from the public table schema; raw private-public links stay inaccessible.
 No report/review creates comparison votes. Legacy access/moderation checks still pass.
 
-After deployment, record these actual API/device outcomes with A/B/M accounts:
+Record these detailed API/device outcomes with A/B/M accounts:
 
 1. A opens a database venue's `+` without saving an impression, writes a report draft,
    closes/reopens it, and submits. A's history shows Pending and B cannot read it.
@@ -140,5 +139,13 @@ After deployment, record these actual API/device outcomes with A/B/M accounts:
    unavailable public information, optional date/timezone handling and account isolation.
    Private details never appear in another ordinary account or the public view.
 
-Hosted 006 deployment, hosted SQL/API checks and physical-device behavior remain
-unconfirmed. Local PostgreSQL and component tests do not establish those outcomes.
+Hosted deployment/verification is confirmed by the owner. These individual API/
+physical-device outcomes were not enumerated; local tests do not establish them.
+
+## Nearby/location
+
+This stage uses existing real venue coordinates and computes distance locally in
+mobile. No new migration or hosted writes are required. User device coordinates
+never enter the database. Physical-device permission, accuracy, movement, background,
+restart and account-isolation checks are listed in the mobile README. Only real
+non-demo venues participate in Nearby; fictional seed coordinates are excluded.

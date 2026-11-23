@@ -130,7 +130,26 @@ invalidates viewed public summaries and queues a fresh read if an older one rema
 in flight; stale reads cannot erase confirmed private writes/reviews. Foreground,
 periodic and manual refresh restore cross-device statuses and publications. No safety
 action changes Elo or public activity counts. Migration 006 and rollback checks pass
-locally; hosted deployment, SQL/API checks and device behavior remain unverified.
+locally; the owner confirmed hosted deployment and verification on 2026-11-23.
+Detailed API/device scenarios were not enumerated in that confirmation.
+
+## Nearby and device location
+
+Foreground device location is an account-scoped, opt-in mobile feature. Selecting
+Nearby checks/requests foreground permission and subscribes to updates only for the
+active session. The app clears coordinates and subscriptions on background/sign-out,
+checks existing permission on return and never uploads or persists the device point.
+The database contract is unchanged: existing real venue latitude/longitude values
+are used locally for approximate Haversine distances. Sample/guest coordinates never
+supply real distances. Nearby filters the loaded catalog at 1 km and sorts closest
+first; cards/details derive their labels from the same current location state.
+
+The store validates coordinate ranges, freshness and reported accuracy, rejects
+out-of-order fixes, bounds first-fix acquisition, expires old points and ignores late
+callbacks after cancellation/account changes. Permission denials, blocked access,
+disabled services, imprecise/stale readings and failures have recovery UI. Native
+configuration requests no background, Always or motion permissions. No migration or
+hosted write is needed; physical-device location checks remain pending.
 
 ## Not yet implemented
 
@@ -138,7 +157,7 @@ locally; hosted deployment, SQL/API checks and device behavior remain unverified
 - Submission throttling, account abuse prevention, and operational monitoring. Latest-per-account crowd aggregation is not a rate limiter.
 - Account deletion/export, retention rules, moderation audit history, and publication withdrawal.
 - Venue catalog editing tools and provenance for real venue data.
-- Proximity search, geographic indexes, push notifications, image storage, and Realtime subscriptions.
+- Server-side proximity queries/geographic indexes for larger catalogs, push notifications, image storage, and Realtime subscriptions.
 - Additional offline caching and realtime updates; catalog reads currently refresh on demand/foreground.
 
 The initial SQL deliberately restricts access, protects server timestamps through column-level grants, and keeps moderators outside user-editable profiles. Hosted read checks, the two SQL access scripts and the impression API write check passed on 2026-11-22; remaining API/device scenarios still need their own checks.

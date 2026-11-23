@@ -9,7 +9,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
 - `supabase/migrations/003_personal_comparisons.sql`: retry-safe explicit comparison submission with owner and timestamp assigned by the server. Locally tested; owner confirmed hosted deployment on 2026-11-23.
 - `supabase/migrations/004_venue_contributions.sql`: retry-safe crowd/price writes and a private own-price history RPC. Locally tested; owner confirmed hosted deployment on 2026-11-23.
 - `supabase/migrations/005_language_suggestions.sql`: private language suggestions, retry receipts and moderator approval/rejection. Owner confirmed deployment and passing hosted SQL checks on 2026-11-23.
-- `supabase/migrations/006_account_safety.sql`: retry-safe private incident submission and review, plus moderator-access RPC. Locally tested; hosted deployment is unconfirmed.
+- `supabase/migrations/006_account_safety.sql`: retry-safe private incident submission and review, plus moderator-access RPC. Owner confirmed deployment and verification on 2026-11-23.
 - `supabase/seed.sql`: three fictional venues and two standardized drinks.
 - `src/services/`: functions the future mobile app can call.
 - `src/logic/eloRanking.ts`: personal rankings from pairwise comparisons.
@@ -29,7 +29,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
    npm run check
    ```
 
-3. On a fresh empty Supabase project, run migrations 001–006 in order in SQL Editor, followed by `supabase/seed.sql`. Each migration is applied once. On the existing configured project, 001–005 are deployed; run only 006. The seed script can be rerun.
+3. On a fresh empty Supabase project, run migrations 001–006 in order in SQL Editor, followed by `supabase/seed.sql`. Each migration is applied once. On the existing configured project, 001–006 are deployed and must not be rerun. The seed script can be rerun.
 4. Create `.env` in this directory with the project URL and **publishable** key, using the variable names in the connection check below. This starter does not load `.env` automatically; the check uses Node's `--env-file` option.
 5. Use `authService` to create an account. Confirm the email when required by your project's authentication settings, then sign in. New accounts automatically receive a profile.
 6. Complete `docs/database-checks.md` before sharing the app with others.
@@ -208,13 +208,13 @@ review; guests keep their separate in-memory forms.
 
 ## Account safety flow (migration 006)
 
-On the existing hosted project, run only
-[`supabase/migrations/006_account_safety.sql`](supabase/migrations/006_account_safety.sql),
-then the whole [`supabase/tests/account-safety.sql`](supabase/tests/account-safety.sql)
-in SQL Editor as postgres. The check rolls back fixtures on success and failure.
+The owner confirmed migration 006 was deployed and verified on 2026-11-23. Do not
+rerun migrations 001–006. The whole
+[`supabase/tests/account-safety.sql`](supabase/tests/account-safety.sql) may be rerun
+in SQL Editor as postgres; it rolls back fixtures on success and failure.
 Migration 006, the original access check and a deliberately broken incident
-privacy policy have been exercised locally. Hosted 006 deployment, safety SQL/API
-results and physical-device verification are unconfirmed. No hosted safety writes
+privacy policy have been exercised locally. Detailed hosted API/device scenarios
+were not enumerated in the owner's verification. No agent-side hosted safety writes
 were performed during implementation.
 
 Existing incident/publication tables, ownership policies, moderator allowlist and
@@ -248,6 +248,12 @@ viewed venue summaries and queues a follow-up if an older read is pending. Guest
 activity is never uploaded, and reports/reviews do not affect rankings or counts.
 Moderators must write public text without identifying details; a private description
 is never prefilled or copied into the public field automatically.
+
+Nearby and distance display now run locally in the mobile app using foreground
+device location and these existing venue coordinates. No location migration or
+user-coordinate storage/API upload is required. Only real, non-demo catalog rows
+participate; seed venue coordinates stay fictional. Backend proximity queries and
+geographic indexes remain future work for a larger catalog.
 
 ## References
 
