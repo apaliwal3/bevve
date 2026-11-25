@@ -89,7 +89,7 @@ test('show/hide preserves the exact password draft, including meaningful spaces'
   assert.equal(hidden.values.password, ' demo123 ');
 });
 
-test('valid Login and Signup submissions clear passwords and wait for the backend result', () => {
+test('valid Login and Signup submissions retain the password draft while waiting for the backend result', () => {
   for (const mode of ['login', 'signup']) {
     const filled = fill(mode);
     const shown = authFormReducer(filled, { type: 'toggle-password' });
@@ -97,8 +97,7 @@ test('valid Login and Signup submissions clear passwords and wait for the backen
     assert.equal(next.status, 'submitting');
     assert.equal(next.passwordVisible, false);
     assert.equal(next.values.email, sample.email);
-    assert.equal(next.values.password, '');
-    assert.ok(!JSON.stringify(next).includes(sample.password));
+    assert.equal(next.values.password, sample.password);
   }
 });
 
@@ -106,7 +105,7 @@ test('repeated submission taps and field edits do not change a pending request',
   const state = submit(fill('login'));
   assert.equal(submit(state), state);
   assert.equal(state.status, 'submitting');
-  assert.equal(state.values.password, '');
+  assert.equal(state.values.password, sample.password);
   assert.equal(authFormReducer(state, { type: 'change', field: 'email', value: 'other@example.com' }), state);
 });
 
@@ -134,12 +133,15 @@ test('the route-leave reset clears drafts, errors, visibility and request state 
   }
 });
 
-test('a failed request allows retry without restoring the password', () => {
-  const next = authFormReducer(submit(fill('login')), { type: 'failed' });
-  assert.equal(next.status, 'idle');
-  assert.equal(next.values.email, sample.email);
-  assert.equal(next.values.password, '');
-  assert.ok(submit(next).errors.password);
+test('failed Login and Signup requests retain the exact draft and allow immediate retry', () => {
+  for (const mode of ['login', 'signup']) {
+    const values = { ...sample, password: ' demo123 ' };
+    const next = authFormReducer(submit(fill(mode, values)), { type: 'failed' });
+    assert.equal(next.status, 'idle');
+    assert.deepEqual(next.values, values);
+    assert.equal(submit(next).status, 'submitting');
+    assert.deepEqual(submit(next).errors, {});
+  }
 });
 
 test('Signup rejects usernames beyond the database limit without truncating them', () => {

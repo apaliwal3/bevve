@@ -56,7 +56,7 @@ test('Login sends one request on rapid taps, disables inputs, and opens Profile 
   button.props.onPress();
   assert.deepEqual(calls, [['test@example.com', 'password123']]);
   assert.ok(ui.render().filter(node => node.type === 'FormInput').every(node => node.props.editable === false));
-  assert.equal(ui.render().find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, '');
+  assert.equal(ui.render().find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, 'password123');
   resolve();
   await tick();
   assert.deepEqual(ui.navigations, ['/profile']);
@@ -74,7 +74,7 @@ test('Signup without a session asks for email confirmation and does not navigate
   ui.harness.unmount();
 });
 
-test('failed Login shows an error and allows retry without restoring the password', async () => {
+test('failed Login shows an error and retains the password for retry', async () => {
   const ui = setup('login', { signIn: async () => { throw { code: 'invalid_credentials' }; } });
   ui.fill();
   ui.render().find(node => node.type === 'PrimaryButton').props.onPress();
@@ -82,8 +82,47 @@ test('failed Login shows an error and allows retry without restoring the passwor
   const nodes = ui.render();
   assert.ok(nodes.some(node => node.props.accessibilityRole === 'alert' && node.props.children === 'The email or password is incorrect.'));
   assert.equal(nodes.find(node => node.type === 'PrimaryButton').props.disabled, false);
-  assert.equal(nodes.find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, '');
+  assert.equal(nodes.find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, 'password123');
   assert.deepEqual(ui.navigations, []);
+  ui.harness.unmount();
+});
+
+test('Signup preserves the password through a failed request and retries successfully without retyping', async () => {
+  const calls = [];
+  let reject;
+  const ui = setup('signup', {
+    signUp: (...args) => {
+      calls.push(args);
+      return calls.length === 1
+        ? new Promise((resolve, fail) => { reject = fail; })
+        : Promise.resolve('confirm-email');
+    },
+  });
+  ui.fill();
+  const password = ' password123 ';
+  ui.render().find(node => node.type === 'FormInput' && node.props.label === 'Password').props.onChangeText(password);
+  const button = ui.render().find(node => node.type === 'PrimaryButton');
+  button.props.onPress();
+  button.props.onPress();
+  let nodes = ui.render();
+  assert.equal(calls.length, 1);
+  assert.equal(nodes.find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, password);
+  assert.ok(nodes.filter(node => node.type === 'FormInput').every(node => node.props.editable === false));
+  reject(new Error('Network request failed'));
+  await tick();
+  nodes = ui.render();
+  assert.ok(nodes.some(node => node.props.accessibilityRole === 'alert'));
+  assert.equal(nodes.find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, password);
+  assert.equal(nodes.find(node => node.type === 'PrimaryButton').props.disabled, false);
+  nodes.find(node => node.type === 'PrimaryButton').props.onPress();
+  await tick();
+  assert.deepEqual(calls, [
+    ['test@example.com', password, 'Test Name'],
+    ['test@example.com', password, 'Test Name'],
+  ]);
+  nodes = ui.render();
+  assert.ok(nodes.some(node => node.props.children === 'Check your email to confirm your account, then return here to sign in.'));
+  assert.ok(nodes.filter(node => node.type === 'FormInput').every(node => node.props.value === ''));
   ui.harness.unmount();
 });
 

@@ -37,9 +37,9 @@ export function authFormReducer(state: AuthFormState, action: AuthFormAction): A
       if (state.status !== 'idle') return state;
       const errors = validateAuthForm(state.mode, state.values);
       if (Object.keys(errors).length > 0) return { ...state, errors };
-      // The caller captures validated input before dispatching. Retain no password
-      // while the request is pending or after a failed request.
-      return { ...state, values: { ...state.values, password: '' }, passwordVisible: false,
+      // Keep the local draft until success or route leave so a failed request can
+      // be retried without re-entering the password. Pending edits stay blocked.
+      return { ...state, passwordVisible: false,
         errors: {}, status: 'submitting' };
     }
     case 'failed': return { ...state, status: 'idle' };
