@@ -411,9 +411,12 @@ Backend code is outside the mobile lint scope.
   impression is separate, and Profile counts one current impression per venue.
 - Impressions do not change Elo. Only explicit comparison choices affect personal
   rankings, which display ordinal positions.
-- Explore, Rankings and Profile are the three persistent tabs. Tab changes keep
+- Explore, Drink prices, Rankings and Profile are the four persistent tabs. Tab changes keep
   the bottom bar mounted and disable scene animations. Rankings leads
   to Explore and a bar's `+` action; Profile presents saved activity.
+- Drink prices compares the selected catalog drink across venues. Explore has no
+  price-comparison footer. The tab shares its screen with `/prices`, which retains
+  contextual links from Bar Details and their Back navigation.
 - Bathroom categories and crowd reports retain their separate five-point scales.
 
 The pure community-opinion helper supports genuine data: each distinct
@@ -454,7 +457,7 @@ bundled assets and the remaining app-icon requirements.
 
 ```text
 src/app/              Routes and root provider layout
-src/app/(tabs)/       Explore, Rankings and Profile tabs
+src/app/(tabs)/       Explore, Drink prices, Rankings and Profile tabs
 src/components/       Reusable native components and bottom navigation
 src/constants/        bevve colors, typography and spacing
 src/features/         Screens, state providers, reducers and selectors
@@ -489,13 +492,13 @@ still belong to the same root provider.
    and tap **Resume comparisons**. Test Skip one and Skip remaining;
    only choosing a winner changes history and ordinal Rankings. Rapidly double
    tap a choice and confirm only one comparison is saved.
-4. Reach Bar Details from each of the three tabs. Open Compare Drink Prices,
+4. Reach Bar Details from each of the four tabs. Open Compare Drink Prices,
    choose a drink, open another bar and return through prices and the original
    bar. Confirm the selected drink, source venue and originating tab survive.
 5. Use the current Expo Go development URL from the terminal, retaining its
    scheme and host but replacing the path after `/--/` with `compare`. Open it
    both after a full reload and with the demo already open: it must land on
-   Rankings, with three tabs and no Compare screen on Back. Repeat with
+   Rankings, with four tabs and no legacy Compare screen on Back. Repeat with
    `bars/<valid fixture UUID>?returnTo=compare`; Back must go to Rankings.
 6. Repeat tab, Explore-button and contextual Back checks in English. Check
    VoiceOver tab labels/selection, larger text and bottom safe-area spacing.
@@ -533,7 +536,7 @@ These checks are separate from Node tests and iOS JavaScript export:
    normal top-down animation and Reduce Motion. Decorative symbols stay fixed
    size while labels follow Dynamic Type.
 7. Confirm all five optional forms still validate, submit and Cancel as before,
-   including bathroom stars and crowd scores. Check three tabs and Compare Drink
+   including bathroom stars and crowd scores. Check four tabs and Compare Drink
    Prices remain intact. Saved demo activity still resets on full reload.
 
 ## Application identity
@@ -552,7 +555,7 @@ native name or icon requires a new native build. See the
 
 ## Profile redesign
 
-Profile uses the same navy/purple theme, Manrope/DM Sans fonts and three persistent
+Profile uses the shared theme, Manrope/DM Sans fonts and four persistent
 primary tabs. Its header uses an honest **Demo profile** / **Your profile** name,
 initials avatar, actual account username when loaded, and one demo-mode badge for
 guests. First names, surnames and photos are not invented.
@@ -633,7 +636,7 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    choose **Explore demo**. Start with a full reload for empty demo state.
 2. Open Profile: check honest demo identity, initials and a single demo badge,
    Places Been = 0, Want to Try = 0, two action buttons and the
-   empty Activity state. Check exactly Explore, Rankings, Profile in the bottom
+   empty Activity state. Check exactly Explore, Drink prices, Rankings, Profile in the bottom
    bar, stationary while switching tabs.
 3. Open each of Places Been, Want to Try, Edit Profile and Settings. Use both
    their Back button and iOS edge-swipe Back. Each must return to Profile. A fresh Want

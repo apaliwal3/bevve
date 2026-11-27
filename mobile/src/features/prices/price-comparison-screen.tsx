@@ -21,16 +21,17 @@ type PriceComparisonScreenProps = PriceComparison & {
   onSelectDrink: (drink: CatalogDrink) => void;
   onOpenVenue: (venue: Venue) => void;
   account?: boolean;
+  isTab?: boolean;
 };
 
-export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, backLabel, onBack, onSelectDrink, onOpenVenue, account = false }: PriceComparisonScreenProps) {
+export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, backLabel, onBack, onSelectDrink, onOpenVenue, account = false, isTab = false }: PriceComparisonScreenProps) {
   const { t, format } = useTranslation();
   const lowest = rows[0];
   const highest = rows[rows.length - 1];
 
   return (
-    <ScreenContainer contentContainerStyle={styles.content}>
-      <FlowHeader eyebrow={t('SMARTER NIGHTS')} title={t('Drink prices')} backLabel={backLabel} onBack={onBack} />
+    <ScreenContainer edges={isTab ? ['top', 'left', 'right'] : undefined} contentContainerStyle={styles.content}>
+      <FlowHeader eyebrow={t('SMARTER NIGHTS')} title={t('Drink prices')} backLabel={backLabel} onBack={isTab ? undefined : onBack} />
       <View style={styles.intro}>
         <Text accessibilityRole="header" style={styles.title}>{t("What are you drinking?")}</Text>
         <Text style={styles.description}>{account ? t('Community-reported prices across venues.') : t("Community-reported prices from bars across Milan.")}</Text>

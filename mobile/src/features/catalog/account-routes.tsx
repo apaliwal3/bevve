@@ -78,16 +78,20 @@ export function AccountRankingsScreen({ catalog }: { catalog: AccountCatalogValu
   </ScreenContainer>;
 }
 
-export function AccountPricesRoute({ catalog }: { catalog: AccountCatalogValue }) {
+export function AccountPricesRoute({ catalog, isTab = false }: { catalog: AccountCatalogValue; isTab?: boolean }) {
   const { t } = useTranslation();
   const params = useLocalSearchParams<PriceRouteParams>();
   const venues = catalog.venues.map(catalogVenue);
   const { drink, sourceVenue } = resolvePriceNavigation(params, catalog.drinks, venues, catalog.drinks[0]?.id);
-  if (catalog.status !== 'ready') return <ScreenContainer><CatalogFeedback catalog={catalog} /><PrimaryButton label={t('Back to Explore')} onPress={() => router.dismissTo('/explore')} /></ScreenContainer>;
+  if (catalog.status !== 'ready') return <ScreenContainer edges={isTab ? ['top', 'left', 'right'] : undefined} contentContainerStyle={styles.content}>
+    {isTab && <Text accessibilityRole="header" style={styles.title}>{t('Drink prices')}</Text>}
+    <CatalogFeedback catalog={catalog} />
+    {!isTab && <PrimaryButton label={t('Back to Explore')} onPress={() => router.dismissTo('/explore')} />}
+  </ScreenContainer>;
   const request = { p_drink_id: drink?.id ?? '', p_bar_ids: venues.map(venue => venue.id), p_currency: 'EUR' as const };
   const rows = catalog.venues.flatMap(venue => venue.drinks.filter(price => price.id === drink?.id).map(price => ({ bar_id: venue.id, ...price })));
   const comparison = adaptRpcPriceComparison(request, rows, catalog.drinks, venues);
-  return <PriceComparisonScreen {...comparison} account catalog={catalog.drinks} drink={drink}
+  return <PriceComparisonScreen {...comparison} account isTab={isTab} catalog={catalog.drinks} drink={drink}
     backLabel={sourceVenue ? t('Back to {name}', { name: sourceVenue.name }) : t('Back to Explore')}
     onBack={() => { if (router.canGoBack()) router.back(); else router.replace(priceOriginHref(sourceVenue)); }}
     onSelectDrink={drink => router.setParams({ drinkId: drink.id })}

@@ -11,8 +11,7 @@ import { BevveTheme as theme } from '@/constants/theme';
 import { filterVenues, venueFilters, type VenueFilter } from '@/features/explore/filter-venues';
 import { EXPLORE_HORIZONTAL_PADDING, filterChipLayout } from '@/features/explore/filter-layout';
 import { mockVenues } from '@/fixtures/venues';
-import { usePriceComparisonSelection, useVenueCrowdSelector, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
-import { priceComparisonHref } from '@/features/prices/price-navigation';
+import { useVenueCrowdSelector, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
 import { useVenueCatalog } from '@/features/catalog/catalog-provider';
 import { AccountExploreScreen } from '@/features/catalog/account-explore-screen';
 
@@ -25,7 +24,6 @@ export function DemoExploreScreen() {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<VenueFilter>('All');
-  const { drinkId } = usePriceComparisonSelection();
   const priceVenues = useVenuePriceCatalog(mockVenues);
   const crowdFor = useVenueCrowdSelector();
   const venues = useMemo(() => filterVenues(priceVenues, query, filter, crowdFor), [priceVenues, query, filter, crowdFor]);
@@ -117,19 +115,6 @@ export function DemoExploreScreen() {
           </View>
         )}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("Compare drink prices")}
-        accessibilityHint={t("View community-reported prices across Milan")}
-        onPress={() => router.push(priceComparisonHref(drinkId))}
-        style={({ pressed }) => [styles.priceCard, pressed && styles.pressed]}>
-        <View style={styles.euroBadge}><Text style={styles.euro}>€</Text></View>
-        <View style={styles.priceCopy}>
-          <Text style={styles.priceTitle}>{t("Compare drink prices")}</Text>
-          <Text style={styles.priceSubtitle}>{t("Find the cheapest pour nearby")}</Text>
-        </View>
-        <AppIcon name="chevron" size={18} color={theme.colors.purpleLight} />
-      </Pressable>
       <Link href="/" asChild>
         <Pressable style={styles.backLink}><Text style={styles.viewAllLabel}>{t("Back to Welcome")}</Text></Pressable>
       </Link>
@@ -244,44 +229,6 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
     fontSize: 11,
     paddingTop: theme.spacing.sm
-  },
-  priceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-    marginTop: theme.spacing.md,
-    padding: theme.spacing.md,
-    borderRadius: theme.radii.button,
-    borderWidth: 1,
-    borderColor: theme.colors.purpleBorder,
-    backgroundColor: theme.colors.purpleTint
-  },
-  euroBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: theme.radii.sm,
-    backgroundColor: theme.colors.purpleButton,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  euro: {
-    color: theme.colors.onAccent,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 18
-  },
-  priceCopy: {
-    flex: 1
-  },
-  priceTitle: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 12
-  },
-  priceSubtitle: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 10,
-    marginTop: theme.spacing.xs
   },
   sectionHeader: {
     flexDirection: 'row',

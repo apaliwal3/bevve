@@ -2,13 +2,11 @@ import { useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppIcon } from '@/components/app-icon';
-import { PrimaryButton } from '@/components/primary-button';
 import { ExploreScreenContainer as ScreenContainer } from '@/features/explore/explore-screen-container';
 import { catalogMapPins } from '@/features/explore/venue-map-data';
 import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { useTranslation } from '@/localization/language-provider';
-import { priceComparisonHref } from '@/features/prices/price-navigation';
 import { catalogReadData } from './catalog-adapters';
 import { CatalogFeedback } from './catalog-feedback';
 import type { AccountCatalogValue } from './catalog-provider';
@@ -58,7 +56,6 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
             : filter === 'Nearby' ? t('No bars nearby') : filter === 'Cheap' ? t('No bars found') : t('No venues are available yet.')}</Text>
         <Text style={styles.emptyCopy}>{filter === 'Nearby' ? t('No matching real venues within 1 km of your current location.') : t('Try another neighborhood or filter.')}</Text>
       </View>}
-      <PrimaryButton label={t('Compare drink prices')} variant="secondary" onPress={() => router.push(priceComparisonHref(catalog.drinks[0]?.id ?? null))} />
     </>}
   </ScreenContainer>;
 }

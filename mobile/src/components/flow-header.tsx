@@ -5,16 +5,16 @@ import { BevveTheme as theme } from '@/constants/theme';
 import { AppIcon } from './app-icon';
 import { Logo } from './logo';
 
-type FlowHeaderProps = { eyebrow: string; title: string; backLabel: string; onBack: () => void };
+type FlowHeaderProps = { eyebrow: string; title: string; backLabel: string; onBack?: () => void };
 
 // Balanced side columns keep the title centered even though the logo is wider than the arrow.
 export function FlowHeader({ eyebrow, title, backLabel, onBack }: FlowHeaderProps) {
   return (
     <View style={styles.header}>
       <View style={styles.side}>
-        <Pressable accessibilityRole="button" accessibilityLabel={backLabel} onPress={onBack} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
+        {onBack && <Pressable accessibilityRole="button" accessibilityLabel={backLabel} onPress={onBack} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
           <AppIcon name="back" size={20} color={theme.colors.text} />
-        </Pressable>
+        </Pressable>}
       </View>
       <View style={styles.copy}>
         <Text style={styles.eyebrow}>{eyebrow}</Text>
