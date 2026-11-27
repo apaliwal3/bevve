@@ -45,7 +45,7 @@ export function ProfileView({ activity, onOpenVenue, onWelcome, feedback, ready 
     <View style={styles.top}>
       <Text accessibilityRole="header" style={styles.name}>{name}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={t('Settings')} onPress={() => router.push(profileDestinations.settings)} style={styles.settings}>
-        <AppIcon name="languages" color={theme.colors.purpleLight} />
+        <AppIcon name="settings" color={theme.colors.purpleLight} />
       </Pressable>
     </View>
     <View style={styles.identity}>
@@ -65,7 +65,7 @@ export function ProfileView({ activity, onOpenVenue, onWelcome, feedback, ready 
         hint={savedBars.status === 'loading' ? t('Please wait…') : savedBars.status === 'error' ? t('Unavailable') : undefined} onPress={() => router.push(profileDestinations.wants)} />
     </View>
     <View style={styles.actions}>
-      <PrimaryButton label={t('Edit Profile')} variant="secondary" style={styles.action} onPress={() => router.push(profileDestinations.edit)} />
+      <PrimaryButton label={t('Change Password')} variant="secondary" style={styles.action} onPress={() => router.push(profileDestinations.password)} />
       <PrimaryButton label={signingOut ? t('Please wait…') : identity.demo ? t('Return to Welcome') : t('Log Out')}
         variant="secondary" style={styles.action} disabled={signingOut} onPress={() => { void leave(); }} />
     </View>

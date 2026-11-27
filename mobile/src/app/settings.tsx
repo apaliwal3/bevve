@@ -1,5 +1,7 @@
+import { useState, type PropsWithChildren } from 'react';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppIcon, type AppIconName } from '@/components/app-icon';
 import { BevveTheme as theme } from '@/constants/theme';
 import { ProfileSecondaryScreen } from '@/features/profile/profile-secondary-screen';
 import { useTranslation } from '@/localization/language-provider';
@@ -12,27 +14,46 @@ export default function SettingsRoute() {
   const { t } = useTranslation();
   const catalog = useVenueCatalog();
   return <ProfileSecondaryScreen title={t('Settings')}>
-    <View style={styles.card}>
-      <Text accessibilityRole="header" style={styles.title}>{t('App language')}</Text>
-      <Text style={styles.text}>{t('English')}</Text>
-    </View>
-    {catalog.mode === 'account' && <AccountTools catalog={catalog} />}
+    {catalog.mode === 'account' ? <AccountTools key={catalog.userId} catalog={catalog} />
+      : <Text style={styles.note}>{t('Sign in to view your account tools.')}</Text>}
   </ProfileSecondaryScreen>;
 }
-// Existing private history and moderator tools remain reachable outside the feed.
+// Reuse the owner histories and role-gated moderation tools, outside public activity.
+// Only disclosure state is local; records, statuses and drafts stay in their providers.
 function AccountTools({ catalog }: { catalog: AccountCatalogValue }) {
   const { t } = useTranslation();
   return <View style={styles.tools}>
-    <Text accessibilityRole="header" style={styles.title}>{t('Account tools')}</Text>
-    <AccountLanguageHistory catalog={catalog} onOpenVenue={id => router.push(venueFromSettingsHref(id))} />
-    <AccountLanguageModeration catalog={catalog} />
-    <AccountIncidentHistory catalog={catalog} />
-    <AccountIncidentModeration catalog={catalog} />
+    <SettingsSection label={t('My language suggestions')} icon="languages">
+      <AccountLanguageHistory catalog={catalog} onOpenVenue={id => router.push(venueFromSettingsHref(id))} />
+      <AccountLanguageModeration catalog={catalog} />
+    </SettingsSection>
+    <SettingsSection label={t('My private incident reports')} icon="safety">
+      <AccountIncidentHistory catalog={catalog} />
+      <AccountIncidentModeration catalog={catalog} />
+    </SettingsSection>
   </View>;
 }
+
+function SettingsSection({ label, icon, children }: PropsWithChildren<{ label: string; icon: AppIconName }>) {
+  const [expanded, setExpanded] = useState(false);
+  return <View style={styles.section}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ expanded }}
+      onPress={() => setExpanded(value => !value)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      <AppIcon name={icon} color={theme.colors.purpleLight} />
+      <Text style={styles.label}>{label}</Text>
+      <View style={expanded ? styles.expanded : undefined}><AppIcon name="chevron" color={theme.colors.purpleLight} /></View>
+    </Pressable>
+    {expanded && <View style={styles.details}>{children}</View>}
+  </View>;
+}
+
 const styles = StyleSheet.create({
-  card: { padding: 20, gap: 16, borderRadius: theme.radii.card, backgroundColor: theme.colors.surface },
-  title: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 18 },
-  text: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold, fontSize: 14, textAlign: 'center' },
-  tools: { gap: 20 },
+  tools: { gap: 12 },
+  section: { borderRadius: theme.radii.card, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
+  row: { minHeight: 60, flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
+  label: { flex: 1, minWidth: 0, color: theme.colors.text, fontFamily: theme.fonts.bodyBold, fontSize: 15 },
+  details: { padding: 16, paddingTop: 4, gap: 20 },
+  note: { color: theme.colors.textSecondary, fontFamily: theme.fonts.body, fontSize: 14, lineHeight: 22 },
+  expanded: { transform: [{ rotate: '90deg' }] },
+  pressed: { opacity: 0.75 },
 });

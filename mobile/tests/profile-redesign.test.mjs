@@ -59,9 +59,9 @@ for (const language of ['en', 'it']) {
     const nodes = expanded(tree.props.header);
     const cards = nodes.filter(node => node.type === 'Pressable' && [ui.t('Places Been') + '. 1', ui.t('Want to Try') + '. 0'].includes(node.props.accessibilityLabel));
     assert.equal(cards.length, 2); cards.forEach(card => card.props.onPress());
-    nodes.find(node => node.type === 'PrimaryButton' && node.props.label === ui.t('Edit Profile')).props.onPress();
+    nodes.find(node => node.type === 'PrimaryButton' && node.props.label === ui.t('Change Password')).props.onPress();
     nodes.find(node => node.props.accessibilityLabel === ui.t('Settings')).props.onPress();
-    assert.deepEqual(ui.calls, [['push', profileDestinations.places], ['push', profileDestinations.wants], ['push', profileDestinations.edit], ['push', profileDestinations.settings]]);
+    assert.deepEqual(ui.calls, [['push', profileDestinations.places], ['push', profileDestinations.wants], ['push', profileDestinations.password], ['push', profileDestinations.settings]]);
     assert.ok(nodes.some(node => node.props.children === ui.t('Demo mode')));
     assert.ok(!nodes.some(node => /followers|following|Elo|Explore bars|My impressions/i.test(String(node.props.children))));
     assert.equal(ui.render(props(project())).props.empty.props.title, ui.t('No activity yet'));
@@ -113,15 +113,13 @@ for (const language of ['en', 'it']) {
     assert.deepEqual(ui.calls, ['back']);
     assert.equal(screen.PlacesBeenScreen({ activity: project() }).props.empty.props.title, ui.t('No places yet'));
   });
-  test('Edit Profile shows honest read-only account/demo information without save controls in ' + language, () => {
+  test('Change Password is informational in both account and demo modes in ' + language, () => {
     for (const demo of [true, false]) {
-      const ui = profileUi(language, { auth: { session: demo ? null : { user: { id: user } } }, identity: { username: demo ? null : 'actual_username' } });
-      const edit = loadNativeModule('src/app/edit-profile.tsx', ui.mocks).default();
-      assert.equal(edit.props.title, ui.t('Edit Profile'));
-      assert.ok(texts(edit).includes(ui.t(demo ? 'Demo profile preview. Profile editing is not available and no changes are saved.' : 'Profile editing is not available yet. Your current account details are shown below.')));
-      const nodes = expanded(edit);
-      assert.ok(nodes.some(node => node.props.children === (demo ? '@demo' : '@actual_username')));
-      assert.equal(nodes.filter(node => node.type === 'TextInput' || node.props.label === 'Save').length, 0);
+      const ui = profileUi(language, { auth: { session: demo ? null : { user: { id: user } } } });
+      const screen = loadNativeModule('src/app/change-password.tsx', ui.mocks).default();
+      assert.equal(screen.props.title, ui.t('Change Password'));
+      assert.ok(texts(screen).includes(ui.t('Password changes are not available in the app yet.')));
+      assert.equal([...elements(screen)].some(node => node.type === 'TextInput' || node.type === 'PrimaryButton'), false);
       assert.deepEqual(ui.calls, []);
     }
   });
@@ -170,7 +168,7 @@ test('initials derive only from supplied display text, including Unicode', () =>
 });
 test('Profile messages are explicitly translated in Italian', () => {
   const files = ['profile-view.tsx', 'profile-feed.ts', 'profile-activity-components.tsx', 'places-been-screen.tsx', 'profile-secondary-screen.tsx'].map(file => 'src/features/profile/' + file)
-    .concat(['src/app/edit-profile.tsx', 'src/app/want-to-try.tsx', 'src/app/settings.tsx']);
+    .concat(['src/app/change-password.tsx', 'src/app/want-to-try.tsx']);
   const keys = files.flatMap(file => [...readFileSync(new URL('../' + file, import.meta.url), 'utf8').matchAll(/\bt\('([^']+)'/g)].map(match => match[1]));
   for (const key of [...keys, ...Object.values(profileImpressionLabels), 'You liked {name}', 'You thought {name} was fine', 'You disliked {name}']) {
     assert.ok(Object.hasOwn(en, key) && Object.hasOwn(it, key), key);
@@ -206,7 +204,7 @@ test('account Profile refreshes only its feed sources, handles loading/errors, a
   assert.equal(tree.type, 'PlacesBeenScreen'); tree.props.onRefresh(); assert.deepEqual(calls, ['catalog']);
 });
 
-test('Settings shows English without a language switch and keeps private tools off Profile', () => {
+test('Settings omits language preferences and keeps private tools off Profile', () => {
   const ui = profileUi('en');
   const settings = loadNativeModule('src/app/settings.tsx', {
     ...ui.mocks, '@/features/catalog/catalog-provider': { useVenueCatalog: () => ({ mode: 'demo' }) },
@@ -215,8 +213,8 @@ test('Settings shows English without a language switch and keeps private tools o
   });
   const nodes = [...elements(settings.default())];
   assert.equal(nodes.filter(node => ['radio', 'radiogroup', 'switch'].includes(node.props.accessibilityRole)).length, 0);
-  assert.ok(nodes.some(node => node.props.children === 'English'));
-  assert.ok(!nodes.some(node => node.props.children === 'Italiano'));
+  assert.ok(!nodes.some(node => ['App language', 'English', 'Italiano'].includes(node.props.children)));
+  assert.ok(nodes.some(node => node.props.children === 'Sign in to view your account tools.'));
   const header = expanded(ui.render(props(project())).props.header);
   assert.ok(!header.some(node => /incident|private|moderation/i.test(String(node.props.children))));
 });
@@ -239,7 +237,7 @@ test('all shared secondary headers use localized Profile Back and work on direct
   for (const canGoBack of [true, false]) {
     const ui = profileUi('it', { canGoBack });
     const screen = loadNativeModule('src/features/profile/profile-secondary-screen.tsx', ui.mocks).ProfileSecondaryScreen;
-    const tree = screen({ title: ui.t('Edit Profile'), children: null });
+    const tree = screen({ title: ui.t('Change Password'), children: null });
     const header = [...elements(tree)].find(node => node.type === 'FlowHeader');
     assert.equal(header.props.backLabel, ui.t('Back to Profile')); header.props.onBack();
     assert.deepEqual(ui.calls, canGoBack ? ['back'] : [['replace', '/profile']]);
