@@ -1,5 +1,11 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  "Confirmation emails cannot be sent to this address yet. Please contact support.": "Confirmation emails cannot be sent to this address yet. Please contact support.",
+  "This email address is not supported. Try another address.": "This email address is not supported. Try another address.",
+  "An account with this email already exists. Please sign in.": "An account with this email already exists. Please sign in.",
+  "New email accounts are unavailable right now. Please try again later.": "New email accounts are unavailable right now. Please try again later.",
+  "Account verification could not be completed. Please contact support.": "Account verification could not be completed. Please contact support.",
+  "The account service could not complete this request. Please try again later.": "The account service could not complete this request. Please try again later.",
   "Liked": "Liked",
   "Fine": "Fine",
   "Didn't like": "Didn't like",

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Buffer } from 'node:buffer';
-import { createAuthStore, authErrorMessage } from '../src/features/auth/auth-store.ts';
+import { createClient } from '@supabase/supabase-js';
+import { createAuthStore, authErrorDetails, authErrorMessage } from '../src/features/auth/auth-store.ts';
 import { supabaseConfig } from '../src/lib/supabase-config.ts';
 
 const session = { user: { id: 'user-a' }, access_token: 'test-token' };
@@ -119,8 +120,58 @@ test('public configuration accepts publishable/anon keys and rejects privileged 
   assert.equal(supabaseConfig(url, jwt('anon')).url, url);
 });
 
+test('configuration rejects service endpoints that would produce incorrect auth paths', () => {
+  for (const service of ['rest', 'auth', 'storage', 'functions', 'realtime']) {
+    for (const suffix of ['', '/', '/signup']) {
+      assert.equal(supabaseConfig(`https://test.supabase.co/${service}/v1${suffix}`, 'sb_publishable_test'), null);
+    }
+  }
+});
+
+test('a configured SDK signup targets the project auth endpoint', async () => {
+  const config = supabaseConfig('https://test.supabase.co', 'sb_publishable_test');
+  const requests = [];
+  const sdk = createClient(config.url, config.key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: async (url, init) => {
+      requests.push({ url: String(url), method: init.method });
+      return new Response(JSON.stringify({ code: 'signup_disabled', msg: 'Test: no account created' }), {
+        status: 422, headers: { 'Content-Type': 'application/json' },
+      });
+    } },
+  });
+  const { error } = await sdk.auth.signUp({ email: 'test@example.com', password: 'test-password' });
+  assert.equal(error.status, 422);
+  assert.deepEqual(requests, [{ url: 'https://test.supabase.co/auth/v1/signup', method: 'POST' }]);
+});
+
 test('auth errors use safe user-facing messages rather than raw server responses', () => {
   assert.equal(authErrorMessage({ code: 'invalid_credentials' }), 'The email or password is incorrect.');
   assert.equal(authErrorMessage({ code: 'email_not_confirmed' }), 'Confirm your email before signing in.');
   assert.ok(!authErrorMessage(new Error('PRIVATE_DATABASE_DETAIL')).includes('PRIVATE_DATABASE_DETAIL'));
+});
+
+test('signup service errors explain the failure without blaming the connection or exposing server details', () => {
+  const cases = [
+    ['email_address_not_authorized', 'Confirmation emails cannot be sent to this address yet. Please contact support.'],
+    ['email_address_invalid', 'This email address is not supported. Try another address.'],
+    ['user_already_exists', 'An account with this email already exists. Please sign in.'],
+    ['email_exists', 'An account with this email already exists. Please sign in.'],
+    ['signup_disabled', 'New email accounts are unavailable right now. Please try again later.'],
+    ['email_provider_disabled', 'New email accounts are unavailable right now. Please try again later.'],
+    ['captcha_failed', 'Account verification could not be completed. Please contact support.'],
+    ['unexpected_failure', 'The account service could not complete this request. Please try again later.'],
+  ];
+  for (const [code, message] of cases) {
+    assert.equal(authErrorMessage({ code, message: 'PRIVATE_DATABASE_DETAIL' }), message);
+  }
+});
+
+test('auth diagnostics expose only an error category, bounded code and HTTP status', () => {
+  assert.deepEqual(authErrorDetails({ name: 'AuthApiError', code: 'unexpected_failure', status: 500, message: 'PRIVATE_DATABASE_DETAIL', password: 'private', access_token: 'private' }), { name: 'AuthApiError', code: 'unexpected_failure', status: 500 });
+  assert.deepEqual(authErrorDetails({ name: 'AuthRetryableFetchError', status: 0 }), { name: 'AuthRetryableFetchError', code: 'unknown', status: 0 });
+  assert.deepEqual(authErrorDetails(new Error('private')), { name: 'Error', code: 'unknown', status: null });
+  for (const value of [null, undefined, 'private', { name: 'private@example.com', code: 'private@example.com', status: 'private' }]) {
+    assert.deepEqual(authErrorDetails(value), { name: 'unknown', code: 'unknown', status: null });
+  }
 });

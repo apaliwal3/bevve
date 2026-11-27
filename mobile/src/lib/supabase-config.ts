@@ -3,6 +3,8 @@ export function supabaseConfig(url: string | undefined, key: string | undefined)
   try {
     const parsed = new URL(url);
     if (!['https:', 'http:'].includes(parsed.protocol)) return null;
+    // createClient appends service paths itself; a copied Data API URL breaks Auth.
+    if (/\/(rest|auth|storage|functions|realtime)\/v1(?:\/|$)/i.test(parsed.pathname)) return null;
     if (key.startsWith('sb_publishable_')) return { url, key };
     // Legacy anon keys are JWTs. A service-role JWT must never reach the app.
     const payload = key.split('.')[1];
