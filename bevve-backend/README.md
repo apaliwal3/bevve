@@ -256,6 +256,35 @@ user-coordinate storage/API upload is required. Only real, non-demo catalog rows
 participate; seed venue coordinates stay fictional. Backend proximity queries and
 geographic indexes remain future work for a larger catalog.
 
+## Profile password reset
+
+`authService(client).resetPassword({ currentPassword, newPassword, confirmPassword })`
+resets the signed-in account's password. The shared contract in
+`shared/password-reset.ts` validates a six-character minimum, requires matching
+confirmation and a different password, reads the authenticated user from Supabase,
+then verifies their current password with a fresh sign-in before calling
+`auth.updateUser`. Supabase enforces its configured password policy and stores the
+password; no profile columns, SQL migration or service-role key are needed.
+Pass a client scoped to the current user, as with the other auth methods.
+
+This is an authenticated password change from Profile. It requires the current
+password. Email-based forgotten-password recovery uses
+`authService(client).requestPasswordRecovery(email, redirectTo)`, followed by
+`completePasswordRecovery({ newPassword, confirmPassword })` on the client
+authenticated by the verified email link. Supabase verifies ownership of that
+session; the completion method never accepts an email or account ID as authority.
+Email requests validate/trim the address, propagate delivery/rate-limit errors,
+and do not return account-existence information.
+
+Allow `mobile://recover-password` in Supabase Authentication URL Configuration
+for installed app builds. Web/Expo Go callback URLs must also be allowlisted for
+their environments; see `mobile/README.md`. The default recovery email template
+works without changes. No SQL migration is needed. The mobile auth store handles
+implicit token callbacks and PKCE code exchange and requires verified recovery
+state before exposing password completion.
+Local tests cover validation, incorrect credentials, account/session checks,
+provider failures and SDK request wiring. Hosted password writes were not run.
+
 ## References
 
 This structure follows the supplied BarHop plan and Supabase documentation:

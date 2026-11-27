@@ -69,6 +69,7 @@ export function ProfileView({ activity, onOpenVenue, onWelcome, feedback, ready 
       <PrimaryButton label={signingOut ? t('Please wait…') : identity.demo ? t('Return to Welcome') : t('Log Out')}
         variant="secondary" style={styles.action} disabled={signingOut} onPress={() => { void leave(); }} />
     </View>
+    {auth.session && <PrimaryButton label={t('Reset password')} variant="secondary" onPress={() => router.push(profileDestinations.password)} />}
     {error && <Text accessibilityRole="alert" style={styles.note}>{t(error)}</Text>}
     {feedback}
     <SavedBarsFeedback />

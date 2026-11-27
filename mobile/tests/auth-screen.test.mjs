@@ -16,7 +16,7 @@ function setup(mode, overrides, globals = {}) {
   const screen = loadNativeModule('src/features/auth/auth-screen.tsx', {
     react: harness.react,
     'react-native': { ...nativeStub, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' } },
-    'expo-router': { router: { replace: route => navigations.push(route) }, useFocusEffect: fn => harness.react.useEffect(fn, [fn]) },
+    'expo-router': { router: { replace: route => navigations.push(route), push: route => navigations.push(route) }, useFocusEffect: fn => harness.react.useEffect(fn, [fn]) },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/localization/language-provider': { useTranslation: () => ({ t: createTranslator('en') }) },
     '@/components/app-icon': { AppIcon: 'AppIcon' },
@@ -60,6 +60,24 @@ test('Login sends one request on rapid taps, disables inputs, and opens Explore 
   resolve();
   await tick();
   assert.deepEqual(ui.navigations, ['/explore']);
+  ui.harness.unmount();
+});
+
+test('Sign-up and sign-in both open forgotten-password recovery and clear their drafts', () => {
+  for (const mode of ['signup', 'login']) {
+    const ui = setup(mode);
+    ui.fill();
+    ui.render().find(node => node.props.accessibilityLabel === 'Forgot password?').props.onPress();
+    assert.deepEqual(ui.navigations, ['/forgot-password']);
+    assert.ok(ui.render().filter(node => node.type === 'FormInput').every(node => node.props.value === ''));
+    ui.harness.unmount();
+  }
+});
+
+test('an email recovery session does not redirect the auth screen to Explore before password reset', () => {
+  const ui = setup('login', { session: { user: { id: 'user-a' } }, recovery: 'ready' });
+  ui.render();
+  assert.deepEqual(ui.navigations, []);
   ui.harness.unmount();
 });
 

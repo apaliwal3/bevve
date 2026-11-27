@@ -52,6 +52,42 @@ npm start -- --go --clear
 
 ## Supabase authentication
 
+Signed-in users can open **Profile → Reset password**, enter their current
+password, a new password of at least six characters and a matching confirmation.
+The app verifies the current password and updates Supabase Auth through the same
+shared operation as the backend auth service. Loading, policy/network errors and
+success are shown in the form. Password drafts stay in screen memory and clear
+on success, route blur and account change. Demo profiles have no reset action.
+This profile flow requires the current password. Forgotten passwords use the
+email recovery flow below. No database migration or new environment variable is required.
+Local component and mocked SDK checks cover the flow; native-device and hosted
+password-change checks remain manual.
+
+**Forgotten passwords:** both Sign Up and Sign In offer **Forgot password?**.
+`/forgot-password` sends a Supabase recovery email and always shows the same
+confirmation regardless of account existence. The email opens `/recover-password`,
+which verifies the link's session before accepting a new password and confirmation.
+It never asks for the old password. Expired/invalid links offer a fresh request.
+Cold and warm app links are handled; recovery stays active across the account
+session change, and auth screens do not redirect it to Explore prematurely.
+Callback credentials are read outside router params and the callback route is
+replaced to remove them from browser history. Drafts clear on blur/success/account change.
+
+In **Supabase → Authentication → URL Configuration → Redirect URLs**, allow
+`mobile://recover-password` for installed/development builds (the existing app
+scheme is `mobile`). For web, allow `https://YOUR_APP_HOST/recover-password`, plus
+the exact localhost callback when testing locally. Expo Go uses a callback such
+as `exp://YOUR_LAN_IP:8081/--/recover-password`; allow that address for development
+and update it when the dev host changes. The request uses `Linking.createURL` to
+select the platform URL. Keep the recovery email template's `{{ .ConfirmationURL }}`
+link so Supabase can verify the email token and honor the callback. No custom email
+template or additional app dependency is required.
+
+Local SDK/component/store tests cover request payloads, link verification, expired
+links, account changes, validation and duplicate taps. Redirect allowlist changes,
+real email delivery and installed-app/browser round trips remain manual; no hosted
+auth settings or real account passwords were changed during implementation.
+
 Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_SUPABASE_URL` and
 `EXPO_PUBLIC_SUPABASE_KEY` to the existing project URL and **publishable** key.
 Use the project base URL (`https://YOUR_PROJECT_REF.supabase.co`), without

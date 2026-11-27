@@ -110,6 +110,56 @@ test('missing configuration keeps demo available but cannot authenticate', async
   await assert.rejects(store.signIn('test@example.com', 'password'), /auth_not_configured/);
 });
 
+test('password reset cannot run in demo mode or against a changed account', async () => {
+  const values = { currentPassword: 'old-password', newPassword: 'new-password', confirmPassword: 'new-password' };
+  await assert.rejects(createAuthStore(null).resetPassword(values), /auth_not_configured/);
+  const sdk = client({ getUser: async () => ({ data: { user: { id: 'other', email: 'other@example.com' } }, error: null }) });
+  const store = createAuthStore(sdk);
+  await assert.rejects(store.resetPassword(values), { code: 'session_not_found' });
+  await store.signIn('test@example.com', 'old-password');
+  await assert.rejects(store.resetPassword(values), { code: 'session_not_found' });
+});
+
+test('password reset errors display safe, actionable messages', () => {
+  assert.equal(authErrorMessage({ code: 'current_password_incorrect' }), 'Your current password is incorrect.');
+  assert.equal(authErrorMessage({ code: 'same_password' }), 'Choose a different password.');
+  assert.equal(authErrorMessage({ code: 'weak_password' }), 'Choose a stronger password and try again.');
+  assert.equal(authErrorMessage({ code: 'session_not_found' }), 'Please sign in again to reset your password.');
+});
+
+test('password reset uses the authenticated Supabase user and password endpoints through the real SDK', async () => {
+  const user = { id: 'user-a', email: 'test@example.com', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-01-01T00:00:00Z' };
+  const requests = [];
+  const sdk = createClient('https://test.supabase.co', 'sb_publishable_test', {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: async (url, init) => {
+      const path = new URL(url).pathname;
+      requests.push({ path, method: init.method, body: init.body ? JSON.parse(init.body) : null, authorization: init.headers.Authorization });
+      const body = path.endsWith('/token')
+        ? { access_token: 'test-access-token', refresh_token: 'test-refresh-token', token_type: 'bearer', expires_in: 3600, user }
+        : user;
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } },
+  });
+  const store = createAuthStore(sdk);
+  const stop = store.start();
+  await store.signIn(user.email, ' old password ');
+  requests.length = 0;
+  await store.resetPassword({ currentPassword: ' old password ', newPassword: ' new password ', confirmPassword: ' new password ' });
+  assert.deepEqual(requests.map(({ path, method }) => ({ path, method })), [
+    { path: '/auth/v1/user', method: 'GET' },
+    { path: '/auth/v1/token', method: 'POST' },
+    { path: '/auth/v1/user', method: 'PUT' },
+  ]);
+  assert.equal(requests[1].body.password, ' old password ');
+  assert.equal(requests[2].body.password, ' new password ');
+  assert.equal(requests[2].body.current_password, ' old password ');
+  assert.equal(requests[2].body.confirmPassword, undefined);
+  assert.equal(requests[2].authorization, 'Bearer test-access-token');
+  assert.equal(store.getSnapshot().session.user.id, user.id);
+  stop();
+});
+
 test('public configuration accepts publishable/anon keys and rejects privileged keys', () => {
   const url = 'https://test.supabase.co';
   const jwt = role => 'header.' + Buffer.from(JSON.stringify({ role })).toString('base64url') + '.signature';
