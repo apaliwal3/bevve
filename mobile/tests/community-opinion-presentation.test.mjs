@@ -140,6 +140,7 @@ test('Profile renders the current saved impression once, without stars, in both 
     const activity = selectProfileContributions({ impressions: edited, crowdReports: [], bathroomReviews: [], priceObservations: [] }, SESSION_USER_ID, mockVenues, mockDrinkCatalog);
     const profile = loadNativeModule('src/features/profile/profile-screen.tsx', {
       ...common, '@/components/logo': { Logo: 'Logo' }, '@/fixtures/venues': { exploreMockUser: {} },
+      '@/features/auth/account-panel': { AccountPanel: 'AccountPanel' },
       '@/localization/translation': translations, './language-preference-feedback': { languagePreferenceFeedback: () => 'DEMO SESSION' },
       './profile-activity-components': { ProfileActivitySection: 'ActivitySection', ProfileActivityRow: 'ActivityRow' },
       '@/features/comparisons/personal-comparisons-provider': { useSavedImpressions: () => edited, usePersonalRankings: () => ({ entries: [], completedCount: 0 }) },
@@ -154,4 +155,37 @@ test('Profile renders the current saved impression once, without stars, in both 
     assert.equal(rows[0].props.trailing, undefined);
     assert.ok(!textValues(section).some((value) => String(value).includes('★')));
   }
+});
+
+test('account venue cards and details override all demo metrics and use the account impression editor', () => {
+  const { card, details } = ui('en','liked');
+  let opened=0;
+  const account={ isDemo:false,community:{status:'ready',percentage:25,count:4},ownImpression:'fine',
+    crowd:{score:1,report_count:3,newest_report_at:'2026-11-22T18:00:00Z',classification:'quiet'},
+    bathrooms:null,drinks:[],startingPriceCents:0 };
+  const cardTree=card.VenueCard({venue,account,onPress(){}});
+  assert.ok(cardTree.props.accessibilityLabel.includes('It was fine'));
+  assert.ok(cardTree.props.accessibilityLabel.includes('25%'));
+  assert.ok(textValues(cardTree).some(value=>String(value).includes('Saved to your account')));
+  assert.ok(!textValues(cardTree).some(value=>String(value).includes('Demo session')));
+  const tree=details.BarDetailsScreen({venue,details:mockVenueDetails[venue.id],account,onBack(){},onComparePrices(){},onEditImpression(){opened++;}});
+  const nodes=[...elements(tree)];
+  nodes.find(node=>node.props.accessibilityHint==='Save or edit your impression').props.onPress();
+  assert.equal(opened,1);
+  assert.ok(textValues(tree).includes('Saved to your account'));
+  assert.ok(!textValues(tree).some(value=>String(value).includes('Fictional demo snapshot')));
+  assert.ok(!textValues(tree).some(value=>String(value).includes('Demo session')));
+});
+
+test('account venue safety uses its public summary slot and cannot display guest demonstration notes', () => {
+  const { details } = ui('en');
+  const account = { isDemo:false,community:{status:'empty',count:0},ownImpression:null,
+    crowd:{score:null,report_count:0,newest_report_at:null,classification:null},bathrooms:null,drinks:[],startingPriceCents:null };
+  const provided = { ...mockVenueDetails[venue.id], demoSafetyNotes: ['Private or fictional note must not reach account safety'] };
+  const slot = { type: 'Text', props: { children: 'Separate public safety summary slot' } };
+  const tree = details.BarDetailsScreen({ venue, details:provided, account, accountSafety:slot, onBack(){}, onComparePrices(){} });
+  assert.ok(textValues(tree).includes('Separate public safety summary slot'));
+  assert.ok(!textValues(tree).includes(provided.demoSafetyNotes[0]));
+  const guest = details.BarDetailsScreen({ venue, details:provided, accountSafety:slot, onBack(){}, onComparePrices(){} });
+  assert.ok(textValues(guest).includes(provided.demoSafetyNotes[0])); assert.ok(!textValues(guest).includes('Separate public safety summary slot'));
 });

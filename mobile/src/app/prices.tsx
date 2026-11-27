@@ -7,8 +7,15 @@ import { priceOriginHref, resolvePriceNavigation, venueFromPricesHref, type Pric
 import { usePriceComparisonResults, usePriceComparisonSelection } from '@/features/ratings/venue-ratings-provider';
 import { mockDrinkCatalog } from '@/fixtures/contribution-catalog';
 import { mockVenues } from '@/fixtures/venues';
+import { useVenueCatalog } from '@/features/catalog/catalog-provider';
+import { AccountPricesRoute } from '@/features/catalog/account-routes';
 
 export default function PricesRoute() {
+  const catalog = useVenueCatalog();
+  return catalog.mode === 'account' ? <AccountPricesRoute catalog={catalog} /> : <DemoPricesRoute />;
+}
+
+function DemoPricesRoute() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<PriceRouteParams>();
   const { drinkId: preferredDrinkId, selectDrink } = usePriceComparisonSelection();

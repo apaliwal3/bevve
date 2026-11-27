@@ -3,7 +3,7 @@ import type { BathroomScores, CrowdLevel } from './contribution-state';
 
 export type BathroomDraft = { [Key in keyof BathroomScores]: FivePointScore | null };
 
-export function bathroomDraftFromSaved(saved: BathroomScores | null): BathroomDraft {
+export function bathroomDraftFromSaved(saved: BathroomDraft | null): BathroomDraft {
   return {
     cleanliness: saved?.cleanliness ?? null,
     accessibility: saved?.accessibility ?? null,
@@ -14,7 +14,7 @@ export function bathroomDraftFromSaved(saved: BathroomScores | null): BathroomDr
 export function bathroomDraftReducer(
   draft: BathroomDraft,
   action: { type: 'rate'; category: keyof BathroomScores; rating: FivePointScore }
-    | { type: 'cancel'; saved: BathroomScores | null },
+    | { type: 'cancel'; saved: BathroomDraft | null },
 ): BathroomDraft {
   return action.type === 'cancel' ? bathroomDraftFromSaved(action.saved) : { ...draft, [action.category]: action.rating };
 }

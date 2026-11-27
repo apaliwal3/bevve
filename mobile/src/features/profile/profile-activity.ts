@@ -1,7 +1,8 @@
 import type { CatalogDrink } from '../../fixtures/contribution-catalog.ts';
 import type { Venue } from '../../types/venue.ts';
 import { parseUuid, type UUID } from '../comparisons/comparison-state.ts';
-import type { CrowdLevel, SessionBathroomReview, SessionCrowdReport } from '../contributions/contribution-state.ts';
+import type { CrowdLevel, SessionCrowdReport } from '../contributions/contribution-state.ts';
+import type { SavedBathroomReview } from '../../../../shared/contribution-contracts.ts';
 import type { SessionPriceObservation } from '../contributions/venue-extras-state.ts';
 import type { FivePointScore } from '../../types/five-point-score.ts';
 import { normalizeVenueImpression, type Impression, type VenueImpression, type VenueImpressionsState } from '../impressions/impression-state.ts';
@@ -10,13 +11,13 @@ export type ProfileVenue = Pick<Venue, 'name' | 'area' | 'image'> & { id: UUID; 
 type ProfileSource = {
   impressions: VenueImpressionsState;
   crowdReports: readonly SessionCrowdReport[];
-  bathroomReviews: readonly SessionBathroomReview[];
+  bathroomReviews: readonly SavedBathroomReview[];
   priceObservations: readonly SessionPriceObservation[];
 };
 export type ProfileImpression = { venue: ProfileVenue; impression: Impression; updatedAt: string };
 export type ProfileCrowdReport = { id: string; venue: ProfileVenue; level: CrowdLevel; submittedAt: string };
 export type ProfileBathroomReview = {
-  id: string; venue: ProfileVenue; cleanliness: FivePointScore; accessibility: FivePointScore; waitTime: FivePointScore; updatedAt: string;
+  id: string; venue: ProfileVenue; cleanliness: FivePointScore; accessibility: FivePointScore | null; waitTime: FivePointScore | null; updatedAt: string;
 };
 export type ProfilePriceObservation = {
   id: string; venue: ProfileVenue; drinkName: string; servingMl: number | null; priceCents: number; observedAt: string;
@@ -49,7 +50,7 @@ export function selectProfileContributions(source: ProfileSource, userId: string
 
   // Reviews are editable per user/venue. This projection also tolerates duplicate
   // snapshots from a future adapter without inflating the count.
-  const bathroomByVenue = new Map<string, SessionBathroomReview>();
+  const bathroomByVenue = new Map<string, SavedBathroomReview>();
   for (const review of source.bathroomReviews) {
     if (review.user_id.toLowerCase() !== owner) continue;
     const key = review.bar_id.toLowerCase();

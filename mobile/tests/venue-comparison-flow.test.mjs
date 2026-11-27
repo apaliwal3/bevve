@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 // Test-only parity check; the mobile controller never imports backend code.
-import { calculateRankings as backendRankings } from '../../barhop-backend/src/logic/eloRanking.ts';
+import { calculateRankings as backendRankings } from '../../bevve-backend/src/logic/eloRanking.ts';
 import {
   calculatePersonalRankings, createPersonalComparisonState, ELO_K, INITIAL_ELO,
 } from '../src/features/comparisons/comparison-state.ts';

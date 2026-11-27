@@ -22,11 +22,12 @@ export function languageDraftReducer(_draft: VenueLanguageCode | null, action:
 
 export type IncidentDraft = { category: IncidentCategory | null; date: string; description: string };
 export const emptyIncidentDraft: IncidentDraft = { category: null, date: '', description: '' };
-export function incidentDraftReducer(draft: IncidentDraft, action:
+export type IncidentDraftAction =
   | { type: 'category'; category: IncidentCategory }
   | { type: 'date'; date: string }
   | { type: 'description'; description: string }
-  | { type: 'reset' }): IncidentDraft {
+  | { type: 'reset' };
+export function incidentDraftReducer(draft: IncidentDraft, action: IncidentDraftAction): IncidentDraft {
   switch (action.type) {
     case 'category': return { ...draft, category: action.category };
     case 'date': return { ...draft, date: action.date };

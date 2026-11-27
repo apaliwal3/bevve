@@ -1,107 +1,24 @@
-# Localization — English and Italian
+# English interface copy and formatting
 
-bevve supports English (`en`) and Italian (`it`) interface languages. English is
-the default when no valid saved preference is available.
+The app is English-only. `language-provider.tsx` always provides an English
+translator, English number/date/currency formatters and fixture-description
+formatting. It does not load language storage and exposes no language switch.
+Old `bevve.interface-language.v1` values are ignored, including Italian values.
 
-Localization covers Welcome, Login, Signup, Explore, comparisons in the `+` overlay,
-Rankings, Profile, Bar Details, the rating overlay, all five contribution forms,
-drink price comparison, bottom navigation and shared navigation headers.
-
-## Dictionaries and usage
-
-- `en.ts` defines the English messages and typed translation keys.
-- `it.ts` provides the same keys in Italian.
-- `translation.ts` handles interpolation, plural selection and locale mapping.
-- `language-provider.tsx` provides `LanguageProvider` and `useTranslation`.
-- `venue-copy.ts` maps venue-language codes, catalog categories and validator
-  messages to display text without changing their saved values.
-
-`LanguageProvider` is installed in the root layout. Within a component, use
-`useTranslation` to access translated messages, formatters, the current
-`language` and `setLanguage`:
+Use `useTranslation()` for typed UI copy and interpolation:
 
 ```tsx
-const { t, format, setLanguage } = useTranslation();
-
-t('Rankings');
-t('{count} comparisons', { count: 2 });
-format.currency(650); // Formats 650 cents as EUR.
-const selectItalian = () => { void setLanguage('it'); };
+const { t, format } = useTranslation();
+const title = t('Profile');
+const price = format.currency(650);
 ```
 
-Bind `selectItalian` to a language selector's press handler.
-Language changes update the interface immediately. Impressions, contributions,
-personal comparisons and navigation remain managed by their existing providers.
+Venue spoken-language codes remain venue data. They do not change the interface.
+User names, venue names, neighborhoods and user-authored text are never translated.
 
-Community-opinion availability and **Your impression** use matching English and
-Italian keys. Demo answers are never labeled as genuine community percentages.
-Future genuine-data summaries have distinct zero-opinion copy and percentage
-labels that always include the opinion count in visible text and accessibility
-labels. Singular counts are localized; there is no minimum-opinion message.
-Bathroom star labels remain separate from the retired overall bar rating copy.
-
-Main navigation has three localized tab labels: Explore, Rankings and Profile.
-Rankings and Profile share guidance to open Explore and a bar's `+` action.
-Standalone personal Compare copy is retired; Compare Drink Prices retains its
-own labels and contextual Back copy. Old Compare return contexts use the
-existing translated **Back to Rankings** label.
-
-The compact impression selector uses the same three columns and sizing rules for
-both languages. Labels wrap and follow Dynamic Type. Revisit actions distinguish
-**Compare this bar again**, **Resume comparisons** and **Continue to contributions**;
-editing still uses Save. No-opponent copy is localized without inventing eligible
-venues or submitting a impression again.
-
-## Adding or updating translations
-
-1. Add each message to both dictionaries using the same key. Keys are English
-   source-text identifiers; keep existing keys stable when changing display copy.
-2. Use matching `{parameter}` names in both languages. For count messages, use
-   `{ one, other }` variants and pass a numeric `count`.
-3. Call `t` at render time. TypeScript checks keys and required arguments; tests
-   check dictionary coverage, placeholders and plural variants.
-
-Keep translated labels out of route parameters, filters and submission records.
-Venue names, neighborhoods, drink names and user-entered content remain
-unchanged. The interface language is independent of venue spoken-language data.
-
-## Language preferences
-
-On iOS and Android, `language-storage.native.ts` uses AsyncStorage 2.2.0 to save
-only `en` or `it` under `bevve.interface-language.v1`. Credentials, private reports
-and session activity are not persisted by this feature. The web adapter uses
-memory only; it does not use browser localStorage or persist across page reloads.
-
-The app waits for preference loading and fonts before displaying its screens.
-Read failures fall back to English. Write failures retain the selected language
-and show an error; selecting a language again retries the save. Writes are
-serialized to preserve selection order.
-
-## Locale-aware formatting
-
-`formatting.ts` uses `en-GB` for English and `it-IT` for Italian. Currency helpers
-accept integer EUR cents; they do not change stored price data. Date and timestamp
-helpers use the device time zone unless an explicit zone is supplied, and return
-`—` for invalid dates.
-
-Plural and relative-time formatting include English/Italian fallbacks for
-runtimes without `Intl.PluralRules` or `Intl.RelativeTimeFormat`.
-
-## Tests
-
-Run the type check and focused tests from `mobile/`:
-
-```sh
-node node_modules/typescript/bin/tsc --noEmit --incremental false
-node --experimental-strip-types --test \
-  tests/localization.test.mjs \
-  tests/localization-coverage.test.mjs \
-  tests/venue-localization.test.mjs \
-  tests/language-persistence.test.mjs \
-  tests/localization-session.test.mjs
-```
-
-Tests cover dictionaries, formatting and runtime fallbacks, preference loading,
-save failures and retries, and session-data selectors. They run in Node with
-mocked storage. Also check language switching, persistence and formatted prices
-and timestamps in Expo Go on a physical device.
+The older Italian dictionary, pure translation helpers and language-store tests
+are retained for compatibility with existing internal tests; none offers an
+Italian interface in the running app. The active provider uses English only.
+`tests/english-only.test.mjs` verifies this boundary without reading device storage.
+Native AsyncStorage is now used separately for Supabase sessions; this provider
+never reads or writes authentication data.

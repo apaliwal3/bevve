@@ -8,8 +8,15 @@ import { mockDrinkCatalog } from '@/fixtures/contribution-catalog';
 import { priceComparisonHref, resolvePriceNavigation, type PriceRouteParams } from '@/features/prices/price-navigation';
 import { usePriceComparisonSelection } from '@/features/ratings/venue-ratings-provider';
 import { navigateBackFromBarDetails, resolveBarDetailsBack } from '@/features/venues/bar-details-navigation';
+import { useVenueCatalog } from '@/features/catalog/catalog-provider';
+import { AccountBarDetailsRoute } from '@/features/catalog/account-routes';
 
 export default function BarDetailsRoute() {
+  const catalog = useVenueCatalog();
+  return catalog.mode === 'account' ? <AccountBarDetailsRoute catalog={catalog} /> : <DemoBarDetailsRoute />;
+}
+
+function DemoBarDetailsRoute() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<PriceRouteParams & { barId?: string | string[]; returnTo?: string | string[] }>();
   const { barId } = params;

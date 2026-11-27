@@ -8,7 +8,7 @@ import { createLanguageStore } from '../src/localization/language-store.ts';
 import { SESSION_USER_ID, initialContributionsState, contributionsReducer } from '../src/features/contributions/contribution-state.ts';
 import { initialVenueExtrasState } from '../src/features/contributions/venue-extras-state.ts';
 import { mockVenues } from '../src/fixtures/venues.ts';
-import { calculateRankings as backendRankings } from '../../barhop-backend/src/logic/eloRanking.ts';
+import { calculateRankings as backendRankings } from '../../bevve-backend/src/logic/eloRanking.ts';
 
 const ids = mockVenues.map((venue) => venue.id);
 const [a, b, c, d] = ids;

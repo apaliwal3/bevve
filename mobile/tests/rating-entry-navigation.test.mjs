@@ -26,6 +26,9 @@ function screens(language, ranked) {
     '@/components/app-icon': { AppIcon: 'AppIcon' }, '@/components/logo': { Logo: 'Logo' },
     '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/components/screen-container': { ScreenContainer: 'ScreenContainer' },
     '@/components/crowd-meter': { CrowdMeter: 'CrowdMeter' }, '@/fixtures/venues': { exploreMockUser },
+    '@/features/auth/account-panel': { AccountPanel: 'AccountPanel' },
+    '@/features/catalog/catalog-provider': { useVenueCatalog: () => ({ mode: 'demo' }) },
+    '@/features/catalog/account-routes': { AccountProfileScreen: 'AccountProfileScreen', AccountRankingsScreen: 'AccountRankingsScreen' },
     '@/features/comparisons/personal-comparisons-provider': { usePersonalRankings: () => personal, useSavedImpressions: () => ({}) },
   };
   const rankings = loadNativeModule('src/features/rankings/personal-rankings-screen.tsx', {
@@ -46,6 +49,8 @@ for (const screen of ['rankings', 'profile']) test(screen + ' guides users to Ex
     const { t, rankings, profile } = screens(language, ranked);
     const calls = [];
     const route = loadNativeModule('src/app/(tabs)/' + screen + '.tsx', {
+      '@/features/catalog/catalog-provider': { useVenueCatalog: () => ({ mode: 'demo' }) },
+      '@/features/catalog/account-routes': { AccountProfileScreen: 'AccountProfileScreen', AccountRankingsScreen: 'AccountRankingsScreen' },
       'expo-router': { router: {
         navigate: (href) => calls.push(['navigate', href]), push: (href) => calls.push(['push', href]), dismissTo: (href) => calls.push(['dismissTo', href]),
       } },

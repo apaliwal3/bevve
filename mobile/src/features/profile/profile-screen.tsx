@@ -1,7 +1,6 @@
 import { useTranslation } from '@/localization/language-provider';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { AppIcon } from '@/components/app-icon';
 import { CrowdMeter } from '@/components/crowd-meter';
 import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
@@ -10,12 +9,11 @@ import { BevveTheme as theme } from '@/constants/theme';
 import type { UUID } from '@/features/comparisons/comparison-state';
 import { usePersonalRankings, useSavedImpressions } from '@/features/comparisons/personal-comparisons-provider';
 import { impressionLabels } from '@/features/impressions/impression-selector';
-import { languages } from '@/localization/translation';
 import { useProfileContributions } from '@/features/ratings/venue-ratings-provider';
 import { exploreMockUser } from '@/fixtures/venues';
 
 import { ProfileActivityRow, ProfileActivitySection } from './profile-activity-components';
-import { languagePreferenceFeedback } from './language-preference-feedback';
+import { AccountPanel } from '@/features/auth/account-panel';
 
 type ProfileScreenProps = {
   onOpenVenue: (venueId: UUID) => void;
@@ -25,7 +23,7 @@ type ProfileScreenProps = {
 };
 
 export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }: ProfileScreenProps) {
-  const { t, format, language, setLanguage, persistent, saving, error } = useTranslation();
+  const { t, format } = useTranslation();
   const savedImpressions = useSavedImpressions();
   const activity = useProfileContributions(savedImpressions);
   const personal = usePersonalRankings();
@@ -34,11 +32,12 @@ export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }:
     <View style={styles.screen}>
       <ScreenContainer edges={['top', 'left', 'right']} contentContainerStyle={styles.content}>
         <View style={styles.header}><Logo /><Text style={styles.pill}>{t("MY ACTIVITY")}</Text></View>
+        <AccountPanel />
         <View style={styles.hero}>
           <View accessibilityLabel={t("Demo avatar")} style={styles.avatar}><Text style={styles.initials}>{exploreMockUser.initials}</Text></View>
           <Text accessibilityRole="header" style={styles.name}>{t("Demo profile")}</Text>
           <Text style={styles.pill}>{t("DEMO SESSION")}</Text>
-          <Text style={styles.description}>{t("No authenticated account or email is connected.")}</Text>
+          <Text style={styles.description}>{t('Venue activity below uses sample data and resets when this session ends.')}</Text>
           <View style={styles.stats}>
             <ProfileStat value={activity.counts.impressions} label={t('Impressions')} />
             <ProfileStat value={activity.updatesCount} label={t("Updates")} />
@@ -68,7 +67,7 @@ export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }:
           emptyHint={t("Rate cleanliness, accessibility and waiting time in a venue’s + overlay.")}>
           {activity.bathrooms.map((entry) => (
             <ProfileActivityRow key={entry.venue.id} venue={entry.venue}
-              summary={t('Cleanliness {clean}/5 · Accessibility {access}/5 · Waiting time {wait}/5 · Updated {date}', { clean: entry.cleanliness, access: entry.accessibility, wait: entry.waitTime, date: format.dateTime(entry.updatedAt) })}
+              summary={t('Cleanliness {clean}/5 · Accessibility {access}/5 · Waiting time {wait}/5 · Updated {date}', { clean: entry.cleanliness, access: entry.accessibility ?? t('Unavailable'), wait: entry.waitTime ?? t('Unavailable'), date: format.dateTime(entry.updatedAt) })}
               onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
@@ -95,26 +94,6 @@ export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }:
 
         <View style={styles.settings}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Settings")}</Text>
-          <View style={styles.languageRow}>
-            <AppIcon name="languages" size={21} color={theme.colors.purpleLight} />
-            <View style={styles.languageCopy}>
-              <Text style={styles.settingLabel}>{t("App language")}</Text>
-              <Text style={styles.note}>{t("Separate from languages spoken at bars.")}</Text>
-            </View>
-          </View>
-          <View accessibilityRole="radiogroup" accessibilityLabel={t('Interface language')} style={styles.languageChoices}>
-            {languages.map((item) => (
-              <Pressable key={item.code} accessibilityRole="radio" accessibilityLabel={item.label}
-                accessibilityState={{ checked: language === item.code }}
-                onPress={() => { void setLanguage(item.code); }}
-                style={({ pressed }) => [styles.languageChoice, language === item.code && styles.languageSelected, pressed && styles.pressed]}>
-                <Text style={styles.languageValue}>{item.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={styles.note}>
-            {t(languagePreferenceFeedback({ error, saving, persistent }))}
-          </Text>
           <PrimaryButton label={t("Return to Welcome")} variant="secondary" onPress={onWelcome} />
           <Text style={styles.note}>{t("Returning to Welcome keeps demo activity for this app session. A full reload may clear it.")}</Text>
         </View>

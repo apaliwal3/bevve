@@ -9,12 +9,14 @@ import { PrimaryButton } from '@/components/primary-button';
 import { ScreenContainer } from '@/components/screen-container';
 import { BevveTheme as theme } from '@/constants/theme';
 import { welcomeMock as welcome } from '@/fixtures/welcome';
+import { useAuth } from '@/features/auth/auth-provider';
 
 export default function WelcomeScreen() {
+  const { session } = useAuth();
   const { t } = useTranslation();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const notice = t('UI demo · Backend authentication is not connected');
+  const notice = t('Sign in to your account, or explore sample venues without an account.');
 
   return (
     <ScreenContainer edges={['left', 'right']} style={styles.screen}>
@@ -49,7 +51,7 @@ export default function WelcomeScreen() {
         </Link>
         <Link href="/explore" asChild>
           <Pressable style={styles.demoLink} accessibilityHint={t("Browse sample venues without signing in")}>
-            <Text style={styles.demoLinkLabel}>{t("Explore demo →")}</Text>
+            <Text style={styles.demoLinkLabel}>{session ? t('Explore venues →') : t("Explore demo →")}</Text>
           </Pressable>
         </Link>
         <Text accessibilityLiveRegion="polite" style={styles.notice}>

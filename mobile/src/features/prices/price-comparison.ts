@@ -48,7 +48,8 @@ export function comparisonRequest(drink: CatalogDrink, venues: readonly Venue[])
 function adaptQuotes(drink: CatalogDrink, venues: readonly Venue[], quotes: readonly ComparisonQuote[]): PriceComparison {
   const latest = new Map<string, ComparisonQuote>();
   for (const quote of quotes) {
-    if (quote.currency !== 'EUR' || !Number.isSafeInteger(quote.price_cents) || quote.price_cents <= 0) continue;
+    if (quote.currency !== 'EUR' || !Number.isSafeInteger(quote.price_cents) || quote.price_cents < 0) continue;
+    if (quote.price_cents === 0 && quote.source !== 'rpc') continue;
     if (quote.observed_at === null ? quote.source !== 'demo' : !Number.isFinite(Date.parse(quote.observed_at))) continue;
     const id = quote.bar_id.toLowerCase();
     const previous = latest.get(id);

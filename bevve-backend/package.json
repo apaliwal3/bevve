@@ -1,0 +1,20 @@
+{
+  "name": "barhop-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:connection": "node --env-file=.env connect.ts",
+    "check:impressions": "node --env-file=.env check-impressions.ts",
+    "check": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}

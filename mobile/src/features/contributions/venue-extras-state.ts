@@ -1,10 +1,10 @@
 import { languageCatalog, mockDrinkCatalog, type VenueLanguageCode } from '../../fixtures/contribution-catalog.ts';
 import type { Venue, VenueDetails } from '../../types/venue.ts';
+import { incidentCategories, type IncidentCategory } from '../../../../shared/safety-contracts.ts';
+export { incidentCategories, type IncidentCategory } from '../../../../shared/safety-contracts.ts';
 
 export const MIN_PRICE_CENTS = 50;
 export const MAX_PRICE_CENTS = 10_000;
-export const incidentCategories = ['Theft', 'Harassment', 'Violence', 'Other'] as const;
-export type IncidentCategory = typeof incidentCategories[number];
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string };
 
 // Parse decimal text as integers, avoiding binary floating-point rounding of euros.
@@ -134,7 +134,7 @@ export function latestPriceObservation(rows: readonly SessionPriceObservation[],
   }, null);
 }
 
-export type VenueDrinkPrice = VenueDetails['drinks'][number] & { observedAt: string | null; source: 'demo' | 'session' };
+export type VenueDrinkPrice = VenueDetails['drinks'][number] & { observedAt: string | null; source: 'demo' | 'session' | 'backend' };
 
 export function venueDrinkPrices(rows: readonly SessionPriceObservation[], barId: string, demo: readonly VenueDetails['drinks'][number][] = []): VenueDrinkPrice[] {
   const result: VenueDrinkPrice[] = demo.map((drink) => ({ ...drink, observedAt: null, source: 'demo' }));
