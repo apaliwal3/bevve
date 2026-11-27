@@ -18,7 +18,7 @@ function setup() {
     disable: () => { calls.push('disable'); state = { ...state, enabled: false, status: 'idle', fix: null }; }, openSettings: async () => { calls.push('settings'); } };
   const mock = { useAccountLocation: () => ({ ...state, ...actions }) };
   const catalog = { status: 'ready', refreshing: false, impressions: {}, drinks: [], userId,
-    venues: [venue({ id: 'far', is_demo: false, latitude: 0.02, longitude: 0 }), venue({ id: barId, is_demo: false, latitude: 0.001, longitude: 0 }), venue({ id: 'sample', latitude: 0, longitude: 0 })], refresh: async () => {} };
+    venues: [venue({ id: 'far', is_demo: false, latitude: 0.02, longitude: 0 }), venue({ id: barId, is_demo: false, latitude: 0.001, longitude: 0 }), venue({ id: 'sample', latitude: 0, longitude: 0 })], refresh: async () => { calls.push('catalog'); } };
   const shared = { react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
     '@/localization/language-provider': { useTranslation: () => translation }, '@/features/location/account-location-provider': mock };
   const explore = loadNativeModule('src/features/catalog/account-explore-screen.tsx', { ...shared,
@@ -77,7 +77,7 @@ test('ready location copy explains straight-line estimates and never promises Ne
   const ui = setup(); ui.set({ enabled: true, status: 'ready', fix: origin });
   const nearby = copy(ui.render('feedback')); assert.ok(nearby.some(value => value.includes('Within 1 km') && value.includes('Closest first')));
   const all = ui.render('feedback', { nearby: false }); assert.ok(!copy(all).some(value => value.includes('Closest first')));
-  assert.ok(copy(all).some(value => value.includes('straight-line estimates'))); all.find(node => node.props.label === 'Refresh location').props.onPress(); assert.deepEqual(ui.calls, ['refresh']); ui.stop();
+  assert.ok(copy(all).some(value => value.includes('straight-line estimates'))); assert.ok(!all.some(node => node.props.label === 'Refresh location')); assert.deepEqual(ui.calls, []); ui.stop();
 });
 
 test('foreground adapter calls only foreground APIs and releases its native subscription', async () => {
@@ -109,4 +109,17 @@ test('location provider skips guest stores, keys account lifetimes, and pauses o
   mode = { mode: 'account', userId }; const account = module.AccountLocationProvider({ children: null }); assert.equal(account.key, userId);
   harness.render(() => account.type(account.props)); harness.effects(); stateChange('inactive'); assert.deepEqual(calls, [['create'],['start',true]]);
   stateChange('background'); stateChange('active'); harness.unmount(); assert.deepEqual(calls, [['create'],['start',true],['suspend'],['resume'],['stop'],['remove']]);
+});
+
+
+test('Explore pull-to-refresh reloads venues and enabled location without changing filters or requesting new permission',()=>{
+  const ui=setup();let screen=ui.render().find(node=>node.type==='ScreenContainer');
+  assert.equal(screen.props.refreshing,false);screen.props.onRefresh();assert.deepEqual(ui.calls,['catalog']);
+  ui.calls.length=0;ui.set({enabled:true,status:'ready',fix:origin});
+  chip(ui.render(),'Quiet').props.onPress();screen=ui.render().find(node=>node.type==='ScreenContainer');
+  screen.props.onRefresh();assert.deepEqual(ui.calls,['catalog','refresh']);
+  const nodes=ui.render();assert.ok(chip(nodes,'Quiet').props.accessibilityState.selected);
+  assert.ok(!nodes.some(node=>node.props.label==='Refresh venues'));
+  ui.set({status:'locating'});screen=ui.render().find(node=>node.type==='ScreenContainer');
+  assert.equal(screen.props.refreshing,true);screen.props.onRefresh();assert.deepEqual(ui.calls,['catalog','refresh']);ui.stop();
 });

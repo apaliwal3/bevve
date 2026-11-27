@@ -22,7 +22,13 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
   const [filter, setFilter] = useState<AccountVenueFilter>('All');
   const rows = useMemo(() => selectAccountVenues(catalog.venues, query, filter, location.fix), [catalog.venues, query, filter, location.fix]);
   const showRows = filter !== 'Nearby' || location.status === 'ready' && location.fix !== null;
-  return <ScreenContainer edges={['top','left','right']} contentContainerStyle={styles.content}>
+  const refreshing = catalog.refreshing || location.enabled && (location.status === 'checking' || location.status === 'locating');
+  function refresh() {
+    if (refreshing) return;
+    void catalog.refresh();
+    if (location.enabled) void location.refresh();
+  }
+  return <ScreenContainer edges={['top','left','right']} contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
     <View style={styles.header}><Logo /><PrimaryButton label={t('Profile')} variant="secondary" onPress={() => router.navigate('/profile')} /></View>
     <Text accessibilityRole="header" style={styles.title}>{t('Explore venues')}</Text>
     <Text style={styles.note}>{t('Open a venue and tap + to save your impression.')}</Text>
@@ -35,8 +41,6 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
         style={[styles.chip, filter === item && styles.selected]}><Text style={styles.chipText}>{t(item)}</Text></Pressable>)}
     </ScrollView>
     {(filter === 'Nearby' || location.enabled) && <LocationFeedback nearby={filter === 'Nearby'} onDisable={() => { location.disable(); if (filter === 'Nearby') setFilter('All'); }} />}
-    <PrimaryButton label={catalog.refreshing ? t('Please wait…') : t('Refresh venues')} disabled={catalog.refreshing}
-      variant="secondary" onPress={() => { void catalog.refresh(); }} />
     <CatalogFeedback catalog={catalog} />
     {catalog.status === 'ready' && <>
       {showRows && <Text accessibilityLiveRegion="polite" style={styles.note}>{t('{count} venues', { count: rows.length })}</Text>}

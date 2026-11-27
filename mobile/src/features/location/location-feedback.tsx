@@ -26,8 +26,8 @@ export function LocationFeedback({ onDisable, nearby }: { onDisable: () => void;
     <Text style={styles.note}>{t('Your location stays on this device for this session. Sample venues have no real distances.')}</Text>
     {location.settingsError && <Text accessibilityRole="alert" style={styles.note}>{t('Open your device or browser settings to allow location, then retry.')}</Text>}
     {settings && <PrimaryButton label={t('Open location settings')} variant="secondary" onPress={() => { void location.openSettings(); }} />}
-    <PrimaryButton label={busy ? t('Please wait…') : location.status === 'ready' ? t('Refresh location') : t('Use my location')}
-      variant="secondary" disabled={busy} onPress={() => { void (location.status === 'ready' ? location.refresh() : location.enable()); }} />
+    {location.status !== 'ready' && <PrimaryButton label={busy ? t('Please wait…') : t('Use my location')}
+      variant="secondary" disabled={busy} onPress={() => { void location.enable(); }} />}
     {location.enabled && <PrimaryButton label={t('Stop using location')} variant="secondary" onPress={onDisable} />}
   </View>;
 }

@@ -72,7 +72,6 @@ export function AccountIncidentHistory({ catalog }: { catalog: AccountCatalogVal
       {row.reviewed_at && <Text style={styles.note}>{t('Reviewed {date}', { date: format.dateTime(row.reviewed_at) })}</Text>}
       <Text style={styles.description}>{row.description}</Text>
     </View>)}
-    <PrimaryButton label={t('Refresh private reports')} variant="secondary" disabled={state.refreshing} onPress={() => { void state.refresh(); }} />
   </View>;
 }
 export function AccountIncidentModeration({ catalog }: { catalog: AccountCatalogValue }) {
@@ -108,7 +107,6 @@ export function AccountIncidentModeration({ catalog }: { catalog: AccountCatalog
         </>}
       </View>;
     })}
-    <PrimaryButton label={t('Refresh incident queue')} variant="secondary" disabled={state.queueRefreshing} onPress={() => { void state.refreshQueue(); }} />
   </View>;
 }
 const styles = StyleSheet.create({

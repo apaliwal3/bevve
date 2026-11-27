@@ -22,6 +22,8 @@ import type { AccountCatalogValue } from './catalog-provider';
 import { useAccountComparisons } from '@/features/comparisons/account-comparisons-provider';
 import { AccountComparisonFeedback } from '@/features/comparisons/account-comparison-panel';
 import { RankedVenueRow } from '@/features/rankings/ranked-venue-row';
+import { useAccountLanguages } from '@/features/contributions/account-languages-provider';
+import { useAccountSafety } from '@/features/contributions/account-safety-provider';
 import { useAccountContributions } from '@/features/contributions/account-contributions-provider';
 import { AccountContributionFeedback, AccountContributionPanel } from '@/features/contributions/account-contribution-panel';
 import { AccountLanguageHistory, AccountLanguageModeration, AccountLanguagePanel } from '@/features/contributions/account-language-panel';
@@ -59,9 +61,18 @@ export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue
   const { t, format } = useTranslation();
   const comparisons = useAccountComparisons();
   const contributions = useAccountContributions();
+  const languages = useAccountLanguages();
+  const safety = useAccountSafety();
+  const refreshing = catalog.refreshing || comparisons.refreshing || contributions.refreshing || languages.refreshing ||
+    languages.queueRefreshing || safety.refreshing || safety.queueRefreshing;
+  function refresh() {
+    if (refreshing) return;
+    void Promise.allSettled([catalog.refresh(), comparisons.refresh(), contributions.refresh(),
+      languages.refresh(), languages.refreshQueue(), safety.refresh(), safety.refreshQueue()]);
+  }
   const activity = selectProfileContributions({ impressions: savedImpressions(catalog.impressions, catalog.venues), crowdReports: contributions.crowds, bathroomReviews: contributions.bathrooms, priceObservations: contributions.prices }, catalog.userId, catalog.venues.map(catalogVenue), catalog.drinks);
   const summary = (barId: string, text: string) => catalog.venues.some(row => row.id === barId && row.is_demo) ? t('Sample venue') + ' · ' + text : text;
-  return <ScreenContainer contentContainerStyle={styles.content}>
+  return <ScreenContainer contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
     <Text accessibilityRole="header" style={styles.title}>{t('Profile')}</Text>
     <AccountPanel />
     <CatalogFeedback catalog={catalog} />
@@ -103,8 +114,6 @@ export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue
     <AccountIncidentHistory catalog={catalog} />
     <AccountIncidentModeration catalog={catalog} />
     <PrimaryButton label={t('Explore venues')} onPress={() => router.navigate('/explore')} />
-    <PrimaryButton label={catalog.refreshing ? t('Please wait…') : t('Refresh impressions')} variant="secondary" disabled={catalog.refreshing} onPress={() => { void catalog.refresh(); }} />
-    <PrimaryButton label={contributions.refreshing ? t('Please wait…') : t('Refresh contributions')} variant="secondary" disabled={contributions.refreshing} onPress={() => { void contributions.refresh(); catalog.invalidate(); }} />
   </ScreenContainer>;
 }
 
@@ -112,7 +121,12 @@ export function AccountRankingsScreen({ catalog }: { catalog: AccountCatalogValu
   const { t } = useTranslation();
   const comparisons = useAccountComparisons();
   const { entries, completedCount } = comparisons.rankings;
-  return <ScreenContainer contentContainerStyle={styles.content}>
+  const refreshing = comparisons.refreshing || catalog.refreshing;
+  function refresh() {
+    if (refreshing) return;
+    void Promise.allSettled([comparisons.refresh(), catalog.refresh()]);
+  }
+  return <ScreenContainer contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
     <Text accessibilityRole="header" style={styles.title}>{t('My Rankings')}</Text>
     <Text style={styles.note}>{t('Your preferences, separate from community opinions and bathroom reviews.')}</Text>
     <CatalogFeedback catalog={catalog} />
@@ -125,8 +139,6 @@ export function AccountRankingsScreen({ catalog }: { catalog: AccountCatalogValu
       </View>)}
       {entries.length === 0 && <Text style={styles.note}>{t('Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.')}</Text>}
     </>}
-    <PrimaryButton label={comparisons.refreshing || catalog.refreshing ? t('Please wait…') : t('Refresh rankings')} disabled={comparisons.refreshing || catalog.refreshing} variant="secondary"
-      onPress={() => { void comparisons.refresh(); void catalog.refresh(); }} />
     <PrimaryButton label={t('My impressions')} onPress={() => router.navigate('/profile')} />
     <PrimaryButton label={t('Explore venues')} variant="secondary" onPress={() => router.navigate('/explore')} />
   </ScreenContainer>;

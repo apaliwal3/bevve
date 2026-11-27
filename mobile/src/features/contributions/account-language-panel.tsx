@@ -51,7 +51,6 @@ export function AccountLanguageHistory({ catalog, onOpenVenue }: { catalog: Acco
           summary={t('{language} · {status} · {date}', { language: venueLanguageLabel(row.language_code, t), status: statuses[row.status], date: format.dateTime(row.created_at) })} />;
       })}
     </ProfileActivitySection>}
-    <PrimaryButton label={t('Refresh language suggestions')} variant="secondary" disabled={state.refreshing} onPress={() => { void state.refresh(); }} />
   </View>;
 }
 export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalogValue }) {
@@ -79,7 +78,6 @@ export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalog
         </>}
       </View>;
     })}
-    <PrimaryButton label={t('Refresh language queue')} variant="secondary" disabled={state.queueRefreshing} onPress={() => { void state.refreshQueue(); }} />
   </View>;
 }
 const styles = StyleSheet.create({
