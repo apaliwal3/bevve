@@ -52,7 +52,7 @@ npm start -- --go --clear
 
 ## Supabase authentication
 
-Signed-in users can open **Profile → Change Password**, enter their current
+Signed-in users can open **Profile → Settings → Account → Change Password**, enter their current
 password, a new password of at least six characters and a matching confirmation.
 The app verifies the current password and updates Supabase Auth through the same
 shared operation as the backend auth service. Loading, policy/network errors and
@@ -627,9 +627,9 @@ out of it. Account history/moderation tools remain separately accessible in
 Activity opens `/bars/[barId]?returnTo=profile`; native Back returns to Profile
 and direct links fall back there. Places Been uses `returnTo=places`, returning
 to the list before Profile. Want to Try uses `returnTo=wants`, returning to
-the saved list. Change Password, Want to Try and Settings use native
-root-stack history with a Profile fallback, following the existing Bar Details
-pattern. Primary tabs remain mounted; secondary screens follow existing full-screen
+the saved list. Want to Try and Settings use native root-stack history with a
+Profile fallback, following the existing Bar Details pattern. Change Password
+opens from Settings and returns there, including a Settings fallback on direct links. Primary tabs remain mounted; secondary screens follow existing full-screen
 stack behavior. Price-comparison and Rankings origins remain intact.
 
 ### Profile backend compatibility audit
@@ -655,26 +655,31 @@ This audit inspected repository contracts, not the hosted dashboard:
   type/size limits and replacement cleanup; and mobile profile read/update/upload
   contracts with loading, validation, failure and refresh handling. Username is
   currently free text, not a unique handle; a production handle policy needs an
-  explicit contract if uniqueness/format is desired. Existing auth can be reused;
-  password recovery remains separate existing work.
+  explicit contract if uniqueness/format is desired. Existing auth and the
+  password recovery flows can be reused.
 
 `/change-password` replaces the retired `/edit-profile` preview and opens the
-working authenticated password form. `/reset-password` remains an alias to the
-same screen. Profile has one Change Password action with the existing styling.
-The form uses the shared secondary header, safe areas and native Back history
-with a `/profile` fallback for direct links. Signed-in users supply their current
-password, a new password and confirmation; demo users see a sign-in message.
-Passwords are validated, the current password is verified and Supabase Auth saves
-the update. Loading, error, retry and success states stay in the existing password
+working authenticated password form from **Settings → Account → Change Password**.
+`/reset-password` remains a compatible alias to the same form. The Change Password
+screen uses the shared secondary header, safe areas and native Back history with
+a `/settings` fallback for direct links; the reset alias keeps its `/profile`
+fallback. Signed-in users supply their current password, a new password and
+confirmation; demo users see a sign-in message without password inputs. Passwords
+are validated, the current password is verified and Supabase Auth saves the
+update. Loading, error, retry and success states stay in the existing password
 feature. Email-based forgotten-password recovery remains available from Sign Up
 and Sign In. See the authentication setup above for callback configuration.
 
-The top-right Settings control uses a gear. Settings has no app-language section,
-selector or duplicate password action. Signed-in users see two compact,
-expandable rows: **My language suggestions** and **My private incident reports**.
-Opening a row reveals its existing history and role-gated moderation tools;
-closing it only hides the content. Existing provider records, pending statuses,
-submission/retry drafts and private/public boundaries are unchanged. Settings
+The top-right Settings control uses a gear. Its **Account** group contains compact
+**Change Password** and **Log Out** rows (guests retain **Return to Welcome**).
+These actions are absent from the main Profile; Activity follows the statistics
+and existing feedback. The **Contributions** group contains two compact, expandable
+rows for signed-in users: **My language suggestions** and **My private incident
+reports**. Each has one parent card and one heading. Expanded histories, empty
+states and role-gated moderation render directly inside it without repeated
+headings or nested card chrome. Closing a row only hides the content. Existing
+provider records, pending statuses, submission/retry drafts and private/public
+boundaries are unchanged. Settings
 never adds reports to public activity. Guests see a short sign-in availability
 message, without account histories. Disclosures reset when the account changes.
 
@@ -687,7 +692,7 @@ not used by the running interface. Removing that legacy capability from storage
 or backend contracts would be a separate cleanup; user-authored content and venue
 spoken-language data remain unchanged.
 
-**Log Out** awaits the existing `signOut()` (local-device Supabase session) and
+**Log Out** in Settings awaits the existing `signOut()` (local-device Supabase session) and
 returns to Welcome only on success; failures remain visible for retry. Guests get
 **Return to Welcome**, which performs no auth call and retains demo activity for
 the current app session. The interface remains English through both paths. A full reload
@@ -702,14 +707,15 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    iPhone and computer on the same Wi-Fi, scan the current terminal QR code, and
    choose **Explore demo**. Start with a full reload for empty demo state.
 2. Open Profile: check honest demo identity, initials and a single demo badge,
-   Places Been = 0, Want to Try = 0, two action buttons and the
-   empty Activity state. Check exactly Explore, Drink prices, Rankings, Profile in the bottom
+   Places Been = 0, Want to Try = 0, no password/logout buttons, and the
+   empty Activity state directly below the statistics and feedback. Check exactly Explore, Drink prices, Rankings, Profile in the bottom
    bar, stationary while switching tabs.
-3. Open each of Places Been, Want to Try, Change Password and Settings. Use both
-   their Back button and iOS edge-swipe Back. Each must return to Profile. A fresh Want
-   to Try list has no saved venues; Change Password shows its sign-in message in
-   demo mode, with no password inputs. Test a direct link to each route with no previous history: the
-   visible Back button must still reach Profile. Bookmark a bar in Explore and
+3. Open Places Been, Want to Try and Settings. Their Back buttons and iOS
+   edge-swipe Back must return to Profile. From Settings → Account, open Change
+   Password: its Back button and edge swipe return to Settings. In demo mode it
+   shows a sign-in message without password inputs. Test direct links without
+   previous history: Change Password falls back to Settings; the other secondary
+   routes fall back to Profile. A fresh Want to Try list is empty. Bookmark a bar in Explore and
    confirm Want to Try increases once, opens that bar, and returns to the list
    from Bar Details. Remove it from the list and check the count decreases. Save
    and rate a bar: the bookmark must remain and Places Been must count only the
@@ -730,7 +736,8 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    check Rankings → venue and Bar Details → Compare Drink Prices → another
    venue → Back, preserving the drink and original venue.
 7. Check that the gear opens Settings with no App language section or language
-   switch, and no duplicate password action. Guests see a short sign-in message. Reload an
+   switch. Check Account contains Change Password and the existing demo exit;
+   Contributions shows a short sign-in message for guests. Reload an
    installation that previously saved Italian: the interface must remain English.
    Return to Welcome and enter the demo again; current-session activity survives.
 8. Sign in with an existing test account. Account bookmarks require the existing
@@ -741,7 +748,8 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    history, sample-venue labels, pull-to-refresh and failure/retry states. Change
    Password must show the authenticated current/new/confirmation form. Check
    validation, incorrect-current-password errors and retry using a test account.
-   In Settings, expand/collapse both account rows; check existing pending statuses,
+   In Settings, expand/collapse both Contributions rows; confirm each heading
+   appears once with no nested cards, and check existing pending statuses,
    private report descriptions and venue navigation/Back. Existing moderators
    retain review access; ordinary users must see no review queue. Private
    reports and pending suggestions must never appear in the Profile feed. Log Out must return to Welcome and
@@ -754,3 +762,30 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    the screen scrolls as one surface, the Profile bottom bar remains visible,
    and camera/home safe areas and native swipe Back work. Turn on Reduce Motion
    and repeat primary tab changes.
+
+### Physical iPhone checks for Settings, Rankings and Bar Details refinements
+
+1. On Profile, confirm identity, both statistics and the chronological Activity
+   feed remain intact, with no Change Password or Log Out buttons. Open the gear:
+   Account contains Change Password and Log Out (Return to Welcome in demo).
+   Verify password validation, success/failure and logout on an existing test
+   account. Demo Change Password shows a sign-in message with no password inputs.
+   Returning to Welcome retains demo activity.
+2. Expand both Contributions rows with empty and populated account histories.
+   Check a single heading/card, pending/approved/rejected statuses, timestamps,
+   private report descriptions, unavailable venue states, language venue links,
+   collapse/reopen and account switching. Existing moderator queues remain role-gated.
+3. Check both demo and account Rankings: populated lists have no large footer
+   navigation buttons; ordinal order, counts and venue links remain. An empty
+   list retains its existing navigation to Explore/Profile where applicable.
+4. Open Armani/Bamboo Bar or another venue with a real available schedule. The
+   name and circular + share the top row. Immediately below, neighborhood,
+   distance and address occupy the left column; hours occupy the right, below
+   the + area, on an opaque navy background. Verify the complete supplied
+   day/time text and the unavailable-hours state; no schedule is invented.
+5. Repeat on narrow iPhones and at the largest accessibility text sizes, with
+   VoiceOver. Address and hours wrap and can stack on narrow widths; titles,
+   addresses, hours and + must not overlap or clip. Check camera/home safe areas,
+   scrolling, Back, bookmarks, + actions, prices, community opinions/crowd,
+   bathrooms and spoken languages. Node component tests and iOS export do not
+   replace these native-device checks.

@@ -52,12 +52,12 @@ export function AccountVenueLanguages({ barId, languages }: { barId: string; lan
     <AccountLanguageFeedback />
   </View>;
 }
-export function AccountLanguageHistory({ catalog, onOpenVenue }: { catalog: AccountCatalogValue; onOpenVenue: (id: UUID) => void }) {
+export function AccountLanguageHistory({ catalog, onOpenVenue, embedded = false }: { catalog: AccountCatalogValue; onOpenVenue: (id: UUID) => void; embedded?: boolean }) {
   const state = useAccountLanguages(), { t, format } = useTranslation();
   const statuses = { pending: t('Pending'), approved: t('Approved'), rejected: t('Rejected') };
   return <View style={styles.section}>
     <AccountLanguageFeedback />
-    {state.status === 'ready' && <ProfileActivitySection title={t('My language suggestions')} count={state.history.length} icon="languages"
+    {state.status === 'ready' && <ProfileActivitySection embedded={embedded} title={t('My language suggestions')} count={state.history.length} icon="languages"
       hint={t('Only approved suggestions can add a venue language. The app interface stays in English.')} emptyHint={t('Suggest a spoken language from a venue’s + overlay.')}>
       {[...state.history].sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id)).map(row => {
         const venue = catalog.venues.find(item => item.id === row.bar_id), id = parseUuid(row.bar_id)!;
@@ -68,7 +68,7 @@ export function AccountLanguageHistory({ catalog, onOpenVenue }: { catalog: Acco
     </ProfileActivitySection>}
   </View>;
 }
-export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalogValue }) {
+export function AccountLanguageModeration({ catalog, embedded = false }: { catalog: AccountCatalogValue; embedded?: boolean }) {
   const state = useAccountLanguages(), { t } = useTranslation();
   if (state.queueStatus === 'loading') return null;
   if (state.queueError) return <View style={styles.section}>
@@ -82,7 +82,7 @@ export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalog
     {state.queue.length === 0 && <Text style={styles.note}>{t('No language suggestions awaiting review.')}</Text>}
     {state.queue.map(row => {
       const op = state.reviews[row.id];
-      return <View key={row.id} style={styles.card}>
+      return <View key={row.id} style={embedded ? styles.historyRow : styles.card}>
         <Text style={styles.title}>{catalog.venues.find(venue => venue.id === row.bar_id)?.name ?? t('Venue unavailable')}</Text>
         <Text style={styles.note}>{venueLanguageLabel(row.language_code, t)}</Text>
         {op?.error && <Text accessibilityRole="alert" style={styles.note}>{t('The review could not be confirmed. Retry the same decision.')}</Text>}
@@ -96,6 +96,7 @@ export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalog
   </View>;
 }
 const styles = StyleSheet.create({
+  historyRow: { gap: theme.spacing.sm, paddingVertical: theme.spacing.md },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   tag: { color: theme.colors.purpleText, fontFamily: theme.fonts.bodyBold, fontSize: 10, paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs, borderRadius: theme.radii.sm, backgroundColor: theme.colors.purpleTint },

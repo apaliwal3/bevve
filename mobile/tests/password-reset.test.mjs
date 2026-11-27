@@ -2,19 +2,18 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { hookHarness } from './helpers/hook-harness.mjs';
 import { elements, loadNativeModule, nativeStub } from './helpers/native-module.mjs';
-import { profileUi } from './helpers/profile-ui.mjs';
 import { createTranslator } from '../src/localization/translation.ts';
 import { authErrorMessage } from '../src/features/auth/auth-store.ts';
 import * as validation from '../../shared/password-reset.ts';
 import * as navigation from '../src/features/profile/profile-navigation.ts';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function setup(resetPassword = async () => {}, session = { user: { id: 'user-a' } }) {
-  const harness = hookHarness();
+function setup(resetPassword = async () => {}, session = { user: { id: 'user-a' } }, { path = 'src/app/change-password.tsx', canGoBack = true } = {}) {
+  const harness = hookHarness(), calls = [];
   const module = loadNativeModule('src/features/auth/reset-password-screen.tsx', {
     react: harness.react,
     'react-native': { ...nativeStub, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' } },
-    'expo-router': { router: {}, useFocusEffect: fn => harness.react.useEffect(fn, [fn]) },
+    'expo-router': { router: { canGoBack: () => canGoBack, back: () => calls.push('back'), replace: href => calls.push(['replace', href]) }, useFocusEffect: fn => harness.react.useEffect(fn, [fn]) },
     '@/components/form-input': { FormInput: 'FormInput' },
     '@/components/primary-button': { PrimaryButton: 'PrimaryButton' },
     '@/constants/theme': loadNativeModule('src/constants/theme.ts'),
@@ -25,10 +24,11 @@ function setup(resetPassword = async () => {}, session = { user: { id: 'user-a' 
     './auth-provider': { useAuth: () => ({ session, resetPassword }) },
     './auth-store': { authErrorMessage },
   });
-  const route = loadNativeModule('src/app/change-password.tsx', {
+  const route = loadNativeModule(path, {
     '@/features/auth/reset-password-screen': module,
   });
-  const form = route.default();
+  const element = route.default();
+  const form = element.type === module.ResetPasswordScreen ? element.type(element.props) : element;
   function render() {
     const tree = harness.render(() => form.type(form.props));
     harness.effects();
@@ -39,21 +39,30 @@ function setup(resetPassword = async () => {}, session = { user: { id: 'user-a' 
       render().find(node => node.type === 'FormInput' && node.props.label === label).props.onChangeText(value);
     }
   }
-  return { render, fill, harness };
+  return { render, fill, harness, calls };
 }
 
-test('profile has one Change Password action and no retired Edit Profile or duplicate reset action', () => {
-  const props = { activity: { impressions: [], crowds: [], bathrooms: [], prices: [] }, onOpenVenue() {}, onWelcome() {} };
-  const demo = profileUi();
-  assert.ok(![...elements(demo.render(props).props.header)].some(node => node.props.label === 'Reset password'));
-  const account = profileUi('en', { auth: { session: { user: { id: 'user-a' } } } });
-  const header = [...elements(account.render(props).props.header)];
-  const buttons = header.filter(node => node.props.label === 'Change Password');
-  assert.equal(buttons.length, 1);
-  assert.ok(!header.some(node => ['Edit Profile', 'Reset password'].includes(node.props.label)));
-  const button = buttons[0];
-  button.props.onPress();
-  assert.deepEqual(account.calls, [['push', '/change-password']]);
+test('the Settings password route and reset alias share the form while preserving their title and Back destination', async () => {
+  for (const [path, destination, title] of [['src/app/change-password.tsx', 'settings', 'Change Password'], ['src/app/reset-password.tsx', 'profile', 'Reset password']]) {
+    for (const canGoBack of [true, false]) {
+      const ui = setup(undefined, undefined, { path, canGoBack });
+      const header = ui.render().find(node => node.type === 'ProfileSecondaryScreen');
+      assert.equal(header.props.title, title);
+      assert.equal(header.props.backDestination, destination);
+      ui.fill();
+      ui.render().find(node => node.type === 'PrimaryButton').props.onPress();
+      await tick();
+      const success = ui.render();
+      const button = success.find(node => node.props.label === (destination === 'settings' ? 'Back to Settings' : 'Back to Profile'));
+      button.props.onPress();
+      assert.deepEqual(ui.calls, canGoBack ? ['back'] : [['replace', '/' + destination]]);
+      ui.harness.unmount();
+      const guest = setup(undefined, null, { path });
+      assert.equal(guest.render().find(node => node.type === 'ProfileSecondaryScreen').props.backDestination, destination);
+      assert.ok(!guest.render().some(node => node.type === 'FormInput'));
+      guest.harness.unmount();
+    }
+  }
 });
 
 test('password form validates before requesting and demo deep links cannot submit', () => {

@@ -3,8 +3,8 @@ import { useProfileContributions } from '@/features/ratings/venue-ratings-provid
 import type { UUID } from '@/features/comparisons/comparison-state';
 import { ProfileView } from './profile-view';
 
-export function ProfileScreen({ onOpenVenue, onWelcome }: { onOpenVenue: (id: UUID) => void; onWelcome: () => void }) {
+export function ProfileScreen({ onOpenVenue }: { onOpenVenue: (id: UUID) => void }) {
   const savedImpressions = useSavedImpressions();
   const activity = useProfileContributions(savedImpressions);
-  return <ProfileView activity={activity} onOpenVenue={onOpenVenue} onWelcome={onWelcome} />;
+  return <ProfileView activity={activity} onOpenVenue={onOpenVenue} />;
 }

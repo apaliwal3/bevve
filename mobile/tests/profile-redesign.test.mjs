@@ -19,7 +19,7 @@ const [a, b, c] = mockVenues.map(venue => venue.id), at = '2026-11-20T18:00:00.0
 const record = (impression = 'liked', bar_id = a, updated_at = at) => ({ user_id: user, bar_id, impression, updated_at, source: 'demo' });
 const emptySource = () => ({ impressions: {}, crowdReports: [], bathroomReviews: [], priceObservations: [] });
 const project = (source = emptySource()) => selectProfileContributions(source, user, mockVenues, mockDrinkCatalog);
-const props = activity => ({ activity, onOpenVenue() {}, onWelcome() {} });
+const props = activity => ({ activity, onOpenVenue() {} });
 function expanded(tree) {
   return [...elements(tree)].flatMap(node => typeof node.type === 'function' ? expanded(node.type(node.props)) : [node]);
 }
@@ -58,9 +58,9 @@ for (const language of ['en', 'it']) {
     const nodes = expanded(tree.props.header);
     const cards = nodes.filter(node => node.type === 'Pressable' && [ui.t('Places Been') + '. 1', ui.t('Want to Try') + '. 0'].includes(node.props.accessibilityLabel));
     assert.equal(cards.length, 2); cards.forEach(card => card.props.onPress());
-    nodes.find(node => node.type === 'PrimaryButton' && node.props.label === ui.t('Change Password')).props.onPress();
+    assert.ok(!nodes.some(node => [ui.t('Change Password'), ui.t('Log Out'), ui.t('Return to Welcome')].includes(node.props.label)));
     nodes.find(node => node.props.accessibilityLabel === ui.t('Settings')).props.onPress();
-    assert.deepEqual(ui.calls, [['push', profileDestinations.places], ['push', profileDestinations.wants], ['push', profileDestinations.password], ['push', profileDestinations.settings]]);
+    assert.deepEqual(ui.calls, [['push', profileDestinations.places], ['push', profileDestinations.wants], ['push', profileDestinations.settings]]);
     assert.ok(nodes.some(node => node.props.children === ui.t('Demo mode')));
     assert.ok(!nodes.some(node => /followers|following|Elo|Explore bars|My impressions/i.test(String(node.props.children))));
     assert.equal(ui.render(props(project())).props.empty.props.title, ui.t('No activity yet'));
@@ -113,7 +113,7 @@ for (const language of ['en', 'it']) {
     assert.equal(screen.PlacesBeenScreen({ activity: project() }).props.empty.props.title, ui.t('No places yet'));
   });
 }
-test('demo exit skips auth; real logout awaits auth and failures stay on Profile', async () => {
+test('the existing demo exit skips auth and real logout waits for successful auth', async () => {
   const calls = [];
   await exitProfile(null, async () => calls.push('auth'), () => calls.push('welcome'));
   assert.deepEqual(calls, ['welcome']); calls.length = 0;
@@ -121,13 +121,7 @@ test('demo exit skips auth; real logout awaits auth and failures stay on Profile
   assert.deepEqual(calls, ['auth', 'welcome']); calls.length = 0;
   await assert.rejects(exitProfile({ user }, async () => { throw Error('network'); }, () => calls.push('welcome')));
   assert.deepEqual(calls, []);
-  for (const demo of [true, false]) {
-    const ui = profileUi('it', { auth: { session: demo ? null : { user } } });
-    const tree = ui.render({ ...props(project()), onWelcome: () => ui.calls.push('welcome') });
-    expanded(tree.props.header).find(node => node.type === 'PrimaryButton' && node.props.label === ui.t(demo ? 'Return to Welcome' : 'Log Out')).props.onPress();
-    await new Promise(resolve => setImmediate(resolve));
-    assert.deepEqual(ui.calls, demo ? ['welcome'] : ['signOut', 'welcome']);
-  }
+
 });
 test('Profile/Places native Back and direct-link fallback preserve the right origin', () => {
   const calls = [], nav = { canGoBack: () => true, back: () => calls.push('back'), replace: href => calls.push(href), dismissTo: href => calls.push(href) };
@@ -208,7 +202,7 @@ test('Settings omits language preferences and keeps private tools off Profile', 
   assert.ok(!header.some(node => /incident|private|moderation/i.test(String(node.props.children))));
 });
 
-test('the actual Profile route forwards venue and demo-exit navigation and selects the account screen', () => {
+test('the actual Profile route forwards venue navigation and selects the account screen', () => {
   const ui = profileUi(), catalog = { mode: 'demo' };
   const route = loadNativeModule('src/app/(tabs)/profile.tsx', {
     ...ui.mocks, '@/features/catalog/catalog-provider': { useVenueCatalog: () => catalog },
@@ -216,8 +210,9 @@ test('the actual Profile route forwards venue and demo-exit navigation and selec
     '@/features/catalog/account-routes': { AccountProfileScreen: 'AccountProfileScreen' },
   });
   let tree = route.default(); assert.equal(tree.type, 'ProfileScreen');
-  tree.props.onOpenVenue(a); tree.props.onWelcome();
-  assert.deepEqual(ui.calls, [['push', venueFromProfileHref(a)], ['dismissTo', '/']]);
+  tree.props.onOpenVenue(a);
+  assert.deepEqual(ui.calls, [['push', venueFromProfileHref(a)]]);
+  assert.equal(tree.props.onWelcome, undefined);
   catalog.mode = 'account'; tree = route.default();
   assert.equal(tree.type, 'AccountProfileScreen'); assert.equal(tree.props.catalog, catalog);
 });

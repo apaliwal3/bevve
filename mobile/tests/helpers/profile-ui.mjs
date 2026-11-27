@@ -34,7 +34,7 @@ export function profileUi(language = 'en', options = {}) {
     './saved-bars-feedback': { SavedBarsFeedback: 'SavedBarsFeedback' },
     '@/features/saved-bars/bookmark-button': { BookmarkButton: 'BookmarkButton' },
     './profile-identity': identity, './profile-feed': feed, './profile-list': { ProfileList: 'ProfileList' },
-    './profile-navigation': navigation, '@/features/venues/bar-details-navigation': venueNavigation,
+    './profile-navigation': navigation, '@/features/profile/profile-navigation': navigation, '@/features/profile/profile-identity': identity, '@/features/venues/bar-details-navigation': venueNavigation,
     '@/features/profile/profile-secondary-screen': { ProfileSecondaryScreen: 'ProfileSecondaryScreen' },
   };
   const rows = loadNativeModule('src/features/profile/profile-activity-components.tsx', mocks);

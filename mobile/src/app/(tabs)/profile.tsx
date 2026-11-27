@@ -11,7 +11,6 @@ export default function ProfileRoute() {
   return (
     <ProfileScreen
       onOpenVenue={(venueId) => router.push(venueFromProfileHref(venueId))}
-      onWelcome={() => router.dismissTo('/')}
     />
   );
 }

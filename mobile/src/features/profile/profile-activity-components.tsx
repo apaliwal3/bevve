@@ -53,14 +53,14 @@ const styles = StyleSheet.create({
 });
 
 type ActivitySectionProps = PropsWithChildren<{
-  title: string; count: number; showCount?: boolean; icon: AppIconName | 'euro'; hint?: string; emptyHint?: string;
+  title: string; count: number; showCount?: boolean; icon: AppIconName | 'euro'; hint?: string; emptyHint?: string; embedded?: boolean;
 }>;
 
-export function ProfileActivitySection({ title, count, showCount = true, icon, hint, emptyHint, children }: ActivitySectionProps) {
+export function ProfileActivitySection({ title, count, showCount = true, icon, hint, emptyHint, children, embedded = false }: ActivitySectionProps) {
   const { t, format } = useTranslation();
   return (
-    <View style={sectionStyles.section}>
-      <View style={sectionStyles.heading}>
+    <View style={embedded ? sectionStyles.embedded : sectionStyles.section}>
+      {!embedded && <View style={sectionStyles.heading}>
         <View style={sectionStyles.icon}>
           {icon === 'euro'
             ? <Text accessible={false} style={sectionStyles.symbol}>€</Text>
@@ -68,10 +68,10 @@ export function ProfileActivitySection({ title, count, showCount = true, icon, h
         </View>
         <Text accessibilityRole="header" style={sectionStyles.title}>{title}</Text>
         {showCount && <Text style={sectionStyles.count}>{format.number(count)}</Text>}
-      </View>
-      {hint && <Text style={sectionStyles.hint}>{hint}</Text>}
+      </View>}
+      {!embedded && hint && <Text style={sectionStyles.hint}>{hint}</Text>}
       {count === 0 ? (
-        <View style={sectionStyles.empty}>
+        <View style={embedded ? sectionStyles.embedded : sectionStyles.empty}>
           <Text style={sectionStyles.emptyTitle}>{t("No activity yet")}</Text>
           {emptyHint && <Text style={sectionStyles.hint}>{emptyHint}</Text>}
         </View>
@@ -82,6 +82,7 @@ export function ProfileActivitySection({ title, count, showCount = true, icon, h
 
 
 const sectionStyles = StyleSheet.create({
+  embedded: { gap: theme.spacing.sm },
   section: {
     gap: theme.spacing.md,
     padding: 15,

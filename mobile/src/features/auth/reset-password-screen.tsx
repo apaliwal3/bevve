@@ -5,7 +5,7 @@ import { FormInput } from '@/components/form-input';
 import { PrimaryButton } from '@/components/primary-button';
 import { BevveTheme as theme } from '@/constants/theme';
 import { ProfileSecondaryScreen } from '@/features/profile/profile-secondary-screen';
-import { backToProfile } from '@/features/profile/profile-navigation';
+import { backToProfile, backToSettings } from '@/features/profile/profile-navigation';
 import { useTranslation } from '@/localization/language-provider';
 import { validatePasswordReset, type PasswordResetErrors, type PasswordResetValues } from '../../../../shared/password-reset';
 import { useAuth } from './auth-provider';
@@ -13,13 +13,15 @@ import { authErrorMessage } from './auth-store';
 
 const emptyValues = (): PasswordResetValues => ({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
-export function ResetPasswordScreen() {
+type PasswordScreenProps = { backDestination?: 'profile' | 'settings' };
+
+export function ResetPasswordScreen({ backDestination = 'profile' }: PasswordScreenProps = {}) {
   const auth = useAuth();
   // Remount on account changes so a previous account's draft cannot survive.
-  return <PasswordForm key={auth.session?.user.id ?? 'guest'} />;
+  return <PasswordForm key={auth.session?.user.id ?? 'guest'} backDestination={backDestination} />;
 }
 
-function PasswordForm() {
+function PasswordForm({ backDestination = 'profile' }: PasswordScreenProps) {
   const auth = useAuth();
   const { t } = useTranslation();
   const [values, setValues] = useState(emptyValues);
@@ -32,6 +34,7 @@ function PasswordForm() {
   const newPassword = useRef<ComponentRef<typeof TextInput>>(null);
   const confirmation = useRef<ComponentRef<typeof TextInput>>(null);
   const submitting = status === 'submitting';
+  const title = backDestination === 'settings' ? t('Change Password') : t('Reset password');
 
   useFocusEffect(useCallback(() => () => {
     attempt.current++;
@@ -76,15 +79,16 @@ function PasswordForm() {
     }
   }
 
-  if (!auth.session) return <ProfileSecondaryScreen title={t('Reset password')}>
+  if (!auth.session) return <ProfileSecondaryScreen title={title} backDestination={backDestination}>
     <Text style={styles.note}>{t('Sign in to reset your password. Demo profiles do not have a password.')}</Text>
   </ProfileSecondaryScreen>;
 
   return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-    <ProfileSecondaryScreen title={t('Reset password')}>
+    <ProfileSecondaryScreen title={title} backDestination={backDestination}>
       {status === 'success' ? <>
         <Text accessibilityLiveRegion="polite" style={styles.note}>{t('Your password has been updated. Use your new password next time you sign in.')}</Text>
-        <PrimaryButton label={t('Back to Profile')} onPress={() => backToProfile(router)} />
+        <PrimaryButton label={backDestination === 'settings' ? t('Back to Settings') : t('Back to Profile')}
+          onPress={() => backDestination === 'settings' ? backToSettings(router) : backToProfile(router)} />
       </> : <>
         <Text style={styles.note}>{t('Enter your current password and choose a new password with at least 6 characters.')}</Text>
         <FormInput label={t('Current password')} value={values.currentPassword} onChangeText={value => change('currentPassword', value)}

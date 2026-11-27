@@ -74,11 +74,6 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
           <BookmarkButton barId={venue.id} name={venue.name} />
         </View>
         <View style={styles.heroCopy}>
-          {details?.openingHoursLabel && (
-            <View style={styles.hoursBadge}>
-              <Text style={styles.hoursLabel}>{describe(details.openingHoursLabel)}</Text>
-            </View>
-          )}
           <View style={styles.nameRow}>
             <Text accessibilityRole="header" style={styles.name}>{venue.name}</Text>
             <Pressable
@@ -90,11 +85,19 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               <AppIcon name="plus" size={20} color={theme.colors.onAccent} />
             </Pressable>
           </View>
-          <View style={styles.locationRow}>
-            <AppIcon name="pin" size={15} color={theme.colors.textSecondary} />
-            <Text style={styles.location}>{venue.area}, {details?.city ?? t("City unavailable")} · {venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
+          <View style={styles.venueInfo}>
+            <View style={styles.addressInfo}>
+              <View style={styles.locationRow}>
+                <AppIcon name="pin" size={15} color={theme.colors.textSecondary} />
+                <Text style={[styles.location, styles.locationCopy]}>{venue.area}, {details?.city ?? t("City unavailable")} · {venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
+              </View>
+              {details?.address && <Text style={styles.location}>{details.address}</Text>}
+            </View>
+            <View style={styles.hoursBlock}>
+              <Text style={styles.hoursTitle}>{t('Opening hours')}</Text>
+              <Text style={styles.hoursLabel}>{details?.openingHoursLabel?.trim() ? describe(details.openingHoursLabel) : t('Opening hours unavailable')}</Text>
+            </View>
           </View>
-          {details?.address && <Text style={styles.location}>{details.address}</Text>}
         </View>
       </View>
 
@@ -280,19 +283,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     gap: theme.spacing.sm
   },
-  hoursBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.successTint,
-    borderColor: theme.colors.successBorder,
-    borderWidth: 1
+  venueInfo: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: theme.spacing.md
   },
-  hoursLabel: {
-    color: theme.colors.success,
+  addressInfo: {
+    flexGrow: 2,
+    flexShrink: 1,
+    flexBasis: 160,
+    minWidth: 0,
+    gap: theme.spacing.xs
+  },
+  hoursBlock: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 130,
+    minWidth: 0,
+    padding: theme.spacing.sm,
+    gap: theme.spacing.xs,
+    borderRadius: theme.radii.md,
+    backgroundColor: theme.colors.backgroundDeep
+  },
+  hoursTitle: {
+    color: theme.colors.textSecondary,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 11
+  },
+  hoursLabel: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 12,
+    lineHeight: 18
   },
   nameRow: {
     flexDirection: 'row',
@@ -327,12 +350,12 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs
   },
   location: {
-    flex: 1,
     color: theme.colors.textSecondary,
     fontFamily: theme.fonts.body,
     fontSize: 12,
     lineHeight: 18
   },
+  locationCopy: { flex: 1, minWidth: 0 },
   body: {
     paddingHorizontal: 18,
     gap: theme.spacing.lg

@@ -26,5 +26,5 @@ export function AccountProfileScreen({ catalog, places = false }: { catalog: Acc
     feedback: <><CatalogFeedback catalog={catalog} />{!places && <AccountContributionFeedback />}</>,
     refreshing, onRefresh: refresh, sampleVenueIds: catalog.venues.filter(row => row.is_demo).map(row => row.id) };
   if (places) return <PlacesBeenScreen {...props} />;
-  return <ProfileView {...props} countReady={catalog.status === 'ready'} onOpenVenue={id => router.push(venueFromProfileHref(id))} onWelcome={() => router.dismissTo('/')} />;
+  return <ProfileView {...props} countReady={catalog.status === 'ready'} onOpenVenue={id => router.push(venueFromProfileHref(id))} />;
 }
