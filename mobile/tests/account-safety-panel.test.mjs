@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { hookHarness } from './helpers/hook-harness.mjs';
-import { elements, loadNativeModule } from './helpers/native-module.mjs';
+import { elements, flattenStyle, loadNativeModule } from './helpers/native-module.mjs';
 import { createTranslator } from '../src/localization/translation.ts';
 import { createLocaleFormatters } from '../src/localization/formatting.ts';
 import * as storeModule from '../src/features/contributions/account-safety-store.ts';
@@ -67,6 +67,20 @@ test('private Profile history shows review statuses and descriptions with unavai
   const copy = strings(ui.render('AccountIncidentHistory'));
   for (const status of ['Pending','Approved','Rejected']) assert.ok(copy.some(value => value.startsWith(status + ' · Submitted')));
   assert.ok(copy.includes(privateRow.description)); assert.ok(copy.includes('Venue unavailable')); assert.ok(!copy.includes(userId)); ui.stop();
+});
+
+test('embedded private history keeps pending reports and dates without a repeated heading or inner card; moderation stays role-gated', () => {
+  const ui = setup();
+  const nodes = ui.render('AccountIncidentHistory', { embedded: true }), copy = strings(nodes);
+  assert.ok(!copy.includes('My private incident reports'));
+  assert.ok(copy.includes(privateRow.description));
+  assert.ok(copy.some(value => value.startsWith('Pending · Submitted')));
+  assert.ok(copy.includes('Visible only to you and moderators. These reports do not enter your public activity counts or rankings.'));
+  assert.ok(!nodes.some(node => { const style = flattenStyle(node.props.style); return style.backgroundColor || style.borderWidth; }));
+  assert.equal(ui.render('AccountIncidentModeration', { embedded: true }).length, 0);
+  ui.setState({ history: [] });
+  assert.ok(strings(ui.render('AccountIncidentHistory', { embedded: true })).includes('No private reports submitted yet.'));
+  assert.deepEqual(ui.calls, []); ui.stop();
 });
 
 test('moderation requires role access and a blank, separately written public summary; retries lock the decision and exact draft', () => {

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { elements, loadNativeModule, nativeStub } from './helpers/native-module.mjs';
 import { createTranslator } from '../src/localization/translation.ts';
 import { createLocaleFormatters } from '../src/localization/formatting.ts';
+import { venueFromRankingsHref } from '../src/features/venues/bar-details-navigation.ts';
 
 const theme=loadNativeModule('src/constants/theme.ts');
 const translation={useTranslation:()=>({t:createTranslator('en'),format:createLocaleFormatters('en')})};
@@ -35,11 +36,11 @@ function setup(){
   const module=loadNativeModule('src/features/catalog/account-routes.tsx',{
     '@/features/saved-bars/saved-bars-section':{SavedBarsSection:'SavedBarsSection'},
     '@/features/saved-bars/saved-bars-provider':{useSavedBars:()=>savedBars},
-    react:{useState:initial=>[initial,()=>{}]},'expo-router':{router:{}},
+    react:{useState:initial=>[initial,()=>{}]},'expo-router':{router:{push:href=>calls.push(['push',href]),navigate:href=>calls.push(['navigate',href])}},
     '@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/components/screen-container':{ScreenContainer:'ScreenContainer'},
     '@/features/profile/account-profile-screen':{AccountProfileScreen:'AccountProfileScreen'},
     '@/constants/theme':theme,'@/features/auth/account-panel':{AccountPanel:'AccountPanel'},
-    '@/features/venues/bar-details-screen':{},'@/features/venues/bar-details-navigation':{},
+    '@/features/venues/bar-details-screen':{},'@/features/venues/bar-details-navigation':{venueFromRankingsHref},
     '@/features/prices/price-comparison-screen':{},'@/features/prices/price-comparison':{},'@/features/prices/price-navigation':{},
     '@/features/profile/profile-activity-components':{ProfileActivitySection:'ProfileActivitySection',ProfileActivityRow:'ProfileActivityRow'},
     '@/features/profile/profile-activity':{selectProfileContributions:()=>({counts:{impressions:0,crowdReports:0,bathroomReviews:0,priceObservations:0},impressions:[],crowds:[],bathrooms:[],prices:[]})},
@@ -67,4 +68,25 @@ test('Rankings pulls refresh comparisons and venues together, including empty an
   ui.comparisons.refreshing=true;screen=ui.render('AccountRankingsScreen');assert.equal(screen.props.refreshing,true);
   screen.props.onRefresh();assert.equal(ui.calls.length,2);ui.comparisons.refreshing=false;ui.catalog.refreshing=true;
   assert.equal(ui.render('AccountRankingsScreen').props.refreshing,true);
+});
+
+test('populated account Rankings preserves ordered entries, counts and venue links without footer actions; empty navigation remains',()=>{
+  const ui=setup();
+  const empty=[...elements(ui.render('AccountRankingsScreen'))];
+  empty.find(node=>node.props.label==='My impressions').props.onPress();
+  empty.find(node=>node.props.label==='Explore venues').props.onPress();
+  assert.deepEqual(ui.calls,[['navigate','/profile'],['navigate','/explore']]);ui.calls.length=0;
+  const entries=Object.freeze([
+    Object.freeze({position:1,venue:{id:'first',name:'First'},comparisonCount:3}),
+    Object.freeze({position:2,venue:{id:'second',name:'Second'},comparisonCount:2}),
+  ]);
+  ui.comparisons.rankings={entries,completedCount:4};
+  const before=JSON.stringify(ui.comparisons.rankings),nodes=[...elements(ui.render('AccountRankingsScreen'))];
+  assert.ok(!nodes.some(node=>node.type==='PrimaryButton'));
+  assert.ok(nodes.some(node=>node.props.children==='4 personal comparisons completed'));
+  const rows=nodes.filter(node=>node.type==='RankedVenueRow');
+  assert.equal(rows.length,2);
+  rows.forEach((row,index)=>{assert.equal(row.props.entry,entries[index]);row.props.onPress();});
+  assert.deepEqual(ui.calls,entries.map(entry=>['push',venueFromRankingsHref(entry.venue.id)]));
+  assert.equal(JSON.stringify(ui.comparisons.rankings),before);
 });

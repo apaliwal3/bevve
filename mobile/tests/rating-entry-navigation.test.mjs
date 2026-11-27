@@ -44,7 +44,7 @@ function screens(language, ranked) {
   return { t, rankings, profile };
 }
 
-for (const screen of ['rankings']) test(screen + ' keeps Explore and venue links working without + instructions in English and Italian', () => {
+for (const screen of ['rankings']) test(screen + ' keeps empty Explore and populated venue links without redundant actions', () => {
   for (const language of ['en', 'it']) for (const ranked of [false, true]) {
     const { t, rankings, profile } = screens(language, ranked);
     const calls = [];
@@ -61,10 +61,15 @@ for (const screen of ['rankings']) test(screen + ' keeps Explore and venue links
     const tree = element.type(element.props);
     const nodes = [...elements(tree)];
     const cta = nodes.find((node) => node.type === 'PrimaryButton' && node.props.label === t('Explore bars'));
-    assert.ok(cta);
-    assert.equal(cta.props.accessibilityHint, undefined);
-    cta.props.onPress();
-    assert.deepEqual(calls, [['navigate', '/explore']]);
+    if (ranked) {
+      assert.equal(cta, undefined);
+      assert.ok(!nodes.some(node => node.type === 'PrimaryButton'));
+    } else {
+      assert.ok(cta);
+      assert.equal(cta.props.accessibilityHint, undefined);
+      cta.props.onPress();
+      assert.deepEqual(calls, [['navigate', '/explore']]);
+    }
     assert.ok(!nodes.some((node) => node.type === 'Text' && node.props.children === t(guide)));
     if (!ranked) {
       assert.ok(!nodes.some((node) => node.props.children === t(empty) || node.props.emptyHint === t(empty)));

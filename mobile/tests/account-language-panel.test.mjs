@@ -92,6 +92,21 @@ test('Profile language history displays all review statuses and keeps unavailabl
   rows.find(node => node.props.venue.available).props.onPress(); assert.equal(opened, barId); ui.stop();
 });
 
+test('embedded language history preserves pending status, timestamp and venue navigation while opting out of inner section chrome', () => {
+  const ui = setup(), before = JSON.stringify(ui.state.history);
+  const nodes = ui.render('AccountLanguageHistory', { embedded: true, onOpenVenue: id => ui.calls.push(['venue', id]) });
+  const section = nodes.find(node => node.type === 'ProfileActivitySection');
+  assert.equal(section.props.embedded, true);
+  assert.equal(section.props.count, 1);
+  const entry = nodes.find(node => node.type === 'ProfileActivityRow');
+  assert.ok(entry.props.summary.includes('Pending'));
+  assert.ok(entry.props.summary.includes(createLocaleFormatters('en').dateTime(at)));
+  entry.props.onPress(); assert.deepEqual(ui.calls, [['venue', barId]]);
+  assert.equal(JSON.stringify(ui.state.history), before);
+  assert.equal(ui.render('AccountLanguageModeration', { embedded: true }).length, 0);
+  ui.stop();
+});
+
 test('moderator queue is role-gated, shows no reporter names, and uncertain reviews expose only the same decision', () => {
   const ui = setup(); assert.equal(ui.render('AccountLanguageModeration').length, 0);
   ui.setState({ isModerator: true, queue: [{ ...row, user_id: otherUserId }] });

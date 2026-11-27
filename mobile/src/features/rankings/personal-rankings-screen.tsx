@@ -64,7 +64,7 @@ export function PersonalRankingsScreen({ onExplore, onOpenVenue, onProfile }: Pe
             <Text style={styles.emptyTitle}>{t("Your ranking starts with a choice")}</Text>
           </View>
         )}
-        <PrimaryButton label={t('Explore bars')} onPress={onExplore} />
+        {!hasRankings && <PrimaryButton label={t('Explore bars')} onPress={onExplore} />}
         <Text style={styles.note}>{t("Only bars you have compared appear here. Every choice helps refine your personal order.")}</Text>
         <Text style={styles.note}>{t("DEMO SESSION · Rankings reset on a full app reload.")}</Text>
       </ScreenContainer>

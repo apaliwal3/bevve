@@ -7,7 +7,7 @@ import { useTranslation } from '@/localization/language-provider';
 // credential state, persistence, or auth requests until that flow is supported.
 export default function ChangePasswordRoute() {
   const { t } = useTranslation();
-  return <ProfileSecondaryScreen title={t('Change Password')}>
+  return <ProfileSecondaryScreen title={t('Change Password')} backDestination="settings">
     <View style={styles.card}>
       <Text style={styles.note}>{t('Password changes are not available in the app yet.')}</Text>
     </View>

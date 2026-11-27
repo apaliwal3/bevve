@@ -56,15 +56,15 @@ export function AccountIncidentPanel({ catalog, barId }: { catalog: AccountCatal
     </OptionalContributionCard>
   </View>;
 }
-export function AccountIncidentHistory({ catalog }: { catalog: AccountCatalogValue }) {
+export function AccountIncidentHistory({ catalog, embedded = false }: { catalog: AccountCatalogValue; embedded?: boolean }) {
   const state = useAccountSafety(), { t, format } = useTranslation();
   const statuses = { pending: t('Pending'), approved: t('Approved'), rejected: t('Rejected') };
   return <View style={styles.section}>
-    <Text accessibilityRole="header" style={styles.title}>{t('My private incident reports')}</Text>
+    {!embedded && <Text accessibilityRole="header" style={styles.title}>{t('My private incident reports')}</Text>}
     <Text style={styles.note}>{t('Visible only to you and moderators. These reports do not enter your public activity counts or rankings.')}</Text>
     <AccountIncidentFeedback />
     {state.status === 'ready' && state.history.length === 0 && <Text style={styles.note}>{t('No private reports submitted yet.')}</Text>}
-    {[...state.history].sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id)).map(row => <View key={row.id} style={styles.card}>
+    {[...state.history].sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id)).map(row => <View key={row.id} style={embedded ? styles.historyRow : styles.card}>
       <Text style={styles.title}>{catalog.venues.find(venue => venue.id === row.bar_id)?.name ?? t('Venue unavailable')}</Text>
       <Text style={styles.note}>{Object.hasOwn(categoryKeys, row.category) ? t(categoryKeys[row.category]) : row.category}</Text>
       <Text style={styles.note}>{t('{status} · Submitted {date}', { status: statuses[row.status], date: format.dateTime(row.created_at) })}</Text>
@@ -74,7 +74,7 @@ export function AccountIncidentHistory({ catalog }: { catalog: AccountCatalogVal
     </View>)}
   </View>;
 }
-export function AccountIncidentModeration({ catalog }: { catalog: AccountCatalogValue }) {
+export function AccountIncidentModeration({ catalog, embedded = false }: { catalog: AccountCatalogValue; embedded?: boolean }) {
   const state = useAccountSafety(), { t, format } = useTranslation();
   if (state.queueStatus === 'loading') return null;
   if (state.queueError) return <View style={styles.section}>
@@ -88,7 +88,7 @@ export function AccountIncidentModeration({ catalog }: { catalog: AccountCatalog
     {state.queue.length === 0 && <Text style={styles.note}>{t('No private reports awaiting review.')}</Text>}
     {state.queue.map(row => {
       const op = state.reviews[row.id] ?? emptyIncidentReview, locked = Boolean(op.request);
-      return <View key={row.id} style={styles.card}>
+      return <View key={row.id} style={embedded ? styles.historyRow : styles.card}>
         <Text style={styles.title}>{catalog.venues.find(venue => venue.id === row.bar_id)?.name ?? t('Venue unavailable')}</Text>
         <Text style={styles.note}>{Object.hasOwn(categoryKeys, row.category) ? t(categoryKeys[row.category]) : row.category}</Text>
         <Text style={styles.note}>{t('Submitted {date}', { date: format.dateTime(row.created_at) })}</Text>
@@ -110,6 +110,7 @@ export function AccountIncidentModeration({ catalog }: { catalog: AccountCatalog
   </View>;
 }
 const styles = StyleSheet.create({
+  historyRow: { gap: theme.spacing.sm, paddingVertical: theme.spacing.md },
   section: { gap: theme.spacing.md }, card: { gap: theme.spacing.sm, padding: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radii.card },
   title: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 17 },
   description: { color: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 14, lineHeight: 22 },

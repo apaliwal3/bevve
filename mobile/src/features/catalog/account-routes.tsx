@@ -74,8 +74,10 @@ export function AccountRankingsScreen({ catalog }: { catalog: AccountCatalogValu
         <RankedVenueRow entry={entry} onPress={() => router.push(venueFromRankingsHref(entry.venue.id))} />
       </View>)}
     </>}
-    <PrimaryButton label={t('My impressions')} onPress={() => router.navigate('/profile')} />
-    <PrimaryButton label={t('Explore venues')} variant="secondary" onPress={() => router.navigate('/explore')} />
+    {entries.length === 0 && <>
+      <PrimaryButton label={t('My impressions')} onPress={() => router.navigate('/profile')} />
+      <PrimaryButton label={t('Explore venues')} variant="secondary" onPress={() => router.navigate('/explore')} />
+    </>}
   </ScreenContainer>;
 }
 

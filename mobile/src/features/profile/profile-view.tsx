@@ -1,11 +1,9 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '@/components/app-icon';
 import { PrimaryButton } from '@/components/primary-button';
 import { BevveTheme as theme } from '@/constants/theme';
-import { useAuth } from '@/features/auth/auth-provider';
-import { authErrorMessage } from '@/features/auth/auth-store';
 import { useTranslation } from '@/localization/language-provider';
 import type { UUID } from '@/features/comparisons/comparison-state';
 import { useSavedBars } from '@/features/saved-bars/saved-bars-provider';
@@ -14,33 +12,20 @@ import { ProfileActivityRow, ProfileEmptyState } from './profile-activity-compon
 import { selectProfileFeed, profileFeedCopy, type ProfileActivity } from './profile-feed';
 import { ProfileList } from './profile-list';
 import { useProfileIdentity } from './use-profile-identity';
-import { exitProfile, profileInitials } from './profile-identity';
+import { profileInitials } from './profile-identity';
 import { profileDestinations } from './profile-navigation';
 
-export function ProfileView({ activity, onOpenVenue, onWelcome, feedback, ready = true, countReady = true,
+export function ProfileView({ activity, onOpenVenue, feedback, ready = true, countReady = true,
   refreshing, onRefresh, sampleVenueIds = [] }: {
-  activity: ProfileActivity; onOpenVenue: (id: UUID) => void; onWelcome: () => void;
+  activity: ProfileActivity; onOpenVenue: (id: UUID) => void;
   feedback?: ReactNode; ready?: boolean; countReady?: boolean; refreshing?: boolean; onRefresh?: () => void; sampleVenueIds?: readonly string[];
 }) {
   const { t, format } = useTranslation();
-  const auth = useAuth();
   const savedBars = useSavedBars();
   const identity = useProfileIdentity();
-  const [signingOut, setSigningOut] = useState(false);
-  const [error, setError] = useState<ReturnType<typeof authErrorMessage> | null>(null);
-  const pending = useRef(false);
   const feed = useMemo(() => selectProfileFeed(activity), [activity]);
   const name = identity.demo ? t('Demo profile') : t('Your profile');
   const initials = profileInitials(identity.username || name);
-  async function leave() {
-    if (pending.current) return;
-    pending.current = true;
-    setSigningOut(true);
-    setError(null);
-    try { await exitProfile(auth.session, auth.signOut, onWelcome); }
-    catch (error) { setError(authErrorMessage(error)); }
-    finally { pending.current = false; setSigningOut(false); }
-  }
   const header = <View style={styles.header}>
     <View style={styles.top}>
       <Text accessibilityRole="header" style={styles.name}>{name}</Text>
@@ -64,12 +49,6 @@ export function ProfileView({ activity, onOpenVenue, onWelcome, feedback, ready 
       <ProfileStat label={t('Want to Try')} value={savedBars.status === 'ready' ? format.number(Object.keys(savedBars.bars).length) : '—'}
         hint={savedBars.status === 'loading' ? t('Please wait…') : savedBars.status === 'error' ? t('Unavailable') : undefined} onPress={() => router.push(profileDestinations.wants)} />
     </View>
-    <View style={styles.actions}>
-      <PrimaryButton label={t('Change Password')} variant="secondary" style={styles.action} onPress={() => router.push(profileDestinations.password)} />
-      <PrimaryButton label={signingOut ? t('Please wait…') : identity.demo ? t('Return to Welcome') : t('Log Out')}
-        variant="secondary" style={styles.action} disabled={signingOut} onPress={() => { void leave(); }} />
-    </View>
-    {error && <Text accessibilityRole="alert" style={styles.note}>{t(error)}</Text>}
     {feedback}
     <SavedBarsFeedback />
     <Text accessibilityRole="header" style={styles.section}>{t('Activity')}</Text>
@@ -102,8 +81,6 @@ const styles = StyleSheet.create({
   stat: { flex: 1, minWidth: 0, minHeight: 112, padding: 14, borderRadius: theme.radii.card, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, gap: 6, justifyContent: 'center' },
   statValue: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 26 },
   statLabel: { color: theme.colors.textSecondary, fontFamily: theme.fonts.bodyBold, fontSize: 14 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  action: { flexGrow: 1, flexBasis: 130, paddingHorizontal: 12 },
   section: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 20, paddingTop: 8, paddingBottom: 4 },
   note: { color: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 12 },
   pressed: { opacity: 0.75 },
