@@ -9,16 +9,24 @@ import * as extraDrafts from '../src/features/contributions/extra-form-drafts.ts
 import * as extras from '../src/features/contributions/venue-extras-state.ts';
 import * as copy from '../src/localization/venue-copy.ts';
 import * as fixtureCatalog from '../src/fixtures/contribution-catalog.ts';
+import { createContributionBatch } from '../src/features/contributions/contribution-batch-store.ts';
 import { drink } from './helpers/catalog-fixtures.mjs';
 
 const theme=loadNativeModule('src/constants/theme.ts');
 const formStyles=loadNativeModule('src/features/contributions/inline-form-styles.ts',{'@/constants/theme':theme});
 const translation={t:createTranslator('en'),format:formatting.createLocaleFormatters('en')};
-function setup(kind,extraProps={}){
+function setup(kind,extraProps={},batchStore=null){
   const harness=hookHarness();let closed=0;
   const names={crowd:['crowd-report-form','CrowdReportForm'],bathroom:['bathroom-review-form','BathroomReviewForm'],price:['drink-price-form','DrinkPriceForm'],language:['spoken-languages-form','SpokenLanguagesForm'],safety:['safety-information-form','SafetyInformationForm']};
   const [file,name]=names[kind];
+  const batching=loadNativeModule('src/features/contributions/contribution-batch.tsx', {
+    react:{...harness.react,createContext:()=>({Provider:'Provider'}),useContext:()=>batchStore?{store:batchStore,saving:batchStore.getSnapshot().saving}:null},
+    '@/components/primary-button':{PrimaryButton:'PrimaryButton'},
+    '@/localization/language-provider':{useTranslation:()=>translation},'./inline-form-styles':formStyles,
+    './contribution-batch-store':{createContributionBatch},
+  });
   const module=loadNativeModule(`src/features/contributions/${file}.tsx`,{
+    './contribution-batch':batching,
     react:harness.react,'@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/constants/theme':theme,
     '@/features/ratings/star-selector':{StarSelector:'StarSelector'},'@/fixtures/contribution-catalog':fixtureCatalog,
     '@/localization/language-provider':{useTranslation:()=>translation},'@/localization/venue-copy':copy,
@@ -144,4 +152,55 @@ test('guest forms retain synchronous session-only success behavior',()=>{
   let saved;
   const ui=setup('crowd',{onSubmit:value=>saved=value});ui.render().find(node=>node.props.accessibilityLabel==='3 Moderate').props.onPress();ui.button('Submit crowd').props.onPress();
   assert.equal(saved,3);assert.ok(ui.render().some(node=>node.props.children==='Crowd report saved for this session.'));ui.harness.unmount();
+});
+
+test('batched sections have no local submit buttons and write only through the final save',async()=>{
+  const batch=createContributionBatch();const writes=[];
+  const crowd=setup('crowd',{onSubmit:level=>{writes.push(['crowd',level]);}},batch);
+  const bathroom=setup('bathroom',{onSubmit:scores=>{writes.push(['bathroom',{...scores}]);}},batch);
+  crowd.render().find(node=>node.props.accessibilityLabel==='3 Moderate').props.onPress();crowd.render();
+  bathroom.render().filter(node=>node.type==='StarSelector')[0].props.onChange(4);bathroom.render();
+  assert.ok(!crowd.render().some(node=>node.type==='PrimaryButton'));
+  assert.ok(!bathroom.render().some(node=>node.type==='PrimaryButton'));
+  assert.equal(await batch.submit(),false);assert.deepEqual(writes,[]);
+  bathroom.render().filter(node=>node.type==='StarSelector')[1].props.onChange(3);bathroom.render();
+  bathroom.render().filter(node=>node.type==='StarSelector')[2].props.onChange(5);bathroom.render();
+  assert.equal(await batch.submit(),true);
+  assert.deepEqual(writes,[['crowd',3],['bathroom',{cleanliness:4,accessibility:3,wait_time:5}]]);
+  crowd.harness.unmount();bathroom.harness.unmount();
+});
+
+test('a reopened unconfirmed account draft uses the same request retry in a batch',async()=>{
+  const batch=createContributionBatch();let retries=0;
+  const ui=setup('price',{catalog:[drink],initialPrice:{drinkId:drink.id,priceCents:675},
+    feedback:{pending:true,saving:false,error:true,saved:false,retry:async()=>{retries++;}},onSubmit:()=>assert.fail('Must retry the original request')},batch);
+  ui.render();assert.equal(batch.getSnapshot().pending,1);assert.equal(await batch.submit(),true);assert.equal(retries,1);
+  ui.harness.unmount();
+});
+
+test('price, language and private report drafts share the final save without section buttons',async()=>{
+  const batch=createContributionBatch();const writes=[];
+  const price=setup('price',{onSubmit:(id,cents)=>{writes.push(['price',id,cents]);}},batch);
+  const language=setup('language',{onSubmit:code=>{writes.push(['language',code]);}},batch);
+  const safety=setup('safety',{onSubmit:input=>{writes.push(['safety',input.description]);}},batch);
+  price.render().find(node=>node.props.accessibilityRole==='radio').props.onPress();price.render();
+  price.render().find(node=>node.props.accessibilityLabel==='Drink price in euros').props.onChangeText('6,50');price.render();
+  language.render().find(node=>node.props.accessibilityRole==='radio').props.onPress();language.render();
+  safety.render().find(node=>node.props.accessibilityRole==='radio').props.onPress();safety.render();
+  assert.equal(await batch.submit(),false);assert.deepEqual(writes,[]);
+  safety.render().find(node=>node.props.accessibilityLabel==='Private incident description').props.onChangeText('Private draft');safety.render();
+  for(const ui of [price,language,safety])assert.ok(!ui.render().some(node=>node.type==='PrimaryButton'));
+  assert.deepEqual(writes,[]);assert.equal(await batch.submit(),true);
+  assert.deepEqual(writes,[['price',drink.id,650],['language','en'],['safety','Private draft']]);
+  price.harness.unmount();language.harness.unmount();safety.harness.unmount();
+});
+
+test('edits back to an original value are still saved after another section fails',async()=>{
+  const batch=createContributionBatch();const levels=[];
+  const crowd=setup('crowd',{savedReport:{level:2,created_at:'2026-01-01T00:00:00Z'},onSubmit:level=>{levels.push(level);}},batch);
+  batch.register('other',{fingerprint:'pending',dirty:true,valid:true,save:async()=>{throw Error('offline');}});
+  crowd.render().find(node=>node.props.accessibilityLabel==='3 Moderate').props.onPress();crowd.render();
+  assert.equal(await batch.submit(),false);assert.deepEqual(levels,[3]);
+  crowd.render().find(node=>node.props.accessibilityLabel==='2 Quiet').props.onPress();crowd.render();
+  await batch.submit();assert.deepEqual(levels,[3,2]);crowd.harness.unmount();
 });

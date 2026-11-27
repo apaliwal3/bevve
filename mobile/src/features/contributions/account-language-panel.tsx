@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { OptionalContributionCard } from './optional-contribution-card';
 import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
 import { BevveTheme as theme } from '@/constants/theme';
@@ -23,20 +23,18 @@ export function AccountLanguageFeedback() {
 }
 export function AccountLanguagePanel({ catalog, barId }: { catalog: AccountCatalogValue; barId: string }) {
   const state = useAccountLanguages(), { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
   const venue = catalog.venues.find(row => row.id === barId);
   const op = state.operations[barId] ?? emptyLanguageOperation;
   if (!venue || !catalog.impressions[barId]) return null;
   return <View style={styles.section}>
-    <PrimaryButton label={t('Spoken languages')} variant="secondary" disabled={op.saving} onPress={() => setExpanded(value => !value)} />
-    {expanded && <>
+    <OptionalContributionCard titleKey="Spoken languages" hintKey="Languages spoken by staff" icon="languages" disabled={op.saving}>
       <AccountLanguageFeedback />
       {state.status === 'ready' && <SpokenLanguagesForm languages={venue.languages.map(row => ({ ...row, name: venueLanguageLabel(row.code, t) }))}
         pending={state.history.filter(row => row.bar_id === barId && row.status === 'pending')}
         initialCode={op.request?.code} feedback={{ pending: Boolean(op.request), saving: op.saving, error: op.error, saved: op.saved,
-          retry: () => { if (op.request) void state.retry(barId, op.request.id).catch(() => {}); } }}
-        onSubmit={code => { void state.submit(barId, code, op.version).catch(() => {}); }} onCancel={() => setExpanded(false)} />}
-    </>}
+          retry: () => { if (op.request) return state.retry(barId, op.request.id); } }}
+        onSubmit={code => state.submit(barId, code, op.version)} onCancel={() => {}} />}
+    </OptionalContributionCard>
   </View>;
 }
 export function AccountLanguageHistory({ catalog, onOpenVenue }: { catalog: AccountCatalogValue; onOpenVenue: (id: UUID) => void }) {

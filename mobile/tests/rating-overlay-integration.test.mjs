@@ -61,6 +61,9 @@ function app() {
     interpolate(config) { return config.outputRange[0]; }
   }
   const overlay = loadNativeModule('src/features/ratings/venue-rating-overlay.tsx', {
+    '@/features/contributions/contribution-batch':{ContributionBatch:'ContributionBatch',SaveContributionsButton:'SaveContributionsButton'},
+    '@/features/contributions/optional-contribution-card':{OptionalContributionCard:'OptionalContributionCard'},
+    './rating-overlay-styles':loadNativeModule('src/features/ratings/rating-overlay-styles.ts',{'@/constants/theme':theme}),
     react,
     'react-native': {
       ...nativeStub, Modal: 'Modal', ScrollView: 'ScrollView',
@@ -166,7 +169,7 @@ test('first save reveals all five optional cards without submitting them, and sa
   submit(); submit(); ui.render();
   assert.equal(ui.getView().step, 'contributions');
   assert.equal(ui.state.comparisons.history.length, 0);
-  const labels = ui.nodes().filter((node) => node.type === 'Pressable').map((node) => node.props.accessibilityLabel);
+  const labels = ui.nodes().filter((node) => node.type === 'OptionalContributionCard').map((node) => node.props.titleKey);
   for (const label of ['Report crowd', 'Rate bathrooms', 'Update drink prices', 'Spoken languages', 'Safety information']) assert.ok(labels.includes(label));
   assert.deepEqual(ui.submissions, []);
   ui.dismiss(); ui.mount(a);
@@ -283,14 +286,14 @@ test('all five unchanged optional form callbacks remain explicit and become iner
   ];
   const callbacks = [];
   for (const [label, component, args] of forms) {
-    ui.nodes().find((node) => node.type === 'Pressable' && node.props.accessibilityLabel === label).props.onPress(); ui.render();
+    assert.ok(ui.nodes().some((node) => node.type === 'OptionalContributionCard' && node.props.titleKey === label));
     const form = ui.nodes().find((node) => node.type === component);
     assert.ok(form); assert.equal(form.props.disabled, false);
     callbacks.push([form.props.onSubmit, args]);
     assert.equal(ui.submissions.length, callbacks.length - 1);
     form.props.onSubmit(...args);
     form.props.onCancel(); ui.render();
-    assert.equal(ui.nodes().some((node) => node.type === component), false);
+    assert.equal(ui.nodes().some((node) => node.type === component), true); // Collapsing retains the draft form.
   }
   const before = JSON.stringify(ui.submissions);
   ui.setCatalog([a, b, c]);
@@ -377,7 +380,7 @@ test('an unfinished revisit offers Resume instead of restart, and Continue to co
   ui.press('Continue to contributions');
   assert.equal(ui.getView().step, 'contributions');
   assert.equal(ui.state.flows[d.id], pending);
-  assert.equal(ui.nodes().filter((node) => node.type === 'Pressable' && ['Report crowd', 'Rate bathrooms', 'Update drink prices', 'Spoken languages', 'Safety information'].includes(node.props.accessibilityLabel)).length, 5);
+  assert.equal(ui.nodes().filter((node) => node.type === 'OptionalContributionCard' && ['Report crowd', 'Rate bathrooms', 'Update drink prices', 'Spoken languages', 'Safety information'].includes(node.props.titleKey)).length, 5);
   ui.dismiss(); ui.mount(d); ui.setLanguage('it'); ui.press('Resume comparisons');
   assert.equal(ui.state.flows[d.id], pending);
   assert.deepEqual(ui.getView().progress, { current: 2, total: 3 });

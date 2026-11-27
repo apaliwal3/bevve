@@ -1,3 +1,4 @@
+import { useBatchedContribution } from './contribution-batch';
 import { useTranslation } from '@/localization/language-provider';
 import { useReducer, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -16,7 +17,7 @@ type SpokenLanguagesFormProps = {
   languages: VenueDetails['languages'];
   pending: readonly Pick<SessionLanguageSuggestion, 'id' | 'language_code'>[];
   disabled?: boolean;
-  onSubmit: (code: typeof languageCatalog[number]['code']) => void;
+  onSubmit: (code: typeof languageCatalog[number]['code']) => void | Promise<void>;
   onCancel: () => void;
   feedback?: ContributionFormFeedback;
   initialCode?: VenueLanguageCode;
@@ -26,10 +27,12 @@ export function SpokenLanguagesForm({ languages, pending, disabled: parentDisabl
   const { t } = useTranslation();
   const [draft, dispatchDraft] = useReducer(languageDraftReducer, initialCode ?? null);
   const [success, setSuccess] = useState<VenueLanguageCode | null>(null);
-  const disabled = parentDisabled || Boolean(feedback?.pending);
   const options = languageCatalog.filter((language) => !languages.some((associated) => associated.code === language.code) &&
     !pending.some((suggestion) => suggestion.language_code === language.code));
   const canSubmit = draft !== null && options.some((language) => language.code === draft);
+
+  const batch = useBatchedContribution('languages', draft, canSubmit, () => { if (draft && canSubmit) return onSubmit(draft); }, feedback);
+  const disabled = parentDisabled || batch.saving || Boolean(feedback?.pending);
 
   function cancel() {
     dispatchDraft({ type: 'reset' });
@@ -83,10 +86,10 @@ export function SpokenLanguagesForm({ languages, pending, disabled: parentDisabl
       {feedback?.pending && <Text style={styles.hint}>{t('Unconfirmed suggestion: {language}', { language: venueLanguageLabel(initialCode ?? draft ?? '', t) })}</Text>}
       {feedback?.saving && <Text accessibilityLiveRegion="polite" style={styles.hint}>{t('Saving contribution…')}</Text>}
       {feedback?.error && <Text accessibilityRole="alert" style={styles.hint}>{t('Your contribution could not be confirmed. Retry to save the same details without duplicates.')}</Text>}
-      <View style={styles.actions}>
+      {!batch.batched && <View style={styles.actions}>
         <PrimaryButton label={t("Cancel")} variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
         <PrimaryButton label={feedback?.pending ? t('Retry save') : t("Suggest language")} disabled={parentDisabled || feedback?.saving || (!canSubmit && !feedback?.pending)} onPress={feedback?.pending ? feedback.retry : submit} style={styles.button} />
-      </View>
+      </View>}
     </View>
   );
 }

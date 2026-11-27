@@ -24,7 +24,7 @@ function setup(saved=true){
   store.setCatalog(catalog);const stop=store.start();
   let harness=hookHarness();
   function load(){return loadNativeModule('src/features/contributions/account-contribution-panel.tsx',{
-    react:harness.react,'@/components/app-icon':{AppIcon:'AppIcon'},'@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/constants/theme':theme,
+    './optional-contribution-card':{OptionalContributionCard:'OptionalContributionCard'},react:harness.react,'@/components/app-icon':{AppIcon:'AppIcon'},'@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/constants/theme':theme,
     '@/features/catalog/catalog-adapters':adapters,'@/localization/language-provider':{useTranslation:()=>({t:createTranslator('en')})},
     './account-contribution-store':contributionStore,
     './account-contributions-provider':{useAccountContributions:()=>({...store.getSnapshot(),submit:store.submit,retry:store.retry,refresh:store.refresh})},
@@ -33,7 +33,7 @@ function setup(saved=true){
   let module=load();
   function render(){const tree=harness.render(()=>module.AccountContributionPanel({catalog,barId}));harness.effects();return [...elements(tree)];}
   return{catalog,store,requests,stop,render,setFail(value){fail=value;},
-    open(label){render().find(node=>node.props.accessibilityLabel===label).props.onPress();},
+    open(label){assert.ok(render().some(node=>node.props.titleKey===label));},
     remount(){harness.unmount();harness=hookHarness();module=load();},
   };
 }
@@ -51,7 +51,7 @@ test('connected optional cards prefill server reports/reviews and use the databa
 
 test('reopening pending forms restores the request payload and retries it once with the same ID',async()=>{
   const ui=setup();await tick();ui.setFail(true);ui.open('Update drink prices');
-  ui.render().find(node=>node.type==='DrinkPriceForm').props.onSubmit(drink.id,675);await tick();
+  await assert.rejects(ui.render().find(node=>node.type==='DrinkPriceForm').props.onSubmit(drink.id,675));await tick();
   const before=ui.requests[0];ui.remount();ui.open('Update drink prices');
   const form=ui.render().find(node=>node.type==='DrinkPriceForm');assert.equal(form.props.initialPrice.drinkId,drink.id);assert.equal(form.props.initialPrice.priceCents,675);assert.equal(form.props.feedback.error,true);
   ui.setFail(false);form.props.feedback.retry();await tick();assert.deepEqual(ui.requests[1],before);assert.equal(ui.store.getSnapshot().prices.length,1);ui.stop();

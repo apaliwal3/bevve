@@ -1,3 +1,4 @@
+import { useBatchedContribution } from './contribution-batch';
 import { useTranslation } from '@/localization/language-provider';
 import { useReducer, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -20,7 +21,7 @@ const categories: { key: keyof BathroomScores; label: PlainTranslationKey; hint:
 type BathroomReviewFormProps = {
   savedReview: BathroomDraft | null;
   disabled?: boolean;
-  onSubmit: (scores: BathroomScores) => void;
+  onSubmit: (scores: BathroomScores) => void | Promise<void>;
   onCancel: () => void;
   feedback?: ContributionFormFeedback;
   initialScores?: BathroomScores;
@@ -30,7 +31,9 @@ export function BathroomReviewForm({ savedReview, disabled: parentDisabled = fal
   const { t } = useTranslation();
   const [draft, dispatchDraft] = useReducer(bathroomDraftReducer, bathroomDraftFromSaved(initialScores ?? savedReview));
   const [success, setSuccess] = useState(false);
-  const disabled = parentDisabled || Boolean(feedback?.pending);
+
+  const batch = useBatchedContribution('bathrooms', draft, completeBathroomDraft(draft), () => { if (completeBathroomDraft(draft)) return onSubmit(draft); }, feedback);
+  const disabled = parentDisabled || batch.saving || Boolean(feedback?.pending);
 
   function cancel() {
     dispatchDraft({ type: 'cancel', saved: savedReview });
@@ -62,10 +65,10 @@ export function BathroomReviewForm({ savedReview, disabled: parentDisabled = fal
       {success && (!feedback || feedback.saved) && <Text accessibilityLiveRegion="polite" style={styles.success}>{feedback ? t('Bathroom ratings saved to your account.') : t("Bathroom ratings saved for this session.")}</Text>}
       {feedback?.saving && <Text accessibilityLiveRegion="polite" style={styles.hint}>{t('Saving contribution…')}</Text>}
       {feedback?.error && <Text accessibilityRole="alert" style={styles.hint}>{t('Your contribution could not be confirmed. Retry to save the same details without duplicates.')}</Text>}
-      <View style={styles.actions}>
+      {!batch.batched && <View style={styles.actions}>
         <PrimaryButton label={t("Cancel")} variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
         <PrimaryButton label={feedback?.pending ? t('Retry save') : t("Submit ratings")} disabled={parentDisabled || feedback?.saving || (!completeBathroomDraft(draft) && !feedback?.pending)} onPress={feedback?.pending ? feedback.retry : submit} style={styles.button} />
-      </View>
+      </View>}
     </View>
   );
 }

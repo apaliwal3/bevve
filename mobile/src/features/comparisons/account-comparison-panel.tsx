@@ -20,7 +20,7 @@ export function AccountComparisonFeedback() {
   </View>;
 }
 
-export function AccountComparisonPanel({ catalog, barId }: { catalog: AccountCatalogValue; barId: string }) {
+export function AccountComparisonPanel({ catalog, barId, journey = false }: { catalog: AccountCatalogValue; barId: string; journey?: boolean }) {
   const comparisons = useAccountComparisons();
   const { t } = useTranslation();
   const batch = comparisons.batches[barId];
@@ -35,15 +35,18 @@ export function AccountComparisonPanel({ catalog, barId }: { catalog: AccountCat
   }
   const pair = current && opponent && batch ? (batch.round % 2 === 0 ? [current, opponent] : [opponent, current]) : [];
   return <View style={styles.section}>
-    <Text accessibilityRole="header" style={styles.heading}>{t('Personal comparisons')}</Text>
-    <Text style={styles.note}>{t('Only your explicit picks build your ranking. Skipping creates no vote.')}</Text>
+    {!journey && <>
+      <Text accessibilityRole="header" style={styles.heading}>{t('Personal comparisons')}</Text>
+      <Text style={styles.note}>{t('Only your explicit picks build your ranking. Skipping creates no vote.')}</Text>
+    </>}
     <AccountComparisonFeedback />
     {comparisons.status === 'ready' && <>
       {!hasImpression ? <Text style={styles.note}>{t('Save your impression before comparing this venue.')}</Text>
         : !hasOpponents && !opponentId ? <Text style={styles.note}>{t('Save an impression for another venue to start comparing.')}</Text>
         : opponentId && batch && token ? <>
           <Text accessibilityLiveRegion="polite" style={styles.note}>{t('Comparison {current} of {total}', { current: batch.round + 1, total: batch.opponents.length })}</Text>
-          <Text style={styles.heading}>{t('Which do you prefer?')}</Text>
+          <Text style={styles.heading}>{journey ? t('Which would you rather revisit?') : t('Which do you prefer?')}</Text>
+          {journey && <Text style={styles.note}>{t('Your personal choices are separate from your saved impression.')}</Text>}
           {pair.length === 2 ? pair.map((row, index) => <View key={row.id}>
             {row.is_demo && <Text style={styles.note}>{t('Sample venue')}</Text>}
             <PreferenceVenueCard venue={catalogVenue(row)}
@@ -58,13 +61,13 @@ export function AccountComparisonPanel({ catalog, barId }: { catalog: AccountCat
           </>}
           <PrimaryButton label={t('Skip this comparison')} variant="secondary" disabled={batch.saving || Boolean(batch.attempt)} onPress={() => comparisons.skip(token)} />
           <PrimaryButton label={t('Skip remaining comparisons')} variant="secondary" disabled={batch.saving || Boolean(batch.attempt)} onPress={() => comparisons.skip(token, true)} />
-        </> : <>
+        </> : !journey && <>
           {batch && <Text accessibilityLiveRegion="polite" style={styles.note}>{t('Comparison batch finished.')}</Text>}
           <PrimaryButton label={batch ? t('Compare this bar again') : t('Start comparisons')} disabled={Boolean(catalog.saving[barId])}
             onPress={() => comparisons.begin(barId, batch?.id ?? null)} />
         </>}
     </>}
-    <Text style={styles.note}>{t('Saved choices survive reloads. Unfinished batches reset when the app restarts or you sign out.')}</Text>
+    {!journey && <Text style={styles.note}>{t('Saved choices survive reloads. Unfinished batches reset when the app restarts or you sign out.')}</Text>}
   </View>;
 }
 const styles = StyleSheet.create({

@@ -20,7 +20,7 @@ import { CatalogFeedback } from './catalog-feedback';
 import { AccountImpressionEditor } from './account-impression-editor';
 import type { AccountCatalogValue } from './catalog-provider';
 import { useAccountComparisons } from '@/features/comparisons/account-comparisons-provider';
-import { AccountComparisonFeedback, AccountComparisonPanel } from '@/features/comparisons/account-comparison-panel';
+import { AccountComparisonFeedback } from '@/features/comparisons/account-comparison-panel';
 import { RankedVenueRow } from '@/features/rankings/ranked-venue-row';
 import { useAccountContributions } from '@/features/contributions/account-contributions-provider';
 import { AccountContributionFeedback, AccountContributionPanel } from '@/features/contributions/account-contribution-panel';
@@ -48,7 +48,6 @@ export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogVal
       onBack={goBack} backLabel={t(back.label)} onEditImpression={() => setEditing(true)}
       onComparePrices={() => router.push(priceComparisonHref(navigation.drink?.id ?? catalog.drinks[0]?.id ?? null, row.id))} />
     {editing && <AccountImpressionEditor key={row.id} catalog={catalog} barId={row.id} name={row.name} onClose={() => setEditing(false)}>
-      <AccountComparisonPanel catalog={catalog} barId={row.id} />
       <AccountContributionPanel catalog={catalog} barId={row.id} />
       <AccountLanguagePanel catalog={catalog} barId={row.id} />
       <AccountIncidentPanel catalog={catalog} barId={row.id} />

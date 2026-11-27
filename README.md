@@ -80,7 +80,9 @@ database migration is needed. Physical-device location verification remains pend
   bathroom summaries, drink prices, spoken languages and safety disclaimers.
 - A top-down `+` overlay: save a impression, complete or skip up to three distinct
   personal comparisons, then use five optional inline forms for crowd, bathrooms,
-  prices, language suggestions and private demo incidents. Saved progress can resume.
+  prices, language suggestions and private demo incidents. Optional cards retain
+  their drafts when collapsed and share one final **Save and finish** button. Saved
+  comparison progress can resume.
 - Compact horizontal impression choices. Saved venues offer explicit **Compare
   this bar again** or **Resume comparisons**, plus direct access to contributions.
   Reopening never creates a new batch or a vote automatically.

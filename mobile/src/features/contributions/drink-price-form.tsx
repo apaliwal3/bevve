@@ -1,3 +1,4 @@
+import { useBatchedContribution } from './contribution-batch';
 import { useTranslation } from '@/localization/language-provider';
 import { useReducer, useState } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
@@ -15,7 +16,7 @@ import type { ContributionFormFeedback } from './contribution-form-feedback';
 type DrinkPriceFormProps = {
   prices: readonly VenueDrinkPrice[];
   disabled?: boolean;
-  onSubmit: (drinkId: string, priceCents: number) => void;
+  onSubmit: (drinkId: string, priceCents: number) => void | Promise<void>;
   onCancel: () => void;
   catalog?: readonly CatalogDrink[];
   feedback?: ContributionFormFeedback;
@@ -28,7 +29,9 @@ export function DrinkPriceForm({ prices, disabled: parentDisabled = false, onSub
   const [success, setSuccess] = useState<{ name: string; priceCents: number } | null>(null);
   const price = parseEuroPrice(draft.euros);
   const selected = catalog.find((drink) => drink.id === draft.drinkId);
-  const disabled = parentDisabled || Boolean(feedback?.pending);
+
+  const batch = useBatchedContribution('prices', draft, Boolean(selected) && price.ok, () => { if (selected && price.ok) return onSubmit(selected.id, price.value); }, feedback);
+  const disabled = parentDisabled || batch.saving || Boolean(feedback?.pending);
 
   function cancel() {
     dispatchDraft({ type: 'cancel' });
@@ -93,10 +96,10 @@ export function DrinkPriceForm({ prices, disabled: parentDisabled = false, onSub
       {feedback?.error && <Text accessibilityRole="alert" style={styles.error}>{t('Your contribution could not be confirmed. Retry to save the same details without duplicates.')}</Text>}
       <Text style={styles.hint}>{feedback ? t('Community-reported, not verified. Corrections save a new observation and keep your previous prices in account history.') : t("Community-reported, not verified. Corrections save a new observation and keep previous prices in session history.")}</Text>
       {catalog.length === 0 && <Text style={styles.hint}>{t('No drinks are available in the catalog yet.')}</Text>}
-      <View style={styles.actions}>
+      {!batch.batched && <View style={styles.actions}>
         <PrimaryButton label={t("Cancel")} variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
         <PrimaryButton label={feedback?.pending ? t('Retry save') : t("Submit price")} disabled={parentDisabled || feedback?.saving || ((!selected || !price.ok) && !feedback?.pending)} onPress={feedback?.pending ? feedback.retry : submit} style={styles.button} />
-      </View>
+      </View>}
     </View>
   );
 }

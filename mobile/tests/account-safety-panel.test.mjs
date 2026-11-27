@@ -22,7 +22,7 @@ function setup() {
   const actions = Object.fromEntries(['submit','retry','refresh','refreshQueue','refreshPublic','moderate','updateDraft','updateReviewDraft'].map(name => [name,
     (...args) => { calls.push([name, ...args]); return Promise.resolve(); }]));
   const module = loadNativeModule('src/features/contributions/account-safety-panel.tsx', {
-    react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
+    './optional-contribution-card':{OptionalContributionCard:'OptionalContributionCard'},react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
     '@/localization/language-provider': { useTranslation: () => ({ t: createTranslator('en'), format: createLocaleFormatters('en') }) },
     './account-safety-provider': { useAccountSafety: () => ({ ...state, ...actions }) }, './account-safety-store': storeModule,
     './extra-form-drafts': drafts, './safety-information-form': { SafetyInformationForm: 'SafetyInformationForm' }, './inline-form-styles': inlineStyles,
@@ -51,13 +51,13 @@ test('public safety distinguishes loading, failed and empty reads and displays o
 test('private incident forms use account drafts and retries without requiring an impression or fixture notes', () => {
   const ui = setup(), savedDraft = { category: 'Theft', description: privateRow.description, date: '2020-01-02' };
   ui.setState({ drafts: { [barId]: savedDraft }, operations: { [barId]: { version: 2, request: { id: privateRow.id }, saving: false, error: true, saved: false } } });
-  ui.render('AccountIncidentPanel').find(node => node.props.label === 'Optional private incident report').props.onPress();
+  assert.ok(ui.render('AccountIncidentPanel').some(node => node.props.titleKey === 'Safety information'));
   const form = ui.render('AccountIncidentPanel').find(node => node.type === 'SafetyInformationForm');
   assert.equal(form.props.draft, savedDraft); assert.equal(form.props.demoNotes.length, 0); assert.equal(form.props.feedback.error, true);
   form.props.feedback.retry(); assert.deepEqual(ui.calls[0], ['retry', barId, privateRow.id]);
   form.props.onDraftAction({ type: 'description', description: 'Next draft' }); assert.deepEqual(ui.calls[1], ['updateDraft', barId, { type: 'description', description: 'Next draft' }, 2]);
   form.props.onSubmit({ description: 'Stale form input' }); assert.deepEqual(ui.calls[2], ['submit', barId, 2]);
-  form.props.onCancel(); assert.ok(!ui.render('AccountIncidentPanel').some(node => node.type === 'SafetyInformationForm')); assert.equal(savedDraft.description, privateRow.description);
+  form.props.onCancel(); assert.ok(ui.render('AccountIncidentPanel').some(node => node.type === 'SafetyInformationForm')); assert.equal(savedDraft.description, privateRow.description);
   ui.catalog.venues = []; assert.equal(ui.render('AccountIncidentPanel').length, 0); ui.stop();
 });
 

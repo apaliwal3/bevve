@@ -23,7 +23,7 @@ function setup() {
     refresh: () => { calls.push(['refresh']); return Promise.resolve(); }, refreshQueue: () => { calls.push(['refreshQueue']); return Promise.resolve(); } };
   function load() {
     module = loadNativeModule('src/features/contributions/account-language-panel.tsx', {
-      react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
+      './optional-contribution-card':{OptionalContributionCard:'OptionalContributionCard'},react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
       '@/features/profile/profile-activity-components': { ProfileActivitySection: 'ProfileActivitySection', ProfileActivityRow: 'ProfileActivityRow' },
       '@/features/catalog/catalog-adapters': adapters, '@/features/comparisons/comparison-state': ids,
       '@/localization/language-provider': { useTranslation: () => ({ t: createTranslator('en'), format: createLocaleFormatters('en') }) },
@@ -40,13 +40,13 @@ function setup() {
 
 test('account language cards use database associations and owner pending rows and restore uncertain requests on reopen', () => {
   const ui = setup();
-  ui.render().find(node => node.props.label === 'Spoken languages').props.onPress();
+  assert.ok(ui.render().some(node => node.props.titleKey === 'Spoken languages'));
   const form = ui.render().find(node => node.type === 'SpokenLanguagesForm');
   assert.deepEqual(Array.from(form.props.languages, value => ({ ...value })), [{ code: 'en', name: 'English' }]);
   assert.equal(form.props.pending.length, 1); form.props.onSubmit('fr');
   assert.deepEqual(ui.calls[0], ['submit', barId, 'fr', 0]);
   ui.setState({ operations: { [barId]: { version: 0, request: { id: row.id, barId, code: 'fr' }, saving: false, error: true, saved: false } } });
-  ui.remount(); ui.render().find(node => node.props.label === 'Spoken languages').props.onPress();
+  ui.remount(); assert.ok(ui.render().some(node => node.props.titleKey === 'Spoken languages'));
   const reopened = ui.render().find(node => node.type === 'SpokenLanguagesForm');
   assert.equal(reopened.props.initialCode, 'fr'); assert.equal(reopened.props.feedback.error, true);
   reopened.props.feedback.retry(); assert.deepEqual(ui.calls[1], ['retry', barId, row.id]); ui.stop();
@@ -55,7 +55,7 @@ test('account language cards use database associations and owner pending rows an
 test('language forms require a saved impression and loading errors expose retry without a demo form', () => {
   const ui = setup(); ui.catalog.impressions = {}; assert.equal(ui.render().length, 0);
   ui.catalog.impressions = { [barId]: impression() }; ui.setState({ status: 'error', error: true });
-  ui.render().find(node => node.props.label === 'Spoken languages').props.onPress();
+  assert.ok(ui.render().some(node => node.props.titleKey === 'Spoken languages'));
   assert.ok(!ui.render().some(node => node.type === 'SpokenLanguagesForm'));
   const feedback = ui.render('AccountLanguageFeedback');
   feedback.find(node => node.props.label === 'Retry language suggestions').props.onPress(); assert.deepEqual(ui.calls[0], ['refresh']); ui.stop();

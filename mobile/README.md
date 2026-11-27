@@ -92,7 +92,11 @@ are different from the four guest fixtures. No names or serving sizes are used
 as database join keys.
 
 Sign in, open Explore, select a venue, tap `+`, choose an impression and tap
-**Save impression**. The modal confirms only a successful server response.
+**Save impression and continue**. The modal advances only after a successful server response,
+then offers the demo’s bounded comparisons followed by five matching optional cards.
+Fill in the cards you want and tap **Save and finish** once. Started sections must be
+complete; collapsed cards keep their drafts. Failed saves remain open for retry,
+and confirmed sections are not submitted again.
 **Close** discards an unsaved impression draft; confirmed writes remain saved.
 A failure keeps the selected draft and allows retry.
 Profile shows one current impression per venue, including edits. Reload the app,
@@ -182,7 +186,10 @@ on 2026-11-23. Local tests pass; hosted results for
 have not been reported. Do not rerun migrations 001–004.
 
 The same inline **Report crowd**, **Rate bathrooms** and **Update drink prices**
-cards appear after the account comparison section, once an impression is saved.
+cards appear after the account comparison step, once an impression is saved.
+Crowd, bathroom, price, language and incident forms share a final **Save and finish**
+button. Closing before that final save discards unsaved optional form edits; private
+incident drafts and unconfirmed requests remain available to retry.
 All are optional. Crowd submissions append history, prefill the latest own level,
 and count only the latest report per contributor in the 45-minute window; at
 least three contributors are required for a classification. Bathroom forms
@@ -340,7 +347,8 @@ Backend code is outside the mobile lint scope.
 - Crowd classification needs three distinct recent contributors. This demo uses
   one contributor; repeated submissions cannot establish a live consensus.
 - The `+` journey saves an impression, offers up to three distinct comparisons
-  (none for the first experienced venue), then reveals the five optional forms.
+  (none for the first experienced venue), then reveals the five optional forms. Each card retains its draft when collapsed;
+  **Save and finish** submits all completed edits together.
   Skip one or all comparisons without creating votes. Reopening can resume a
   pending comparison flow; editing an impression does not automatically repeat it.
 - Impression choices use one row of muted green, yellow and pink 56-point circles
@@ -380,7 +388,8 @@ These are manual checks, separate from Node component-prop tests and iOS export:
 1. In Explore and Bar Details, confirm there is no overall bar star score and
    that community opinions are unavailable in the demo. Bathroom stars remain.
 2. Save an impression via `+`, skip or complete the bounded comparisons, and
-   confirm the same five optional forms and their Cancel behavior still work.
+   fill in the optional cards and use **Save and finish**. Check that incomplete
+   sections block saving and collapsed cards retain their drafts.
 3. Dismiss and reopen the overlay, navigate away and return.
    Confirm saved impressions and pending comparisons survive in this app session.
 4. Edit an impression. Confirm **Your impression** and Profile update, Profile

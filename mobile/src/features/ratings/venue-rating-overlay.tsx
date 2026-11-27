@@ -1,5 +1,8 @@
+import { ContributionBatch, SaveContributionsButton } from '@/features/contributions/contribution-batch';
+import { OptionalContributionCard } from '@/features/contributions/optional-contribution-card';
+import { ratingOverlayStyles as styles } from './rating-overlay-styles';
 import { useTranslation } from '@/localization/language-provider';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -63,11 +66,12 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
   const [closingSnapshot, setClosingSnapshot] = useState<typeof journey | null>(null);
   const view = closingSnapshot ?? journey;
   const unchangedImpression = view.impression !== null && draftImpression === view.impression;
-  const [expanded, setExpanded] = useState<Partial<Record<OptionalActionId, boolean>>>({});
   const [isClosing, setIsClosing] = useState(false);
   const [progress] = useState(() => new Animated.Value(0));
   const mounted = useRef(true);
   const closing = useRef(false);
+  const contributionBusy = useRef(false);
+  const onContributionSaving = useCallback((value: boolean) => { contributionBusy.current = value; }, []);
   const reduceMotion = useRef(false);
   const overlayId = useRef<string | null>(null);
   const authority = useRef<typeof journey.token>(null);
@@ -118,7 +122,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
   }
 
   function requestClose() {
-    if (closing.current || !mounted.current) return;
+    if (closing.current || contributionBusy.current || !mounted.current) return;
     closing.current = true;
     setClosingSnapshot(journey);
     setIsClosing(true);
@@ -232,60 +236,36 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
                 <PrimaryButton label={t('Skip remaining comparisons')} variant="secondary" disabled={isClosing} onPress={() => { if (canAct()) journey.skip(true); }} />
               </>
             ) : view.step === 'contributions' ? (
-              <>
+              <ContributionBatch onSavingChange={onContributionSaving}>
                 <View style={styles.ratingCard}>
                   <Text style={styles.eyebrow}>{t('YOUR EXPERIENCE')}</Text>
                   {view.impression && <Text accessibilityLiveRegion="polite" style={styles.question}>{t(impressionLabels[view.impression])}</Text>}
                   <Text style={styles.description}>{t('Saved for this demo session. Reopen + to edit your experience.')}</Text>
                   {view.noOpponents && <Text style={styles.description}>{t('No other experienced bars are available to compare yet.')}</Text>}
                 </View>
-                <Text style={styles.description}>{t("All five contributions are optional. Choose any card, or close when you are done.")}</Text>
-                {optionalActions.map((action) => {
-                  const isExpanded = expanded[action.id] === true;
-                  return (
-                    <View key={action.id} style={[styles.optionalCard, isExpanded && styles.expandedCard]}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t(action.title)}
-                        accessibilityState={{ expanded: isExpanded }}
-                        disabled={isClosing}
-                        onPress={() => setExpanded((previous) => ({ ...previous, [action.id]: !previous[action.id] }))}
-                        style={({ pressed }) => [styles.cardSummary, pressed && styles.pressed]}>
-                        <View style={styles.cardIcon}>
-                          {action.icon === 'euro'
-                            ? <Text style={styles.euro} accessible={false}>€</Text>
-                            : <AppIcon name={action.icon} size={20} color={theme.colors.purpleLight} />}
-                        </View>
-                        <View style={styles.cardCopy}>
-                          <Text style={styles.cardTitle}>{t(action.title)}</Text>
-                          <Text style={styles.hint}>{t(action.hint)}</Text>
-                        </View>
-                        <View style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}>
-                          <AppIcon name="chevron" size={16} color={theme.colors.purpleLight} />
-                        </View>
-                      </Pressable>
-                      {isExpanded && (
-                        <View style={styles.placeholder}>
+                <Text style={styles.description}>{t('All five contributions are optional. Fill in any cards, then save when you are done.')}</Text>
+                {optionalActions.map((action) => (
+                  <OptionalContributionCard key={action.id} titleKey={action.title} hintKey={action.hint} icon={action.icon} disabled={isClosing}>
                           {action.id === 'crowd' ? (
                             <CrowdReportForm
                               savedReport={ownCrowdReport}
                               disabled={isClosing}
                               onSubmit={(level) => { if (canAct()) submitCrowdReport(level); }}
-                              onCancel={() => setExpanded((previous) => ({ ...previous, crowd: false }))}
+                              onCancel={() => {}}
                             />
                           ) : action.id === 'bathrooms' ? (
                             <BathroomReviewForm
                               savedReview={ownBathroomReview}
                               disabled={isClosing}
                               onSubmit={(scores) => { if (canAct()) saveBathroomReview(scores); }}
-                              onCancel={() => setExpanded((previous) => ({ ...previous, bathrooms: false }))}
+                              onCancel={() => {}}
                             />
                           ) : action.id === 'prices' ? (
                             <DrinkPriceForm
                               prices={drinks}
                               disabled={isClosing}
                               onSubmit={(drinkId, cents) => { if (canAct()) submitDrinkPrice(drinkId, cents); }}
-                              onCancel={() => setExpanded((previous) => ({ ...previous, prices: false }))}
+                              onCancel={() => {}}
                             />
                           ) : action.id === 'languages' ? (
                             <SpokenLanguagesForm
@@ -293,22 +273,20 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
                               pending={pendingLanguages}
                               disabled={isClosing}
                               onSubmit={(code) => { if (canAct()) suggestLanguage(code); }}
-                              onCancel={() => setExpanded((previous) => ({ ...previous, languages: false }))}
+                              onCancel={() => {}}
                             />
                           ) : (
                             <SafetyInformationForm
                               demoNotes={demoSafetyNotes}
                               disabled={isClosing}
                               onSubmit={(incident) => { if (canAct()) submitIncident(incident); }}
-                              onCancel={() => setExpanded((previous) => ({ ...previous, safety: false }))}
+                              onCancel={() => {}}
                             />
                           )}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-              </>
+                  </OptionalContributionCard>
+                ))}
+                <SaveContributionsButton onComplete={requestClose} />
+              </ContributionBatch>
             ) : <Text style={styles.description}>{t('Updating available venues…')}</Text>}
           </ScrollView>
         </Animated.View>
@@ -316,139 +294,3 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start'
-  },
-  backdrop: {
-    backgroundColor: theme.colors.overlayBackdrop
-  },
-  panel: {
-    width: '100%',
-    maxWidth: 374,
-    flexShrink: 1,
-    borderRadius: theme.radii.panel,
-    borderWidth: 1,
-    borderColor: theme.colors.purpleBorder,
-    backgroundColor: theme.colors.overlaySurface,
-    overflow: 'hidden'
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderColor: theme.colors.border
-  },
-  headerCopy: {
-    flex: 1,
-    gap: theme.spacing.xs
-  },
-  eyebrow: {
-    color: theme.colors.purpleLight,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 10,
-    letterSpacing: 1
-  },
-  venueName: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.brand,
-    fontSize: 21,
-    lineHeight: 28
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.surfaceRaised
-  },
-  scroll: {
-    flexGrow: 0,
-    flexShrink: 1
-  },
-  content: {
-    padding: theme.spacing.md,
-    paddingBottom: theme.spacing.lg,
-    gap: theme.spacing.md
-  },
-  ratingCard: {
-    padding: theme.spacing.md,
-    gap: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.purpleBorder,
-    borderRadius: theme.radii.card,
-    backgroundColor: theme.colors.purpleTint
-  },
-  question: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.brand,
-    fontSize: 22,
-    lineHeight: 29
-  },
-  description: {
-    color: theme.colors.textSecondary,
-    fontFamily: theme.fonts.body,
-    fontSize: 12,
-    lineHeight: 19
-  },
-  optionalCard: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radii.card,
-    backgroundColor: theme.colors.surface,
-    overflow: 'hidden'
-  },
-  expandedCard: {
-    borderColor: theme.colors.purpleBorder
-  },
-  cardSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 60,
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md
-  },
-  cardIcon: {
-    width: 38,
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.purpleTint
-  },
-  cardCopy: {
-    flex: 1,
-    gap: theme.spacing.xs
-  },
-  cardTitle: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 14
-  },
-  hint: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    lineHeight: 17
-  },
-  euro: {
-    color: theme.colors.purpleLight,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 19
-  },
-  placeholder: {
-    borderTopWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.md,
-    gap: theme.spacing.sm
-  },
-  pressed: {
-    opacity: 0.7
-  }
-});

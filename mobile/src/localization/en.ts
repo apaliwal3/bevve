@@ -1,5 +1,10 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  "Complete the sections you started before saving.": "Complete the sections you started before saving.",
+  "Some details could not be saved. Retry to finish saving your changes.": "Some details could not be saved. Retry to finish saving your changes.",
+  "Saving…": "Saving…",
+  "Save and finish": "Save and finish",
+  "All five contributions are optional. Fill in any cards, then save when you are done.": "All five contributions are optional. Fill in any cards, then save when you are done.",
   "Distances are straight-line estimates. Location accuracy: about {distance} m.": "Distances are straight-line estimates. Location accuracy: about {distance} m.",
   "No matching real venues within 1 km of your current location.": "No matching real venues within 1 km of your current location.",
   "Your current location is unavailable. Please retry.": "Your current location is unavailable. Please retry.",

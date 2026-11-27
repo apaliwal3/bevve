@@ -1,3 +1,4 @@
+import { useBatchedContribution } from './contribution-batch';
 import { useTranslation } from '@/localization/language-provider';
 import { useReducer, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -21,7 +22,7 @@ const options: { level: CrowdLevel }[] = [
 type CrowdReportFormProps = {
   savedReport: SessionCrowdReport | null;
   disabled?: boolean;
-  onSubmit: (level: CrowdLevel) => void;
+  onSubmit: (level: CrowdLevel) => void | Promise<void>;
   onCancel: () => void;
   feedback?: ContributionFormFeedback;
   initialLevel?: CrowdLevel;
@@ -31,7 +32,9 @@ export function CrowdReportForm({ savedReport, disabled: parentDisabled = false,
   const { t, format } = useTranslation();
   const [level, dispatchDraft] = useReducer(crowdDraftReducer, initialLevel ?? savedReport?.level ?? null);
   const [success, setSuccess] = useState(false);
-  const disabled = parentDisabled || Boolean(feedback?.pending);
+
+  const batch = useBatchedContribution('crowd', level, level !== null, () => { if (level !== null) return onSubmit(level); }, feedback);
+  const disabled = parentDisabled || batch.saving || Boolean(feedback?.pending);
 
   function cancel() {
     dispatchDraft({ type: 'cancel', saved: savedReport?.level ?? null });
@@ -67,10 +70,10 @@ export function CrowdReportForm({ savedReport, disabled: parentDisabled = false,
       {feedback?.saving && <Text accessibilityLiveRegion="polite" style={styles.hint}>{t('Saving contribution…')}</Text>}
       {feedback?.error && <Text accessibilityRole="alert" style={styles.hint}>{t('Your contribution could not be confirmed. Retry to save the same details without duplicates.')}</Text>}
       <Text style={styles.hint}>{t("Only your latest report counts. A crowd classification needs at least 3 recent contributors.")}</Text>
-      <View style={styles.actions}>
+      {!batch.batched && <View style={styles.actions}>
         <PrimaryButton label={t("Cancel")} variant="secondary" disabled={disabled} onPress={cancel} style={styles.button} />
         <PrimaryButton label={feedback?.pending ? t('Retry save') : t("Submit crowd")} disabled={parentDisabled || feedback?.saving || (level === null && !feedback?.pending)} onPress={feedback?.pending ? feedback.retry : submit} style={styles.button} />
-      </View>
+      </View>}
     </View>
   );
 }

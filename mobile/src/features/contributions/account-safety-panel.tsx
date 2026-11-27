@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { OptionalContributionCard } from './optional-contribution-card';
+import { useEffect } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
 import { BevveTheme as theme } from '@/constants/theme';
@@ -40,21 +41,19 @@ export function AccountIncidentFeedback() {
   </View>;
 }
 export function AccountIncidentPanel({ catalog, barId }: { catalog: AccountCatalogValue; barId: string }) {
-  const state = useAccountSafety(), { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
+  const state = useAccountSafety();
   const op = state.operations[barId] ?? emptyIncidentOperation;
   if (!catalog.venues.some(row => row.id === barId)) return null;
   return <View style={styles.section}>
-    <PrimaryButton label={t('Optional private incident report')} variant="secondary" onPress={() => setExpanded(value => !value)} />
-    {expanded && <>
+    <OptionalContributionCard titleKey="Safety information" hintKey="Public information and private reports" icon="safety" disabled={op.saving}>
       <AccountIncidentFeedback />
       <SafetyInformationForm demoNotes={[]} draft={state.drafts[barId] ?? emptyIncidentDraft}
         onDraftAction={action => state.updateDraft(barId, action, op.version)} submitUnavailable={state.status !== 'ready'}
         publishedContent={<AccountPublishedSafety barId={barId} />}
         feedback={{ pending: Boolean(op.request), saving: op.saving, error: op.error, saved: op.saved,
-          retry: () => { if (op.request) void state.retry(barId, op.request.id).catch(() => {}); } }}
-        onSubmit={() => { void state.submit(barId, op.version).catch(() => {}); }} onCancel={() => setExpanded(false)} />
-    </>}
+          retry: () => { if (op.request) return state.retry(barId, op.request.id); } }}
+        onSubmit={() => state.submit(barId, op.version)} onCancel={() => {}} />
+    </OptionalContributionCard>
   </View>;
 }
 export function AccountIncidentHistory({ catalog }: { catalog: AccountCatalogValue }) {
