@@ -40,7 +40,7 @@ test('venue names cannot break out of the embedded map script', () => {
   const hostileName = '</script><script>alert("venue")</script><img src=x onerror=alert(1)>';
   const html = venueMapHtml([{ ...demoMapPins(mockVenues)[0], name: hostileName }], {
     title: 'Map', empty: 'No bars', sample: 'Sample', unavailable: 'Unavailable', open: 'Open',
-  });
+  }, theme.BevveTheme.colors);
   assert.equal(html.includes(hostileName), false);
   assert.ok(html.includes('\\u003c/script\\u003e'));
   assert.ok(html.includes('name.textContent=pin.name'));

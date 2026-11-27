@@ -48,11 +48,11 @@ export function DemoExploreScreen() {
       </View>
 
       <View style={styles.search}>
-        <AppIcon name="explore" size={21} />
+        <AppIcon name="explore" size={21} color={theme.colors.purpleLight} />
         <TextInput
           accessibilityLabel={t("Search bars or neighborhoods")}
           placeholder={t("Search bars or neighborhoods")}
-          placeholderTextColor={theme.colors.textMuted}
+          placeholderTextColor={theme.colors.purpleText}
           selectionColor={theme.colors.purpleLight}
           value={query}
           onChangeText={setQuery}
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     letterSpacing: -1
   },
   titleAccent: {
-    color: theme.colors.purpleLight
+    color: theme.colors.heroAccent
   },
   demoLabel: {
     color: theme.colors.textMuted,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   },
   selectedChip: {
     backgroundColor: theme.colors.purpleButton,
-    borderColor: theme.colors.purpleButton
+    borderColor: theme.colors.accentBorder
   },
   selectedChipPressed: { backgroundColor: theme.colors.purpleButtonPressed },
   chipLabel: {
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   selectedChipLabel: {
-    color: theme.colors.text
+    color: theme.colors.onAccent
   },
   nearbyDot: {
     width: 6,
@@ -260,12 +260,12 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: theme.radii.sm,
-    backgroundColor: theme.colors.purple,
+    backgroundColor: theme.colors.purpleButton,
     alignItems: 'center',
     justifyContent: 'center'
   },
   euro: {
-    color: theme.colors.text,
+    color: theme.colors.onAccent,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 18
   },

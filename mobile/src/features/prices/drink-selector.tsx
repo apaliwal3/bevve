@@ -30,7 +30,7 @@ export function DrinkSelector({ catalog, selectedId, onSelect }: DrinkSelectorPr
             </View>
             <View style={styles.copy}>
               <Text style={[styles.name, selected && styles.selectedText]}>{drink.name}</Text>
-              <Text style={styles.serving}>{drink.serving_ml} ml</Text>
+              <Text style={[styles.serving, selected && styles.selectedText]}>{drink.serving_ml} ml</Text>
             </View>
           </Pressable>
         );
@@ -61,8 +61,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface
   },
   selected: {
-    borderColor: theme.colors.purple,
-    backgroundColor: theme.colors.purpleTint
+    borderColor: theme.colors.accentBorder,
+    backgroundColor: theme.colors.purpleButton
   },
   initial: {
     width: 26,
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surfaceRaised
   },
   selectedInitial: {
-    backgroundColor: theme.colors.purple
+    backgroundColor: theme.colors.purpleButton
   },
   initialText: {
     color: theme.colors.purpleLight,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   selectedText: {
-    color: theme.colors.text
+    color: theme.colors.onAccent
   },
   serving: {
     color: theme.colors.textMuted,

@@ -60,8 +60,8 @@ export function CrowdReportForm({ savedReport, disabled: parentDisabled = false,
             disabled={disabled}
             onPress={() => { dispatchDraft({ type: 'select', level: option.level }); setSuccess(false); }}
             style={({ pressed }) => [styles.option, level === option.level && styles.selected, pressed && styles.pressed]}>
-            <Text style={styles.level}>{option.level}</Text>
-            <Text style={styles.optionLabel}>{t(crowdLevelKeys[option.level])}</Text>
+            <Text style={[styles.level, level === option.level && styles.selectedLabel]}>{option.level}</Text>
+            <Text style={[styles.optionLabel, level === option.level && styles.selectedLabel]}>{t(crowdLevelKeys[option.level])}</Text>
           </Pressable>
         ))}
       </View>
@@ -97,12 +97,13 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceRaised
+    backgroundColor: theme.colors.control
   },
   selected: {
-    borderColor: theme.colors.purpleLight,
-    backgroundColor: theme.colors.purpleTint
+    borderColor: theme.colors.accentBorder,
+    backgroundColor: theme.colors.purpleButton
   },
+  selectedLabel: { color: theme.colors.onAccent },
   level: {
     color: theme.colors.purpleLight,
     fontFamily: theme.fonts.bodyBold,

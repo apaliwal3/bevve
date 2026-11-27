@@ -67,8 +67,8 @@ export function DrinkPriceForm({ prices, disabled: parentDisabled = false, onSub
               setSuccess(null);
             }}
             style={({ pressed }) => [styles.option, draft.drinkId === drink.id && styles.selected, pressed && styles.pressed]}>
-            <Text style={styles.label}>{drink.name}</Text>
-            <Text style={styles.hint}>{t('{category} · {volume} ml', { category: drinkCategoryLabel(drink.category, t), volume: format.number(drink.serving_ml) })}</Text>
+            <Text style={[styles.label, draft.drinkId === drink.id && styles.selectedLabel]}>{drink.name}</Text>
+            <Text style={[styles.hint, draft.drinkId === drink.id && styles.selectedLabel]}>{t('{category} · {volume} ml', { category: drinkCategoryLabel(drink.category, t), volume: format.number(drink.serving_ml) })}</Text>
           </Pressable>
         ))}
       </View>

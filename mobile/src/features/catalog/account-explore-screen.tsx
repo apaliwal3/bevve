@@ -37,11 +37,11 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
     <Text accessibilityRole="header" style={styles.title}>{t('Explore venues')}</Text>
     {catalog.venues.some(row => row.is_demo) && <Text style={styles.note}>{t('Sample venues are labeled. Your impressions are saved to your account.')}</Text>}
     <TextInput style={styles.search} accessibilityLabel={t('Search bars or neighborhoods')} placeholder={t('Search bars or neighborhoods')}
-      placeholderTextColor={theme.colors.textMuted} value={query} onChangeText={setQuery} autoCorrect={false} />
+      placeholderTextColor={theme.colors.purpleText} value={query} onChangeText={setQuery} autoCorrect={false} />
     <ScrollView horizontal style={styles.filterScroll} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters} keyboardShouldPersistTaps="handled">
       {(['All','Nearby','Cheap','Quiet','Popular'] as const).map(item => <Pressable key={item} accessibilityRole="button"
         accessibilityState={{ selected: filter === item }} onPress={() => setFilter(item)}
-        style={[styles.chip, filter === item && styles.selected]}><Text style={styles.chipText}>{t(item)}</Text></Pressable>)}
+        style={[styles.chip, filter === item && styles.selected]}><Text style={[styles.chipText, filter === item && styles.selectedText]}>{t(item)}</Text></Pressable>)}
     </ScrollView>
     <LocationFeedback />
     <CatalogFeedback catalog={catalog} />
@@ -77,5 +77,6 @@ const styles = StyleSheet.create({
   emptyTitle: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 22, lineHeight: 30, textAlign: 'center' },
   emptyCopy: { color: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 14, lineHeight: 22, textAlign: 'center' },
   selected: { backgroundColor: theme.colors.purpleButton },
+  selectedText: { color: theme.colors.onAccent },
   chipText: { color: theme.colors.text, fontFamily: theme.fonts.bodyBold, fontSize: 12 },
 });

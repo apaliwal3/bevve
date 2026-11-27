@@ -79,7 +79,7 @@ export function SafetyInformationForm({ demoNotes, disabled: parentDisabled = fa
             disabled={disabled}
             onPress={() => { dispatchDraft({ type: 'category', category }); setSuccess(false); }}
             style={({ pressed }) => [styles.option, draft.category === category && styles.selected, pressed && styles.pressed]}>
-            <Text style={styles.label}>{t(category)}</Text>
+            <Text style={[styles.label, draft.category === category && styles.selectedLabel]}>{t(category)}</Text>
           </Pressable>
         ))}
       </View>

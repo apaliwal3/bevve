@@ -84,7 +84,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               accessibilityHint={account ? t('Save or edit your impression') : t('Open experience, personal comparisons and optional bar actions')}
               onPress={account ? onEditImpression : () => setRatingOverlayOpen(true)}
               style={({ pressed }) => [styles.plusButton, pressed && styles.plusPressed]}>
-              <AppIcon name="plus" size={20} color={theme.colors.text} />
+              <AppIcon name="plus" size={20} color={theme.colors.onAccent} />
             </Pressable>
           </View>
           <View style={styles.locationRow}>

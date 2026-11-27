@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from '@/localization/language-provider';
+import { BevveTheme as theme } from '@/constants/theme';
 import { mapSelection, type VenueMapPin } from './venue-map-data';
 import { venueMapHtml } from './venue-map-html';
 
@@ -9,7 +10,7 @@ export function VenueMap({ pins, onSelect }: { pins: readonly VenueMapPin[]; onS
   const html = useMemo(() => venueMapHtml(pins, {
     title: t('Map of bars'), empty: t('No bars to show on the map'), sample: t('Sample location'),
     unavailable: t('Map unavailable. Check your connection.'), open: t('View Bar Details'),
-  }), [pins, t]);
+  }, theme.colors), [pins, t]);
   useEffect(() => {
     function receive(event: MessageEvent) {
       if (event.source !== frame.current?.contentWindow || typeof event.data !== 'string') return;

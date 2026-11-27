@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   sampleBadge: { position: 'absolute', bottom: 26, left: 12, padding: 8, borderRadius: theme.radii.sm, backgroundColor: theme.colors.imageBadge },
   sampleText: { fontFamily: theme.fonts.body, color: theme.colors.textSecondary, fontSize: 10 },
   showMap: { position: 'absolute', bottom: 16, alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, justifyContent: 'center', borderRadius: theme.radii.pill, backgroundColor: theme.colors.purpleButton, borderColor: theme.colors.purpleLight, borderWidth: 1 },
-  showMapText: { fontFamily: theme.fonts.bodyBold, fontSize: 13, color: theme.colors.text },
+  showMapText: { fontFamily: theme.fonts.bodyBold, fontSize: 13, color: theme.colors.onAccent },
   pressed: { opacity: 0.8 },
 });

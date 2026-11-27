@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useTranslation } from '@/localization/language-provider';
+import { BevveTheme as theme } from '@/constants/theme';
 import { mapSelection, type VenueMapPin } from './venue-map-data';
 import { venueMapHtml } from './venue-map-html';
 
@@ -16,7 +17,7 @@ export function VenueMap({ pins, onSelect, onInteractionChange }: VenueMapProps)
   const source = useMemo(() => ({ html: venueMapHtml(pins, {
     title: t('Map of bars'), empty: t('No bars to show on the map'), sample: t('Sample location'),
     unavailable: t('Map unavailable. Check your connection.'), open: t('View Bar Details'),
-  }) }), [pins, t]);
+  }, theme.colors) }), [pins, t]);
   return <WebView
     accessibilityLabel={t('Map of bars')}
     source={source}
@@ -37,4 +38,4 @@ export function VenueMap({ pins, onSelect, onInteractionChange }: VenueMapProps)
   />;
 }
 
-const styles = StyleSheet.create({ map: { flex: 1, backgroundColor: '#111827' } });
+const styles = StyleSheet.create({ map: { flex: 1, backgroundColor: theme.colors.background } });

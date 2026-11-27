@@ -74,7 +74,7 @@ export function SpokenLanguagesForm({ languages, pending, disabled: parentDisabl
             disabled={disabled}
             onPress={() => { dispatchDraft({ type: 'select', code: language.code }); setSuccess(null); }}
             style={({ pressed }) => [styles.option, draft === language.code && styles.selected, pressed && styles.pressed]}>
-            <Text style={styles.label}>{venueLanguageLabel(language.code, t)}</Text>
+            <Text style={[styles.label, draft === language.code && styles.selectedLabel]}>{venueLanguageLabel(language.code, t)}</Text>
           </Pressable>
         ))}
       </View>

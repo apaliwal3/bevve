@@ -39,12 +39,13 @@ export const inlineFormStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.surfaceRaised
+    backgroundColor: theme.colors.control
   },
   selected: {
-    borderColor: theme.colors.purpleLight,
-    backgroundColor: theme.colors.purpleTint
+    borderColor: theme.colors.accentBorder,
+    backgroundColor: theme.colors.purpleButton
   },
+  selectedLabel: { color: theme.colors.onAccent },
   input: {
     minHeight: 50,
     width: '100%',

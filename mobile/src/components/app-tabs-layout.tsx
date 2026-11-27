@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: theme.layout.maxWidth,
     alignSelf: 'center',
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.navigation,
     borderTopWidth: 1,
     borderColor: theme.colors.border,
     paddingHorizontal: theme.spacing.md,

@@ -35,7 +35,7 @@ export function PersonalRankingsScreen({ onExplore, onOpenVenue, onProfile }: Pe
 
         <View style={styles.tasteCard}>
           <View accessible={false} style={[styles.orb, rankingBadgeSize(fontScale)]}>
-            <AppIcon name="rankings" size={28} color={theme.colors.purpleLight} />
+            <AppIcon name="rankings" size={28} color={theme.colors.onAccent} />
           </View>
           <View style={styles.tasteCopy}>
             <Text style={styles.sectionLabel}>{t("YOUR NIGHTLIFE DNA")}</Text>
@@ -118,10 +118,10 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundImage: 'linear-gradient(145deg, ' + theme.colors.purpleLight + ', ' + theme.colors.purple + ')'
+    backgroundColor: theme.colors.purpleButton
   },
   initials: {
-    color: theme.colors.text,
+    color: theme.colors.onAccent,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 11
   },
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.card,
     borderWidth: 1,
     borderColor: theme.colors.purpleBorder,
-    backgroundImage: 'linear-gradient(135deg, ' + theme.colors.purpleTint + ', ' + theme.colors.surface + ')'
+    backgroundColor: theme.colors.surface
   },
   orb: {
     flexShrink: 0,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: theme.colors.purpleBorder,
-    backgroundColor: theme.colors.purple
+    backgroundColor: theme.colors.purpleButton
   },
   tasteCopy: {
     flex: 1,

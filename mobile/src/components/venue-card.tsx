@@ -66,8 +66,8 @@ export function VenueCard({ venue, onPress, account }: VenueCardProps) {
         </View>
         {ownImpression && <View accessible={!onPress} accessibilityRole="image" accessibilityLabel={impressionLabel}
           pointerEvents="none" style={styles.impressionBadge}>
-          <AppIcon name={ownImpression === 'disliked' ? 'thumbsDown' : 'thumbsUp'} size={16} color={theme.colors.text} />
-          {ownImpression === 'liked' && <AppIcon name="thumbsUp" size={16} color={theme.colors.text} />}
+          <AppIcon name={ownImpression === 'disliked' ? 'thumbsDown' : 'thumbsUp'} size={16} color={theme.colors.onAccent} />
+          {ownImpression === 'liked' && <AppIcon name="thumbsUp" size={16} color={theme.colors.onAccent} />}
         </View>}
       </View>
       <View style={styles.body}>
