@@ -1,3 +1,5 @@
+import { SavedBarsSection } from '@/features/saved-bars/saved-bars-section';
+import { useSavedBars } from '@/features/saved-bars/saved-bars-provider';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
@@ -50,7 +52,67 @@ export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogVal
   </>;
 }
 
-export { AccountProfileScreen } from '@/features/profile/account-profile-screen';
+export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue }) {
+  const { t, format } = useTranslation();
+  const comparisons = useAccountComparisons();
+  const contributions = useAccountContributions();
+  const savedBars = useSavedBars();
+  const languages = useAccountLanguages();
+  const safety = useAccountSafety();
+  const refreshing = catalog.refreshing || comparisons.refreshing || contributions.refreshing || languages.refreshing ||
+    languages.queueRefreshing || safety.refreshing || safety.queueRefreshing || savedBars.refreshing;
+  function refresh() {
+    if (refreshing) return;
+    void Promise.allSettled([catalog.refresh(), comparisons.refresh(), contributions.refresh(),
+      languages.refresh(), languages.refreshQueue(), safety.refresh(), safety.refreshQueue(), savedBars.refresh()]);
+  }
+  const activity = selectProfileContributions({ impressions: savedImpressions(catalog.impressions, catalog.venues), crowdReports: contributions.crowds, bathroomReviews: contributions.bathrooms, priceObservations: contributions.prices }, catalog.userId, catalog.venues.map(catalogVenue), catalog.drinks);
+  const summary = (barId: string, text: string) => catalog.venues.some(row => row.id === barId && row.is_demo) ? t('Sample venue') + ' · ' + text : text;
+  return <ScreenContainer contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
+    <Text accessibilityRole="header" style={styles.title}>{t('Profile')}</Text>
+    <AccountPanel />
+    <SavedBarsSection venues={catalog.venues.map(catalogVenue)} onOpenVenue={id => router.push(venueFromProfileHref(id))} />
+    <CatalogFeedback catalog={catalog} />
+    <AccountComparisonFeedback />
+    <AccountContributionFeedback />
+    {comparisons.status === 'ready' && <>
+      <Text style={styles.note}>{t('{count} personal comparisons completed', { count: comparisons.rankings.completedCount })}</Text>
+      <PrimaryButton label={t('My Rankings')} variant="secondary" onPress={() => router.navigate('/rankings')} />
+    </>}
+    {catalog.status === 'ready' && <ProfileActivitySection title={t('My impressions')} count={activity.counts.impressions}
+      icon="profile" hint={t('One editable impression per venue, saved to your account.')}>
+      {activity.impressions.map(entry => <ProfileActivityRow key={entry.venue.id} venue={entry.venue}
+        summary={summary(entry.venue.id, t('Your impression: {impression} · Updated {date}', { impression: t(impressionLabels[entry.impression]), date: format.dateTime(entry.updatedAt) }))}
+        onPress={() => router.push(venueFromProfileHref(entry.venue.id))} />)}
+    </ProfileActivitySection>}
+    {contributions.status === 'ready' && <>
+      <ProfileActivitySection title={t('My crowd reports')} count={activity.counts.crowdReports} icon="crowd"
+        hint={t('All your saved reports, including earlier submissions. These are not a live crowd consensus.')} emptyHint={t('Report a crowd level from a venue’s + overlay.')}>
+        {activity.crowds.map(entry => <ProfileActivityRow key={entry.id} venue={entry.venue}
+          summary={summary(entry.venue.id, t('Reported crowd level {level}/5 · {date}', { level:entry.level,date:format.dateTime(entry.submittedAt) }))}
+          onPress={()=>router.push(venueFromProfileHref(entry.venue.id))} />)}
+      </ProfileActivitySection>
+      <ProfileActivitySection title={t('My bathroom reviews')} count={activity.counts.bathroomReviews} icon="bathroom"
+        hint={t('One editable review per venue. A waiting-time score of 5 means a shorter wait.')} emptyHint={t('Rate cleanliness, accessibility and waiting time in a venue’s + overlay.')}>
+        {activity.bathrooms.map(entry => <ProfileActivityRow key={entry.id} venue={entry.venue}
+          summary={summary(entry.venue.id, t('Cleanliness {clean}/5 · Accessibility {access} · Waiting time {wait} · Updated {date}', { clean:entry.cleanliness,
+            access:entry.accessibility===null?t('Unavailable'):t('{score}/5',{score:entry.accessibility}),wait:entry.waitTime===null?t('Unavailable'):t('{score}/5',{score:entry.waitTime}),date:format.dateTime(entry.updatedAt) }))}
+          onPress={()=>router.push(venueFromProfileHref(entry.venue.id))} />)}
+      </ProfileActivitySection>
+      <ProfileActivitySection title={t('My price observations')} count={activity.counts.priceObservations} icon="euro"
+        hint={t('Community-reported, not verified. Corrections retain earlier observations.')} emptyHint={t('Submit a catalog drink price from a venue’s + overlay.')}>
+        {activity.prices.map(entry => <ProfileActivityRow key={entry.id} venue={entry.venue}
+          summary={summary(entry.venue.id, t('{drink} · {price} · {date}', {drink:entry.servingMl===null?t('Drink unavailable'):t('{name} · {volume} ml',{name:entry.drinkName,volume:entry.servingMl}),price:format.currency(entry.priceCents),date:format.dateTime(entry.observedAt)}))}
+          onPress={()=>router.push(venueFromProfileHref(entry.venue.id))} />)}
+      </ProfileActivitySection>
+    </>}
+    <AccountLanguageHistory catalog={catalog} onOpenVenue={id => router.push(venueFromProfileHref(id))} />
+    <AccountLanguageModeration catalog={catalog} />
+    <AccountIncidentHistory catalog={catalog} />
+    <AccountIncidentModeration catalog={catalog} />
+    <PrimaryButton label={t('Explore venues')} onPress={() => router.navigate('/explore')} />
+  </ScreenContainer>;
+}
 
 export function AccountRankingsScreen({ catalog }: { catalog: AccountCatalogValue }) {
   const { t } = useTranslation();
