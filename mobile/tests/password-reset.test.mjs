@@ -25,7 +25,10 @@ function setup(resetPassword = async () => {}, session = { user: { id: 'user-a' 
     './auth-provider': { useAuth: () => ({ session, resetPassword }) },
     './auth-store': { authErrorMessage },
   });
-  const form = module.ResetPasswordScreen();
+  const route = loadNativeModule('src/app/change-password.tsx', {
+    '@/features/auth/reset-password-screen': module,
+  });
+  const form = route.default();
   function render() {
     const tree = harness.render(() => form.type(form.props));
     harness.effects();
@@ -39,14 +42,18 @@ function setup(resetPassword = async () => {}, session = { user: { id: 'user-a' 
   return { render, fill, harness };
 }
 
-test('profile exposes password reset only for authenticated accounts and navigates to its route', () => {
+test('profile has one Change Password action and no retired Edit Profile or duplicate reset action', () => {
   const props = { activity: { impressions: [], crowds: [], bathrooms: [], prices: [] }, onOpenVenue() {}, onWelcome() {} };
   const demo = profileUi();
   assert.ok(![...elements(demo.render(props).props.header)].some(node => node.props.label === 'Reset password'));
   const account = profileUi('en', { auth: { session: { user: { id: 'user-a' } } } });
-  const button = [...elements(account.render(props).props.header)].find(node => node.props.label === 'Reset password');
+  const header = [...elements(account.render(props).props.header)];
+  const buttons = header.filter(node => node.props.label === 'Change Password');
+  assert.equal(buttons.length, 1);
+  assert.ok(!header.some(node => ['Edit Profile', 'Reset password'].includes(node.props.label)));
+  const button = buttons[0];
   button.props.onPress();
-  assert.deepEqual(account.calls, [['push', '/reset-password']]);
+  assert.deepEqual(account.calls, [['push', '/change-password']]);
 });
 
 test('password form validates before requesting and demo deep links cannot submit', () => {

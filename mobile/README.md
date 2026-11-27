@@ -52,12 +52,13 @@ npm start -- --go --clear
 
 ## Supabase authentication
 
-Signed-in users can open **Profile → Reset password**, enter their current
+Signed-in users can open **Profile → Change Password**, enter their current
 password, a new password of at least six characters and a matching confirmation.
 The app verifies the current password and updates Supabase Auth through the same
 shared operation as the backend auth service. Loading, policy/network errors and
 success are shown in the form. Password drafts stay in screen memory and clear
-on success, route blur and account change. Demo profiles have no reset action.
+on success, route blur and account change. Demo profiles see a sign-in message
+when opening Change Password and cannot submit password updates.
 This profile flow requires the current password. Forgotten passwords use the
 email recovery flow below. No database migration or new environment variable is required.
 Local component and mocked SDK checks cover the flow; native-device and hosted
@@ -626,7 +627,7 @@ out of it. Account history/moderation tools remain separately accessible in
 Activity opens `/bars/[barId]?returnTo=profile`; native Back returns to Profile
 and direct links fall back there. Places Been uses `returnTo=places`, returning
 to the list before Profile. Want to Try uses `returnTo=wants`, returning to
-the saved list. Edit Profile, Want to Try and Settings use native
+the saved list. Change Password, Want to Try and Settings use native
 root-stack history with a Profile fallback, following the existing Bar Details
 pattern. Primary tabs remain mounted; secondary screens follow existing full-screen
 stack behavior. Price-comparison and Rankings origins remain intact.
@@ -657,10 +658,34 @@ This audit inspected repository contracts, not the hosted dashboard:
   explicit contract if uniqueness/format is desired. Existing auth can be reused;
   password recovery remains separate existing work.
 
-`/edit-profile` therefore implements a read-only capability preview in both modes,
-showing the actual username when available and honest unavailable fields. No edit,
-Save button, local competing profile store, fake success or Supabase write was
-introduced. No editing validation is claimed because inputs are unavailable.
+`/change-password` replaces the retired `/edit-profile` preview and opens the
+working authenticated password form. `/reset-password` remains an alias to the
+same screen. Profile has one Change Password action with the existing styling.
+The form uses the shared secondary header, safe areas and native Back history
+with a `/profile` fallback for direct links. Signed-in users supply their current
+password, a new password and confirmation; demo users see a sign-in message.
+Passwords are validated, the current password is verified and Supabase Auth saves
+the update. Loading, error, retry and success states stay in the existing password
+feature. Email-based forgotten-password recovery remains available from Sign Up
+and Sign In. See the authentication setup above for callback configuration.
+
+The top-right Settings control uses a gear. Settings has no app-language section,
+selector or duplicate password action. Signed-in users see two compact,
+expandable rows: **My language suggestions** and **My private incident reports**.
+Opening a row reveals its existing history and role-gated moderation tools;
+closing it only hides the content. Existing provider records, pending statuses,
+submission/retry drafts and private/public boundaries are unchanged. Settings
+never adds reports to public activity. Guests see a short sign-in availability
+message, without account histories. Disclosures reset when the account changes.
+
+English-only behavior is already enforced by the root `LanguageProvider` for UI
+copy and number/date/currency formatters. Legacy saved Italian preferences are
+ignored at startup; no migration or additional runtime change is required.
+Italian dictionaries, translation helpers and the unused legacy language store
+remain for compatibility. Database `preferred_language` remains `en`/`it` and is
+not used by the running interface. Removing that legacy capability from storage
+or backend contracts would be a separate cleanup; user-authored content and venue
+spoken-language data remain unchanged.
 
 **Log Out** awaits the existing `signOut()` (local-device Supabase session) and
 returns to Welcome only on success; failures remain visible for retry. Guests get
@@ -680,10 +705,10 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    Places Been = 0, Want to Try = 0, two action buttons and the
    empty Activity state. Check exactly Explore, Drink prices, Rankings, Profile in the bottom
    bar, stationary while switching tabs.
-3. Open each of Places Been, Want to Try, Edit Profile and Settings. Use both
+3. Open each of Places Been, Want to Try, Change Password and Settings. Use both
    their Back button and iOS edge-swipe Back. Each must return to Profile. A fresh Want
-   to Try list has no saved venues; Edit Profile explicitly offers no editing
-   or saving. Test a direct link to each route with no previous history: the
+   to Try list has no saved venues; Change Password shows its sign-in message in
+   demo mode, with no password inputs. Test a direct link to each route with no previous history: the
    visible Back button must still reach Profile. Bookmark a bar in Explore and
    confirm Want to Try increases once, opens that bar, and returns to the list
    from Bar Details. Remove it from the list and check the count decreases. Save
@@ -704,17 +729,22 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    state. Places Been → venue → Back returns to Places Been → Profile. Also
    check Rankings → venue and Bar Details → Compare Drink Prices → another
    venue → Back, preserving the drink and original venue.
-7. Check that Settings shows English without a language switch. Reload an
+7. Check that the gear opens Settings with no App language section or language
+   switch, and no duplicate password action. Guests see a short sign-in message. Reload an
    installation that previously saved Italian: the interface must remain English.
    Return to Welcome and enter the demo again; current-session activity survives.
 8. Sign in with an existing test account. Account bookmarks require the existing
    migration 007 to be deployed; no migration or hosted change is performed here.
    Verify bookmark persistence after reload/sign-out and a failed-read retry.
     Check its actual username, honest
-   missing names/photo, database impressions/count and confirmed contribution
-   history, sample-venue labels, pull-to-refresh and failure/retry states. Edit
-   Profile must show a read-only account preview. Private history/moderator tools
-   are in Settings, never the Profile feed. Log Out must return to Welcome and
+   initials avatar, database impressions/count and confirmed contribution
+   history, sample-venue labels, pull-to-refresh and failure/retry states. Change
+   Password must show the authenticated current/new/confirmation form. Check
+   validation, incorrect-current-password errors and retry using a test account.
+   In Settings, expand/collapse both account rows; check existing pending statuses,
+   private report descriptions and venue navigation/Back. Existing moderators
+   retain review access; ordinary users must see no review queue. Private
+   reports and pending suggestions must never appear in the Profile feed. Log Out must return to Welcome and
    keep the interface in English; signing back in restores server data. Do not create a new
    account or change hosted configuration for this check.
 9. On the smallest available iPhone and one with Dynamic Island, enable Settings

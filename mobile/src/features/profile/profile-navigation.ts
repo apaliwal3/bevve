@@ -1,5 +1,5 @@
 export const profileDestinations = {
-  places: '/places-been', wants: '/want-to-try', edit: '/edit-profile', settings: '/settings', password: '/reset-password',
+  places: '/places-been', wants: '/want-to-try', password: '/change-password', settings: '/settings',
 } as const;
 
 type ProfileNavigator = { canGoBack: () => boolean; back: () => void; replace: (href: '/profile') => void };

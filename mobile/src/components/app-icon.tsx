@@ -18,6 +18,7 @@ const symbols = {
   thumbsUp: { ios: 'hand.thumbsup.fill', android: 'thumb_up', web: 'thumb_up' },
   thumbsDown: { ios: 'hand.thumbsdown.fill', android: 'thumb_down', web: 'thumb_down' },
   languages: { ios: 'globe', android: 'language', web: 'language' },
+  settings: { ios: 'gearshape', android: 'settings', web: 'settings' },
   bookmark: { ios: 'bookmark', android: 'bookmark_border', web: 'bookmark_border' },
   bookmarkFilled: { ios: 'bookmark.fill', android: 'bookmark', web: 'bookmark' },
   safety: { ios: 'shield', android: 'shield', web: 'shield' },
