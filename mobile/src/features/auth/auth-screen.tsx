@@ -14,7 +14,7 @@ import { BevveTheme as theme } from '@/constants/theme';
 import { authFormReducer, createAuthFormState } from './auth-form-state';
 import { validateAuthForm, type AuthMode } from './auth-validation';
 import { useAuth } from './auth-provider';
-import { authErrorMessage } from './auth-store';
+import { authErrorDetails, authErrorMessage } from './auth-store';
 
 type AuthScreenProps = { mode: AuthMode; onBack: () => void; onSwitch: () => void };
 
@@ -69,6 +69,9 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
       else router.replace('/explore');
     } catch (error) {
       if (request !== attempt.current) return;
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn('[auth] Request failed', { operation: mode, ...authErrorDetails(error) });
+      }
       dispatch({ type: 'failed' });
       setRequestError(authErrorMessage(error));
     } finally {

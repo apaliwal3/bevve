@@ -69,11 +69,32 @@ export function createAuthStore(client: SupabaseClient | null) {
 
 const serverSnapshot: AuthSnapshot = { session: null, ready: false, error: null };
 
+// Log only an error category/code/status, never credentials or raw server messages.
+export function authErrorDetails(error: unknown) {
+  const value = error && typeof error === 'object' ? error : {};
+  const code = 'code' in value ? value.code : null;
+  const status = 'status' in value ? value.status : null;
+  const name = 'name' in value ? value.name : null;
+  return {
+    name: typeof name === 'string' && ['AuthApiError', 'AuthRetryableFetchError', 'AuthUnknownError', 'TypeError', 'Error'].includes(name) ? name : 'unknown',
+    code: typeof code === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(code) ? code : 'unknown',
+    status: typeof status === 'number' && Number.isInteger(status) && (status === 0 || (status >= 100 && status <= 599)) ? status : null,
+  };
+}
+
 export function authErrorMessage(error: unknown) {
   const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
   if (code === 'invalid_credentials') return 'The email or password is incorrect.' as const;
   if (code === 'email_not_confirmed') return 'Confirm your email before signing in.' as const;
   if (code === 'weak_password') return 'Choose a stronger password and try again.' as const;
+  if (code === 'email_address_not_authorized') {
+    return 'Confirmation emails cannot be sent to this address yet. Please contact support.' as const;
+  }
+  if (code === 'email_address_invalid') return 'This email address is not supported. Try another address.' as const;
+  if (code === 'user_already_exists' || code === 'email_exists') return 'An account with this email already exists. Please sign in.' as const;
+  if (code === 'signup_disabled' || code === 'email_provider_disabled') return 'New email accounts are unavailable right now. Please try again later.' as const;
+  if (code === 'captcha_failed') return 'Account verification could not be completed. Please contact support.' as const;
+  if (code === 'unexpected_failure') return 'The account service could not complete this request. Please try again later.' as const;
   if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit') {
     return 'Too many attempts. Please wait a little and try again.' as const;
   }

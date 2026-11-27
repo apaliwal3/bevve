@@ -54,6 +54,8 @@ npm start -- --go --clear
 
 Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_SUPABASE_URL` and
 `EXPO_PUBLIC_SUPABASE_KEY` to the existing project URL and **publishable** key.
+Use the project base URL (`https://YOUR_PROJECT_REF.supabase.co`), without
+`/rest/v1` or another service path; the SDK appends those paths itself.
 The local workspace is already configured. Restart Expo after changing env files.
 Never copy `TEST_EMAIL`, `TEST_PASSWORD`, secret keys or database passwords into
 mobile configuration. With no valid public configuration, demo browsing still

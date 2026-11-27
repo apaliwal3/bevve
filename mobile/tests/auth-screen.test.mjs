@@ -5,11 +5,11 @@ import { elements, loadNativeModule, nativeStub } from './helpers/native-module.
 import { createTranslator } from '../src/localization/translation.ts';
 import * as state from '../src/features/auth/auth-form-state.ts';
 import * as validation from '../src/features/auth/auth-validation.ts';
-import { authErrorMessage } from '../src/features/auth/auth-store.ts';
+import { authErrorDetails, authErrorMessage } from '../src/features/auth/auth-store.ts';
 
 const theme = loadNativeModule('src/constants/theme.ts');
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function setup(mode, overrides) {
+function setup(mode, overrides, globals = {}) {
   const harness = hookHarness();
   const navigations = [];
   const auth = { session: null, error: null, signIn: async () => {}, signUp: async () => 'confirm-email', ...overrides };
@@ -26,8 +26,8 @@ function setup(mode, overrides) {
     '@/components/screen-container': { ScreenContainer: 'ScreenContainer' },
     '@/constants/theme': theme,
     './auth-form-state': state, './auth-validation': validation,
-    './auth-provider': { useAuth: () => auth }, './auth-store': { authErrorMessage },
-  });
+    './auth-provider': { useAuth: () => auth }, './auth-store': { authErrorDetails, authErrorMessage },
+  }, globals);
   function render() {
     let tree;
     for (let i = 0; i < 10; i++) {
@@ -135,4 +135,18 @@ test('a late request response cannot navigate after leaving the authentication s
   resolve();
   await tick();
   assert.deepEqual(ui.navigations, []);
+});
+
+test('Signup explains email delivery restrictions and logs only safe diagnostics in development', async () => {
+  const logs = [];
+  const ui = setup('signup', { signUp: async () => {
+    throw { name: 'AuthApiError', code: 'email_address_not_authorized', status: 403, message: 'PRIVATE_SERVER_DETAIL' };
+  } }, { __DEV__: true, console: { warn: (...args) => logs.push(args) } });
+  ui.fill();
+  ui.render().find(node => node.type === 'PrimaryButton').props.onPress();
+  await tick();
+  assert.ok(ui.render().some(node => node.props.accessibilityRole === 'alert' && node.props.children === 'Confirmation emails cannot be sent to this address yet. Please contact support.'));
+  assert.equal(JSON.stringify(logs), JSON.stringify([['[auth] Request failed', { operation: 'signup', name: 'AuthApiError', code: 'email_address_not_authorized', status: 403 }]]));
+  assert.deepEqual(ui.navigations, []);
+  ui.harness.unmount();
 });
