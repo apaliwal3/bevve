@@ -19,7 +19,7 @@ import { useAccountComparisons } from '@/features/comparisons/account-comparison
 import { AccountComparisonFeedback } from '@/features/comparisons/account-comparison-panel';
 import { RankedVenueRow } from '@/features/rankings/ranked-venue-row';
 import { AccountContributionPanel } from '@/features/contributions/account-contribution-panel';
-import { AccountLanguagePanel } from '@/features/contributions/account-language-panel';
+import { AccountLanguagePanel, AccountVenueLanguages } from '@/features/contributions/account-language-panel';
 import { AccountIncidentPanel, AccountPublishedSafety } from '@/features/contributions/account-safety-panel';
 import { useAccountLocation } from '@/features/location/account-location-provider';
 import { locatedCatalogVenue } from '@/features/location/venue-distance';
@@ -39,6 +39,7 @@ export function AccountBarDetailsRoute({ catalog }: { catalog: AccountCatalogVal
   const row = catalog.venues.find(row => row.id === result.venue.id)!;
   return <>
     <BarDetailsScreen venue={result.venue} details={catalogDetails(row)} account={catalogReadData(row, catalog.impressions[row.id])}
+      accountLanguages={<AccountVenueLanguages barId={row.id} languages={row.languages} />}
       accountSafety={<AccountPublishedSafety key={row.id} barId={row.id} />}
       onBack={goBack} backLabel={t(back.label)} onEditImpression={() => setEditing(true)}
       onComparePrices={() => router.push(priceComparisonHref(navigation.drink?.id ?? catalog.drinks[0]?.id ?? null, row.id))} />

@@ -3,6 +3,19 @@ import type { Message } from './translation.ts';
 
 export const it: Record<keyof typeof en, Message> = {
   ...en, // Legacy copy falls back to English; Profile messages are translated.
+  'Select one or more languages': 'Seleziona una o più lingue',
+  'Select spoken languages': 'Seleziona le lingue parlate',
+  'Suggest languages': 'Suggerisci lingue',
+  'Submitted languages appear on the bar page as not verified until reviewed.': 'Le lingue inviate appaiono nella pagina del locale come non verificate fino alla revisione.',
+  'Language suggestions saved to your account.': 'Suggerimenti sulle lingue salvati nel tuo account.',
+  'Language suggestions saved for this demo session.': 'Suggerimenti sulle lingue salvati per questa sessione demo.',
+  'Unconfirmed languages: {languages}': 'Lingue non confermate: {languages}',
+  'Crowd': 'Affollamento',
+  'Prices from': 'Prezzi da',
+  'Mostly liked': 'Perlopiù apprezzato',
+  'Mostly okay': 'Perlopiù nella media',
+  'Mostly disliked': 'Perlopiù non apprezzato',
+  'Mixed opinions': 'Opinioni contrastanti',
   'Map of bars': 'Mappa dei bar',
   'No bars to show on the map': 'Nessun bar da mostrare sulla mappa',
   'Sample location': 'Posizione di esempio',

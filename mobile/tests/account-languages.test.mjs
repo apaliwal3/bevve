@@ -39,6 +39,34 @@ test('rapid language submissions coalesce, preserve pending details, and show su
   assert.equal(ui.invalidations, before + 1); await assert.rejects(ui.store.submit(barId, 'fr', 0), /Stale/); ui.stop();
 });
 
+test('multiple language saves keep confirmed choices and retry only the remaining requests after a partial failure', async () => {
+  const calls=[];let fail=true;
+  const ui=setup({ submit:async(_owner,request)=>{
+    calls.push(request);if(request.code==='fr'&&fail)throw Error('lost response');
+    return row({id:request.id,language_code:request.code});
+  }});await tick();
+  const first=ui.store.submitMany(barId,['it','fr','de','it'],0);
+  assert.equal(ui.store.submitMany(barId,['it','fr','de'],0),first);
+  await assert.rejects(first);
+  assert.deepEqual(ui.store.getSnapshot().history.map(value=>value.language_code),['it']);
+  const op=ui.store.getSnapshot().operations[barId];
+  assert.deepEqual(op.remainingCodes,['fr','de']);assert.equal(op.saved,false);assert.equal(op.saving,false);
+  fail=false;const retry=ui.store.retryMany(barId);assert.equal(ui.store.retryMany(barId),retry);await retry;
+  assert.deepEqual(calls.map(value=>value.code),['it','fr','fr','de']);
+  assert.equal(calls[1].id,calls[2].id);
+  assert.deepEqual(ui.store.getSnapshot().history.map(value=>value.language_code),['it','fr','de']);
+  assert.equal(ui.store.getSnapshot().operations[barId].saved,true);
+  assert.deepEqual(ui.store.getSnapshot().operations[barId].remainingCodes,[]);ui.stop();
+});
+
+test('a language batch stops on sign-out and cannot send its remaining languages into another session',async()=>{
+  const gate=deferred(),calls=[];
+  const ui=setup({submit:async(_owner,request)=>{calls.push(request);return gate.promise;}});await tick();
+  const save=ui.store.submitMany(barId,['it','fr'],0);await tick();ui.stop();
+  gate.resolve(row({id:calls[0].id,language_code:'it'}));await assert.rejects(save,/Account changed/);
+  assert.equal(calls.length,1);assert.deepEqual(ui.store.getSnapshot().history,[]);
+});
+
 test('uncertain suggestion retries reuse one request and reconcile committed rows from history', async () => {
   const saved = []; let fail = true, calls = [];
   const ui = setup({ load: async () => saved, submit: async (_owner, request) => {

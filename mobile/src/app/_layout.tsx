@@ -63,7 +63,9 @@ function AppLayout() {
                   <AccountComparisonsProvider>
                     <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
                       <PersonalComparisonsProvider>
-                        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
+                        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}>
+                          <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, fullScreenGestureEnabled: false }} />
+                        </Stack>
                       </PersonalComparisonsProvider>
                     </VenueRatingsProvider>
                   </AccountComparisonsProvider>

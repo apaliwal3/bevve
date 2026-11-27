@@ -31,10 +31,25 @@ export function AccountLanguagePanel({ catalog, barId }: { catalog: AccountCatal
       <AccountLanguageFeedback />
       {state.status === 'ready' && <SpokenLanguagesForm languages={venue.languages.map(row => ({ ...row, name: venueLanguageLabel(row.code, t) }))}
         pending={state.history.filter(row => row.bar_id === barId && row.status === 'pending')}
-        initialCode={op.request?.code} feedback={{ pending: Boolean(op.request), saving: op.saving, error: op.error, saved: op.saved,
-          retry: () => { if (op.request) return state.retry(barId, op.request.id); } }}
-        onSubmit={code => state.submit(barId, code, op.version)} onCancel={() => {}} />}
+        initialCodes={op.remainingCodes ?? (op.request ? [op.request.code] : [])}
+        feedback={{ pending: Boolean(op.request || op.remainingCodes?.length), saving: op.saving, error: op.error, saved: op.saved,
+          retry: () => state.retryMany(barId) }}
+        onSubmit={codes => state.submitMany(barId, codes, op.version)} onCancel={() => {}} />}
     </OptionalContributionCard>
+  </View>;
+}
+export function AccountVenueLanguages({ barId, languages }: { barId: string; languages: readonly { code: string }[] }) {
+  const state = useAccountLanguages(), { t } = useTranslation();
+  const associated = new Set(languages.map(language => language.code));
+  const submitted = [...new Set(state.history.filter(row => row.bar_id === barId && row.status !== 'rejected' &&
+    !associated.has(row.language_code)).map(row => row.language_code))];
+  return <View style={styles.section}>
+    <View style={styles.tags}>
+      {languages.map(language => <Text key={language.code} style={styles.tag}>{venueLanguageLabel(language.code, t)}</Text>)}
+      {submitted.map(code => <Text key={code} style={styles.tag}>{venueLanguageLabel(code, t)} · {t('Not verified')}</Text>)}
+    </View>
+    {languages.length === 0 && submitted.length === 0 && state.status === 'ready' && <Text style={styles.note}>{t('No languages reported yet.')}</Text>}
+    <AccountLanguageFeedback />
   </View>;
 }
 export function AccountLanguageHistory({ catalog, onOpenVenue }: { catalog: AccountCatalogValue; onOpenVenue: (id: UUID) => void }) {
@@ -81,6 +96,9 @@ export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalog
   </View>;
 }
 const styles = StyleSheet.create({
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  tag: { color: theme.colors.purpleText, fontFamily: theme.fonts.bodyBold, fontSize: 10, paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs, borderRadius: theme.radii.sm, backgroundColor: theme.colors.purpleTint },
   section: { gap: theme.spacing.md }, card: { gap: theme.spacing.sm, padding: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radii.card },
   title: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 17 },
   note: { color: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 19 },

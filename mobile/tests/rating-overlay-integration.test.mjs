@@ -281,7 +281,7 @@ test('all five unchanged optional form callbacks remain explicit and become iner
   const ui = app(); ui.mount(a); ui.select('liked'); ui.press('Save impression and continue');
   const forms = [
     ['Report crowd', 'CrowdReportForm', [3]], ['Rate bathrooms', 'BathroomReviewForm', [{ cleanliness: 4, accessibility: 3, wait_time: 5 }]],
-    ['Update drink prices', 'DrinkPriceForm', ['drink-id', 650]], ['Spoken languages', 'SpokenLanguagesForm', ['fr']],
+    ['Update drink prices', 'DrinkPriceForm', ['drink-id', 650]], ['Spoken languages', 'SpokenLanguagesForm', [['fr']]],
     ['Safety information', 'SafetyInformationForm', [{ category: 'Other', description: 'Private test', occurred_at: null }]],
   ];
   const callbacks = [];

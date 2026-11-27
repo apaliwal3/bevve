@@ -272,7 +272,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
                               languages={languages}
                               pending={pendingLanguages}
                               disabled={isClosing}
-                              onSubmit={(code) => { if (canAct()) suggestLanguage(code); }}
+                              onSubmit={(codes) => { if (canAct()) codes.forEach(code => suggestLanguage(code)); }}
                               onCancel={() => {}}
                             />
                           ) : (

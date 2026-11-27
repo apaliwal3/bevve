@@ -30,9 +30,10 @@ type BarDetailsScreenProps = {
   account?: AccountVenueData;
   onEditImpression?: () => void;
   accountSafety?: ReactNode;
+  accountLanguages?: ReactNode;
 };
 
-export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices, account, onEditImpression, accountSafety }: BarDetailsScreenProps) {
+export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices, account, onEditImpression, accountSafety, accountLanguages }: BarDetailsScreenProps) {
   const { t, format, describe } = useTranslation();
   const insets = useSafeAreaInsets();
   const [imageFailed, setImageFailed] = useState(false);
@@ -48,8 +49,10 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
   const { community, ownImpression } = account ?? demoOpinion;
   const demoExtras = useVenueExtras(venue.id);
   const drinks = account?.drinks ?? demoExtras.drinks;
-  const pendingLanguages = account ? [] : demoExtras.pendingLanguages;
   const languages = details?.languages ?? [];
+  const pendingLanguages = account ? [] : [...new Map(demoExtras.pendingLanguages
+    .filter(row => !languages.some(language => language.code === row.language_code))
+    .map(row => [row.language_code, row])).values()];
 
   return (
     <>
@@ -162,18 +165,13 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
           <View style={[styles.card, styles.infoCard]}>
             <AppIcon name="languages" size={22} color={theme.colors.purpleLight} />
             <Text style={styles.sectionLabel}>{t("SPOKEN LANGUAGES")}</Text>
+            {account && accountLanguages ? accountLanguages : <>
             <View style={styles.languageList}>
               {languages.map((language) => <Text key={language.code} style={styles.languageTag}>{venueLanguageLabel(language.code, t, language.name)}</Text>)}
+              {pendingLanguages.map(suggestion => <Text key={suggestion.language_code} style={styles.languageTag}>{venueLanguageLabel(suggestion.language_code, t)} · {t('Not verified')}</Text>)}
             </View>
-            {languages.length === 0 && <Text style={styles.description}>{t("No languages reported yet.")}</Text>}
-            {pendingLanguages.length > 0 && (
-              <>
-                <Text style={styles.meta}>{t("Suggestions awaiting review")}</Text>
-                <View style={styles.languageList}>
-                  {pendingLanguages.map((suggestion) => <Text key={suggestion.id} style={styles.languageTag}>{venueLanguageLabel(suggestion.language_code, t)} · {t('Pending')}</Text>)}
-                </View>
-              </>
-            )}
+            {languages.length === 0 && pendingLanguages.length === 0 && <Text style={styles.description}>{t("No languages reported yet.")}</Text>}
+            </>}
           </View>
         </View>
 

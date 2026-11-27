@@ -1,6 +1,6 @@
 import type { CatalogVenueRow, SavedImpressionRow } from '../../../../shared/venue-contracts.ts';
 import type { Venue, VenueDetails } from '../../types/venue.ts';
-import type { CommunityOpinionView } from '../impressions/community-opinion-presentation.ts';
+import { communitySentiment, type CommunityOpinionView } from '../impressions/community-opinion-presentation.ts';
 import { saveVenueImpression, type Impression, type VenueImpressionsState } from '../impressions/impression-state.ts';
 import { languageName } from '../../fixtures/contribution-catalog.ts';
 import type { CrowdSummary } from '../contributions/contribution-state.ts';
@@ -50,8 +50,9 @@ export function catalogDetails(row: CatalogVenueRow): VenueDetails {
 export function catalogOpinion(row: CatalogVenueRow): CommunityOpinionView {
   const opinion = row.opinions;
   if (!opinion.available) return { status: 'unavailable' };
-  if (opinion.total_opinions === 0 || opinion.liked_percentage === null) return { status: 'empty', count: 0 };
-  return { status: 'ready', count: opinion.total_opinions, percentage: Math.round(opinion.liked_percentage) };
+  if (opinion.total_opinions === 0) return { status: 'empty', count: 0 };
+  return { status: 'ready', count: opinion.total_opinions,
+    sentiment: communitySentiment(opinion.liked_count, opinion.fine_count, opinion.disliked_count) };
 }
 
 export function savedImpressions(rows: Readonly<Record<string, SavedImpressionRow>>, venues: readonly CatalogVenueRow[]): VenueImpressionsState {

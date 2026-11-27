@@ -2,7 +2,7 @@ import { decodeLanguageSuggestion, matchesLanguageRequest, validLanguageCode,
   type LanguageRequest, type LanguageSuggestion, type VenueLanguageCode } from '../../../../shared/language-contracts.ts';
 import type { accountLanguageRepository } from './account-language-repository.ts';
 
-export type LanguageOperation = { request: LanguageRequest | null; saving: boolean; error: boolean; saved: boolean; version: number };
+export type LanguageOperation = { request: LanguageRequest | null; saving: boolean; error: boolean; saved: boolean; version: number; remainingCodes?: readonly VenueLanguageCode[] };
 export const emptyLanguageOperation: LanguageOperation = { request: null, saving: false, error: false, saved: false, version: 0 };
 type ReviewOperation = { decision: 'approved' | 'rejected'; saving: boolean; error: boolean };
 type Snapshot = {
@@ -20,6 +20,7 @@ export function createAccountLanguageStore(owner: string, repository: ReturnType
   let catalog: Catalog = { status: 'loading', venues: [] };
   let loading: Promise<void> | null = null, queueLoading: Promise<void> | null = null;
   const pending = new Map<string, Promise<void>>();
+  const batches = new Map<string, Promise<void>>();
   const confirmed = new Map<string, { revision: number; row: LanguageSuggestion }>();
   function publish(patch: Partial<Snapshot>) { snapshot = { ...snapshot, ...patch }; listeners.forEach(listener => listener()); }
   const operation = (barId: string) => snapshot.operations[barId] ?? emptyLanguageOperation;
@@ -33,7 +34,12 @@ export function createAccountLanguageStore(owner: string, repository: ReturnType
   function accept(row: LanguageSuggestion, request: LanguageRequest) {
     record(row);
     const op = operation(request.barId);
-    if (op.request?.id === request.id) setOperation(request.barId, { request: null, saving: false, error: false, saved: true, version: op.version + 1 });
+    if (op.request?.id === request.id) {
+      const remainingCodes = op.remainingCodes?.filter(code => code !== request.code);
+      setOperation(request.barId, { request: null, saving: Boolean(remainingCodes?.length && batches.has(request.barId)),
+        error: false, saved: !remainingCodes?.length, version: op.version + 1,
+        ...(remainingCodes ? { remainingCodes } : {}) });
+    }
     invalidate();
   }
   function refresh(): Promise<void> {
@@ -90,6 +96,32 @@ export function createAccountLanguageStore(owner: string, repository: ReturnType
     }).finally(() => { if (run === generation) pending.delete(request.id); });
     pending.set(request.id, promise); return promise;
   }
+  function resumeBatch(barId: string): Promise<void> {
+    const existing = batches.get(barId); if (existing) return existing;
+    const run = generation;
+    // Defer the first write until this batch is registered, so all request
+    // confirmations can accurately keep the whole selection in a saving state.
+    const promise = Promise.resolve().then(async () => {
+      while (true) {
+        if (!active || run !== generation) throw new Error('Account changed');
+        const op = operation(barId), code = op.remainingCodes?.[0];
+        if (op.request) { await send(op.request); continue; }
+        if (!code) return;
+        const venue = catalog.venues.find(row => row.id === barId);
+        if (snapshot.status !== 'ready' || catalog.status !== 'ready' || !venue) throw new Error('Language suggestions unavailable');
+        if (venue.languages.some(row => row.code === code) || snapshot.history.some(row => row.bar_id === barId && row.language_code === code && row.status === 'pending')) {
+          const remainingCodes = op.remainingCodes!.slice(1);
+          setOperation(barId, { ...op, remainingCodes, saving: remainingCodes.length > 0, error: false, saved: remainingCodes.length === 0 });
+          continue;
+        }
+        await send({ id: nextId(), barId, code });
+      }
+    }).catch(error => {
+      if (active && run === generation) setOperation(barId, { ...operation(barId), saving: false, error: true, saved: false });
+      throw error;
+    }).finally(() => { if (run === generation) batches.delete(barId); });
+    batches.set(barId, promise); return promise;
+  }
   return {
     getSnapshot: () => snapshot, getServerSnapshot: () => initial,
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
@@ -99,13 +131,32 @@ export function createAccountLanguageStore(owner: string, repository: ReturnType
       publish({ operations: Object.fromEntries(Object.entries(snapshot.operations).map(([id, op]) => [id, op.saving ? { ...op, saving: false, error: true } : op])),
         reviews: Object.fromEntries(Object.entries(snapshot.reviews).map(([id, op]) => [id, op.saving ? { ...op, saving: false, error: true } : op])) });
       void refresh(); void refreshQueue();
-      return () => { active = false; generation++; loading = null; queueLoading = null; pending.clear(); };
+      return () => { active = false; generation++; loading = null; queueLoading = null; pending.clear(); batches.clear(); };
     },
     refresh, refreshQueue,
+    submitMany(barId: string, codes: readonly VenueLanguageCode[], version: number): Promise<void> {
+      const op = operation(barId), venue = catalog.venues.find(row => row.id === barId);
+      if (!active || snapshot.status !== 'ready' || catalog.status !== 'ready' || !venue || !codes.length || codes.some(code => !validLanguageCode(code))) return Promise.reject(new Error('Language suggestions unavailable'));
+      if (op.version !== version) return Promise.reject(new Error('Stale language action'));
+      const remainingCodes = [...new Set(codes)];
+      if (op.request || op.remainingCodes?.length) {
+        if (JSON.stringify(remainingCodes) !== JSON.stringify(op.remainingCodes ?? [op.request!.code])) return Promise.reject(new Error('Retry the pending suggestions first'));
+        return resumeBatch(barId);
+      }
+      setOperation(barId, { ...op, remainingCodes, saving: true, error: false, saved: false });
+      return resumeBatch(barId);
+    },
+    retryMany(barId: string): Promise<void> {
+      const op = operation(barId);
+      if (!active || (!op.request && !op.remainingCodes?.length)) return Promise.reject(new Error('Suggestions unavailable'));
+      setOperation(barId, { ...op, saving: true, error: false, saved: false });
+      return resumeBatch(barId);
+    },
     submit(barId: string, code: VenueLanguageCode, version: number): Promise<void> {
       const op = operation(barId), venue = catalog.venues.find(row => row.id === barId);
       if (!active || snapshot.status !== 'ready' || catalog.status !== 'ready' || !venue || !validLanguageCode(code)) return Promise.reject(new Error('Language suggestions unavailable'));
       if (op.version !== version) return Promise.reject(new Error('Stale language action'));
+      if (op.remainingCodes?.length) return Promise.reject(new Error('Retry the pending suggestions first'));
       if (op.request && op.request.code !== code) return Promise.reject(new Error('Retry the pending suggestion first'));
       if (!op.request && (venue.languages.some(row => row.code === code) || snapshot.history.some(row => row.bar_id === barId && row.language_code === code && row.status === 'pending'))) return Promise.reject(new Error('Language already associated or pending'));
       return send(op.request ?? { id: nextId(), barId, code });

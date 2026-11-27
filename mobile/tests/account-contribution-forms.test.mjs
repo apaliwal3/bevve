@@ -71,22 +71,43 @@ test('account language drafts retain their selection until confirmation and offe
   const state=feedback();let code,retries=0;
   state.retry=()=>retries++;
   const ui=setup('language',{feedback:state,onSubmit:value=>{code=value;state.pending=true;state.error=true;}});
-  ui.render().filter(node=>node.props.accessibilityRole==='radio')[1].props.onPress();
-  ui.button('Suggest language').props.onPress();assert.equal(code,'it');
-  assert.ok(ui.render().filter(node=>node.props.accessibilityRole==='radio').every(node=>node.props.disabled));
-  assert.ok(ui.render().some(node=>node.props.accessibilityRole==='radio'&&node.props.accessibilityState.checked));
+  ui.render().filter(node=>node.props.accessibilityRole==='checkbox')[1].props.onPress();
+  ui.button('Suggest languages').props.onPress();assert.deepEqual(Array.from(code),['it']);
+  assert.ok(ui.render().filter(node=>node.props.accessibilityRole==='checkbox').every(node=>node.props.disabled));
+  assert.ok(ui.render().some(node=>node.props.accessibilityRole==='checkbox'&&node.props.accessibilityState.checked));
   assert.ok(!ui.render().some(node=>typeof node.props.children==='string'&&node.props.children.includes('saved')));
   ui.button('Retry save').props.onPress();assert.equal(retries,1);
   state.pending=false;state.error=false;state.saved=true;ui.props.pending=[{id:'saved',language_code:'it'}];
-  assert.ok(ui.render().some(node=>node.props.children==='Language suggestion saved to your account. Check its review status in Profile.'));
+  assert.ok(ui.render().some(node=>node.props.children==='Language suggestions saved to your account.'));
   assert.ok(!ui.render().some(node=>node.props.children==='Currently associated · Demo data'));ui.harness.unmount();
 });
 
 test('reopened uncertain language forms restore the request and show approved and pending languages separately',()=>{
-  const ui=setup('language',{languages:[{code:'en',name:'English'}],pending:[{id:'pending',language_code:'fr'}],initialCode:'it',feedback:{...feedback(),pending:true,error:true}});
-  const radios=ui.render().filter(node=>node.props.accessibilityRole==='radio');assert.equal(radios.length,6);
-  assert.equal(radios.filter(node=>node.props.accessibilityState.checked).length,1);
+  const ui=setup('language',{languages:[{code:'en',name:'English'}],pending:[{id:'pending',language_code:'fr'}],initialCodes:['it','de'],feedback:{...feedback(),pending:true,error:true}});
+  const checkboxes=ui.render().filter(node=>node.props.accessibilityRole==='checkbox');assert.equal(checkboxes.length,6);
+  assert.equal(checkboxes.filter(node=>node.props.accessibilityState.checked).length,2);
   assert.equal(ui.button('Retry save').props.disabled,false);assert.equal(ui.button('Cancel').props.disabled,true);ui.harness.unmount();
+});
+
+test('spoken languages allow multiple selections and toggling a choice off before one submission',()=>{
+  let submitted;
+  const ui=setup('language',{onSubmit:codes=>{submitted=Array.from(codes);}});
+  const choose=label=>ui.render().find(node=>node.props.accessibilityRole==='checkbox'&&node.props.accessibilityLabel===label).props.onPress();
+  choose('English');choose('Italian');choose('French');choose('Italian');
+  assert.equal(ui.render().filter(node=>node.props.accessibilityRole==='checkbox'&&node.props.accessibilityState.checked).length,2);
+  ui.button('Suggest languages').props.onPress();assert.deepEqual(submitted,['en','fr']);
+  assert.ok(ui.render().filter(node=>node.props.accessibilityRole==='checkbox').every(node=>!node.props.accessibilityState.checked));
+  ui.harness.unmount();
+});
+
+test('a confirmed language refresh clears the final-save error without resubmitting saved languages',async()=>{
+  const batch=createContributionBatch(),state=feedback();let writes=0;
+  const ui=setup('language',{feedback:state,onSubmit:async()=>{writes++;state.pending=true;state.error=true;throw Error('lost response');}},batch);
+  ui.render().find(node=>node.props.accessibilityRole==='checkbox').props.onPress();ui.render();
+  assert.equal(await batch.submit(),false);assert.equal(writes,1);
+  state.pending=false;state.error=false;state.saved=true;ui.props.pending=[{id:'saved',language_code:'en'}];ui.render();
+  assert.equal(batch.getSnapshot().invalid,false);assert.equal(await batch.submit(),true);assert.equal(writes,1);
+  ui.harness.unmount();
 });
 
 test('account crowd reports show success only after server confirmation, disable pending edits and expose retry',()=>{
@@ -185,13 +206,13 @@ test('price, language and private report drafts share the final save without sec
   const safety=setup('safety',{onSubmit:input=>{writes.push(['safety',input.description]);}},batch);
   price.render().find(node=>node.props.accessibilityRole==='radio').props.onPress();price.render();
   price.render().find(node=>node.props.accessibilityLabel==='Drink price in euros').props.onChangeText('6,50');price.render();
-  language.render().find(node=>node.props.accessibilityRole==='radio').props.onPress();language.render();
+  language.render().find(node=>node.props.accessibilityRole==='checkbox').props.onPress();language.render();
   safety.render().find(node=>node.props.accessibilityRole==='radio').props.onPress();safety.render();
   assert.equal(await batch.submit(),false);assert.deepEqual(writes,[]);
   safety.render().find(node=>node.props.accessibilityLabel==='Private incident description').props.onChangeText('Private draft');safety.render();
   for(const ui of [price,language,safety])assert.ok(!ui.render().some(node=>node.type==='PrimaryButton'));
   assert.deepEqual(writes,[]);assert.equal(await batch.submit(),true);
-  assert.deepEqual(writes,[['price',drink.id,650],['language','en'],['safety','Private draft']]);
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)),[['price',drink.id,650],['language',['en']],['safety','Private draft']]);
   price.harness.unmount();language.harness.unmount();safety.harness.unmount();
 });
 

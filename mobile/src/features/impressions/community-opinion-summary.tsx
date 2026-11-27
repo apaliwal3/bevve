@@ -2,24 +2,28 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { BevveTheme as theme } from '@/constants/theme';
 import { useTranslation } from '@/localization/language-provider';
-import type { Translate } from '@/localization/translation';
-import type { CommunityOpinionView } from './community-opinion-presentation';
+import type { PlainTranslationKey, Translate } from '@/localization/translation';
+import type { CommunityOpinionView, CommunitySentiment } from './community-opinion-presentation';
+
+const sentimentLabels: Record<CommunitySentiment, PlainTranslationKey> = {
+  liked: 'Mostly liked', fine: 'Mostly okay', disliked: 'Mostly disliked', mixed: 'Mixed opinions',
+};
 
 export function communityOpinionLabel(opinion: CommunityOpinionView, t: Translate): string {
   if (opinion.status === 'unavailable') return t('Community opinions are unavailable in this demo.');
   if (opinion.status === 'empty') return t('No opinions yet');
-  return t('{percentage}% liked it · {count} opinions', { percentage: opinion.percentage, count: opinion.count });
+  return t(sentimentLabels[opinion.sentiment]) + ' · ' + t('{count} opinions', { count: opinion.count });
 }
 
 export function CommunityOpinionSummary({ opinion, compact = false }: { opinion: CommunityOpinionView; compact?: boolean }) {
-  const { t, format } = useTranslation();
+  const { t } = useTranslation();
   return (
     <View accessible accessibilityLabel={communityOpinionLabel(opinion, t)} style={[styles.summary, compact && styles.compact]}>
       <Text style={styles.label}>{t('Community opinion')}</Text>
       {opinion.status === 'unavailable' ? <Text style={styles.meta}>{compact ? t('Unavailable in demo') : t('Community opinions are unavailable in this demo.')}</Text>
         : opinion.status === 'empty' ? <Text style={styles.meta}>{t('No opinions yet')}</Text>
           : <>
-            <Text style={[styles.value, compact && styles.compactValue]}>{t('{percentage}% liked it', { percentage: format.number(opinion.percentage) })}</Text>
+            <Text style={[styles.value, compact && styles.compactValue]}>{t(sentimentLabels[opinion.sentiment])}</Text>
             <Text style={styles.meta}>{t('{count} opinions', { count: opinion.count })}</Text>
           </>}
     </View>
