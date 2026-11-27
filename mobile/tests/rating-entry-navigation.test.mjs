@@ -19,6 +19,7 @@ function screens(language, ranked) {
   const personal = { entries: ranked ? [{ position: 1, venue: mockVenues[0], comparisonCount: 1 }] : [], completedCount: ranked ? 1 : 0 };
   const activity = selectProfileContributions({ impressions: {}, crowdReports: [], bathroomReviews: [], priceObservations: [] }, SESSION_USER_ID, mockVenues, []);
   const mocks = {
+    '@/features/saved-bars/saved-bars-section': { SavedBarsSection: 'SavedBarsSection' },
     'react-native': { ...nativeStub, useWindowDimensions: () => ({ fontScale: 2, width: 320 }) },
     '@/constants/theme': theme,
     '@/localization/language-provider': { useTranslation: () => ({ t, language, format: createLocaleFormatters(language), describe: (value) => describeFixture(value, t) }) },

@@ -17,6 +17,9 @@ the original fictional, in-memory demo. The interface is English-only.
   Foreground location starts automatically for signed-in accounts. All filters
   and venue details show approximate distances; Nearby shows real venues within
   1 km and sorts closest first.
+- Private **Want to visit** bookmarks on venue images and Bar Details, with a
+  saved list in Profile. Requires migration `007_saved_bars.sql`; guest saves
+  stay in the demo session. Bookmarks remain saved after rating a bar.
 - A venue's `+` action saves/edits an impression. Profile and cards update only
   after the server confirms the write. Failures retain the draft for retry.
 - Impressions reload across sessions/devices, remain private to their owner, and

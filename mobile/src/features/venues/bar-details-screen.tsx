@@ -1,3 +1,4 @@
+import { BookmarkButton } from '@/features/saved-bars/bookmark-button';
 import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
@@ -67,6 +68,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
           <Pressable accessibilityRole="button" accessibilityLabel={backLabel ?? t('Back to Explore')} onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <AppIcon name="back" color={theme.colors.text} />
           </Pressable>
+          <BookmarkButton barId={venue.id} name={venue.name} />
         </View>
         <View style={styles.heroCopy}>
           {details?.openingHoursLabel && (
@@ -257,6 +259,9 @@ const styles = StyleSheet.create({
     backgroundImage: `linear-gradient(180deg, ${theme.colors.imageBadge}, ${theme.colors.transparent} 42%, ${theme.colors.background} 100%)`
   },
   backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 18
   },
   backButton: {

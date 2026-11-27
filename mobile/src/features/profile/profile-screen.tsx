@@ -1,3 +1,4 @@
+import { SavedBarsSection } from '@/features/saved-bars/saved-bars-section';
 import { useTranslation } from '@/localization/language-provider';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -10,7 +11,7 @@ import type { UUID } from '@/features/comparisons/comparison-state';
 import { usePersonalRankings, useSavedImpressions } from '@/features/comparisons/personal-comparisons-provider';
 import { impressionLabels } from '@/features/impressions/impression-selector';
 import { useProfileContributions } from '@/features/ratings/venue-ratings-provider';
-import { exploreMockUser } from '@/fixtures/venues';
+import { exploreMockUser, mockVenues } from '@/fixtures/venues';
 
 import { ProfileActivityRow, ProfileActivitySection } from './profile-activity-components';
 import { AccountPanel } from '@/features/auth/account-panel';
@@ -45,6 +46,8 @@ export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }:
           </View>
           <Text style={styles.note}>{t("Updates include crowd reports, bathroom reviews and price observations.")}</Text>
         </View>
+
+        <SavedBarsSection venues={mockVenues} onOpenVenue={onOpenVenue} />
 
         <ProfileActivitySection title={t('My impressions')} count={activity.counts.impressions} icon="profile"
           hint={t('One editable impression per venue · Demo session only')}>

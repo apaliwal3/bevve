@@ -82,6 +82,24 @@ account details/demo state clear. Check invalid credentials, offline requests,
 email-confirmation signup, rapid double submission, and a previously saved Italian
 preference (the interface must remain English).
 
+## Want to visit
+
+Apply `bevve-backend/supabase/migrations/007_saved_bars.sql` after migrations
+001–006 to enable account bookmarks. The bookmark on each bar image and in Bar
+Details saves/removes that bar. Profile's **Want to visit** list opens saved bars
+and provides removal controls. Saves persist across sign-in and devices, stay
+private through row-level security, and remain saved after the user rates a bar.
+Saving/removing does not submit impressions or comparison votes.
+
+Buttons update after database confirmation. Failed writes retain the confirmed
+state and offer **Retry**; retries preserve the original save date and do not
+create duplicate entries. Saved bars refresh on foreground, periodically, and
+with Profile's pull-to-refresh. Guest bookmarks are memory-only and clear when
+switching into or out of an account; they are never merged into account data.
+Run `supabase/tests/saved-bars.sql` in Supabase to verify owner isolation and
+save/remove behavior; its fixtures roll back. Hosted deployment and device
+verification must be completed separately from the local checks.
+
 ## Connected venue catalog and impressions
 
 The existing project has migrations `001_backend.sql` and

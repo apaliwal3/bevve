@@ -39,6 +39,8 @@ function ui(language, ownImpression = null) {
     useVenueExtras: () => ({ drinks: [], pendingLanguages: [], startingPriceCents: null }),
   };
   const common = {
+    '@/features/saved-bars/bookmark-button': { BookmarkButton: 'BookmarkButton' },
+    '@/features/saved-bars/saved-bars-section': { SavedBarsSection: 'SavedBarsSection' },
     ...shared, react: { useState: (initial) => [initial, () => {}] }, 'expo-image': { Image: 'Image' },
     '@/components/app-icon': { AppIcon: 'AppIcon' }, '@/components/crowd-meter': { CrowdMeter: 'CrowdMeter' },
     '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/components/screen-container': { ScreenContainer: 'ScreenContainer' },
@@ -107,7 +109,10 @@ test('English and Italian summaries visibly and accessibly pair every percentage
 test('Explore cards and Bar Details keep demo impressions separate from unavailable community data and preserve bathroom stars', () => {
   for (const language of ['en', 'it']) for (const ownImpression of [null, 'liked', 'fine', 'disliked']) {
     const { t, summary, card, details } = ui(language, ownImpression);
-    const cardTree = card.VenueCard({ venue, onPress() {} });
+    const cardRoot = card.VenueCard({ venue, onPress() {} });
+    const cardTree = [...elements(cardRoot)].find(node => node.type === 'Pressable');
+    assert.ok([...elements(cardRoot)].some(node=>node.type==='BookmarkButton'&&node.props.barId===venue.id));
+    assert.ok(![...elements(cardTree)].some(node=>node.type==='BookmarkButton')); // Saving is a sibling control, not a nested venue link.
     const detailsTree = details.BarDetailsScreen({ venue, details: mockVenueDetails[venue.id], onBack() {}, onComparePrices() {} });
     for (const tree of [cardTree, detailsTree]) {
       const opinions = [...elements(tree)].filter((node) => node.type === summary.CommunityOpinionSummary);
@@ -172,7 +177,8 @@ test('account venue cards and details override all demo metrics and use the acco
   const account={ isDemo:false,community:{status:'ready',percentage:25,count:4},ownImpression:'fine',
     crowd:{score:1,report_count:3,newest_report_at:'2026-11-22T18:00:00Z',classification:'quiet'},
     bathrooms:null,drinks:[],startingPriceCents:0 };
-  const cardTree=card.VenueCard({venue,account,onPress(){}});
+  const cardRoot=card.VenueCard({venue,account,onPress(){}});
+  const cardTree=[...elements(cardRoot)].find(node=>node.type==='Pressable');
   assert.ok(cardTree.props.accessibilityLabel.includes('It was fine'));
   assert.ok(cardTree.props.accessibilityLabel.includes('25%'));
   assert.ok(!textValues(cardTree).some(value=>String(value).includes('Saved to your account')));

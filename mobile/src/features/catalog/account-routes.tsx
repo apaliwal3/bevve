@@ -1,3 +1,5 @@
+import { SavedBarsSection } from '@/features/saved-bars/saved-bars-section';
+import { useSavedBars } from '@/features/saved-bars/saved-bars-provider';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
@@ -61,20 +63,22 @@ export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue
   const { t, format } = useTranslation();
   const comparisons = useAccountComparisons();
   const contributions = useAccountContributions();
+  const savedBars = useSavedBars();
   const languages = useAccountLanguages();
   const safety = useAccountSafety();
   const refreshing = catalog.refreshing || comparisons.refreshing || contributions.refreshing || languages.refreshing ||
-    languages.queueRefreshing || safety.refreshing || safety.queueRefreshing;
+    languages.queueRefreshing || safety.refreshing || safety.queueRefreshing || savedBars.refreshing;
   function refresh() {
     if (refreshing) return;
     void Promise.allSettled([catalog.refresh(), comparisons.refresh(), contributions.refresh(),
-      languages.refresh(), languages.refreshQueue(), safety.refresh(), safety.refreshQueue()]);
+      languages.refresh(), languages.refreshQueue(), safety.refresh(), safety.refreshQueue(), savedBars.refresh()]);
   }
   const activity = selectProfileContributions({ impressions: savedImpressions(catalog.impressions, catalog.venues), crowdReports: contributions.crowds, bathroomReviews: contributions.bathrooms, priceObservations: contributions.prices }, catalog.userId, catalog.venues.map(catalogVenue), catalog.drinks);
   const summary = (barId: string, text: string) => catalog.venues.some(row => row.id === barId && row.is_demo) ? t('Sample venue') + ' · ' + text : text;
   return <ScreenContainer contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
     <Text accessibilityRole="header" style={styles.title}>{t('Profile')}</Text>
     <AccountPanel />
+    <SavedBarsSection venues={catalog.venues.map(catalogVenue)} onOpenVenue={id => router.push(venueFromProfileHref(id))} />
     <CatalogFeedback catalog={catalog} />
     <AccountComparisonFeedback />
     <AccountContributionFeedback />

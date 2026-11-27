@@ -1,3 +1,4 @@
+import { BookmarkButton } from '@/features/saved-bars/bookmark-button';
 import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState } from 'react';
@@ -119,16 +120,17 @@ export function VenueCard({ venue, onPress, account }: VenueCardProps) {
     </>
   );
 
-  if (!onPress) return <View style={styles.card}>{content}</View>;
-
   return (
-    <Pressable
+    <View style={styles.card}>
+    {onPress ? <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('{name}, {area}. {opinion}. {impression}. View venue', { name: venue.name, area: venue.area, opinion: communityOpinionLabel(community, t), impression: impressionLabel })}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      style={({ pressed }) => pressed && styles.pressed}>
       {content}
-    </Pressable>
+    </Pressable> : content}
+    <View style={styles.bookmarkPosition}><BookmarkButton barId={venue.id} name={venue.name} /></View>
+    </View>
   );
 }
 
@@ -140,6 +142,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     overflow: 'hidden'
   },
+  bookmarkPosition: { position: 'absolute', top: 122, left: theme.spacing.sm },
   photo: {
     height: 174,
     backgroundColor: theme.colors.surfaceRaised

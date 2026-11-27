@@ -1,3 +1,4 @@
+import { SavedBarsProvider } from '@/features/saved-bars/saved-bars-provider';
 import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -54,21 +55,23 @@ function AppLayout() {
       }}>
       <StatusBar style="light" />
       <VenueCatalogProvider>
-        <AccountLocationProvider>
-          <AccountSafetyProvider>
-            <AccountLanguagesProvider>
-              <AccountContributionsProvider>
-                <AccountComparisonsProvider>
-                  <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
-                    <PersonalComparisonsProvider>
-                      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
-                    </PersonalComparisonsProvider>
-                  </VenueRatingsProvider>
-                </AccountComparisonsProvider>
-              </AccountContributionsProvider>
-            </AccountLanguagesProvider>
-          </AccountSafetyProvider>
-        </AccountLocationProvider>
+        <SavedBarsProvider>
+          <AccountLocationProvider>
+            <AccountSafetyProvider>
+              <AccountLanguagesProvider>
+                <AccountContributionsProvider>
+                  <AccountComparisonsProvider>
+                    <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
+                      <PersonalComparisonsProvider>
+                        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
+                      </PersonalComparisonsProvider>
+                    </VenueRatingsProvider>
+                  </AccountComparisonsProvider>
+                </AccountContributionsProvider>
+              </AccountLanguagesProvider>
+            </AccountSafetyProvider>
+          </AccountLocationProvider>
+        </SavedBarsProvider>
       </VenueCatalogProvider>
     </ThemeProvider>
   );

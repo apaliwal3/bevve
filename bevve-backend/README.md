@@ -10,6 +10,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
 - `supabase/migrations/004_venue_contributions.sql`: retry-safe crowd/price writes and a private own-price history RPC. Locally tested; owner confirmed hosted deployment on 2026-11-23.
 - `supabase/migrations/005_language_suggestions.sql`: private language suggestions, retry receipts and moderator approval/rejection. Owner confirmed deployment and passing hosted SQL checks on 2026-11-23.
 - `supabase/migrations/006_account_safety.sql`: retry-safe private incident submission and review, plus moderator-access RPC. Owner confirmed deployment and verification on 2026-11-23.
+- `supabase/migrations/007_saved_bars.sql`: private per-account Want to visit bookmarks, with owner-only reads/inserts/deletes and unique user/venue pairs. Apply after 006; local checks are in `supabase/tests/saved-bars.sql`.
 - `supabase/seed.sql`: three fictional venues and two standardized drinks.
 - `src/services/`: functions the future mobile app can call.
 - `src/logic/eloRanking.ts`: personal rankings from pairwise comparisons.

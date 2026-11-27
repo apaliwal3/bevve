@@ -1,5 +1,17 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  "Retry": "Retry",
+  "Want to visit": "Want to visit",
+  "Loading saved bars…": "Loading saved bars…",
+  "Your saved bars could not be refreshed. Try again.": "Your saved bars could not be refreshed. Try again.",
+  "Retry saved bars": "Retry saved bars",
+  "No saved bars yet": "No saved bars yet",
+  "Save bars to find them here.": "Save bars to find them here.",
+  "Saved {date}": "Saved {date}",
+  "Retry saving {name}": "Retry saving {name}",
+  "Remove {name} from Want to visit": "Remove {name} from Want to visit",
+  "Save {name} to Want to visit": "Save {name} to Want to visit",
+  "Your saved bar could not be updated. Tap to retry.": "Your saved bar could not be updated. Tap to retry.",
   "Confirmation emails cannot be sent to this address yet. Please contact support.": "Confirmation emails cannot be sent to this address yet. Please contact support.",
   "This email address is not supported. Try another address.": "This email address is not supported. Try another address.",
   "An account with this email already exists. Please sign in.": "An account with this email already exists. Please sign in.",

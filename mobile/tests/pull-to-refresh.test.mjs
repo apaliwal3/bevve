@@ -30,8 +30,11 @@ function setup(){
   const comparisons={...source('comparisons'),status:'ready',rankings:{completedCount:0,entries:[]}};
   const contributions={...source('contributions'),status:'ready',crowds:[],bathrooms:[],prices:[]};
   const languages={...source('languages'),queueRefreshing:false,refreshQueue:async()=>{calls.push('language queue');}};
+  const savedBars=source('saved bars');
   const safety={...source('safety'),queueRefreshing:false,refreshQueue:async()=>{calls.push('incident queue');}};
   const module=loadNativeModule('src/features/catalog/account-routes.tsx',{
+    '@/features/saved-bars/saved-bars-section':{SavedBarsSection:'SavedBarsSection'},
+    '@/features/saved-bars/saved-bars-provider':{useSavedBars:()=>savedBars},
     react:{useState:initial=>[initial,()=>{}]},'expo-router':{router:{}},
     '@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/components/screen-container':{ScreenContainer:'ScreenContainer'},
     '@/constants/theme':theme,'@/features/auth/account-panel':{AccountPanel:'AccountPanel'},
@@ -53,16 +56,16 @@ function setup(){
     '@/features/contributions/account-safety-panel':{AccountIncidentHistory:'AccountIncidentHistory',AccountIncidentModeration:'AccountIncidentModeration'},
     '@/features/location/account-location-provider':{},'@/features/location/venue-distance':{},
   });
-  return {catalog,comparisons,contributions,languages,safety,calls,render(name){return module[name]({catalog});}};
+  return {catalog,comparisons,contributions,languages,safety,savedBars,calls,render(name){return module[name]({catalog});}};
 }
 
 test('one Profile pull refreshes all activity and moderation sources and stays busy until every source finishes',()=>{
   const ui=setup();const screen=ui.render('AccountProfileScreen');screen.props.onRefresh();
-  assert.deepEqual(ui.calls,['catalog','comparisons','contributions','languages','language queue','safety','incident queue']);
+  assert.deepEqual(ui.calls,['catalog','comparisons','contributions','languages','language queue','safety','incident queue','saved bars']);
   assert.ok(![...elements(screen)].some(node=>node.type==='PrimaryButton'&&node.props.label.startsWith('Refresh')));
-  for(const [source,key] of [[ui.catalog,'refreshing'],[ui.comparisons,'refreshing'],[ui.contributions,'refreshing'],[ui.languages,'refreshing'],[ui.languages,'queueRefreshing'],[ui.safety,'refreshing'],[ui.safety,'queueRefreshing']]){
+  for(const [source,key] of [[ui.catalog,'refreshing'],[ui.comparisons,'refreshing'],[ui.contributions,'refreshing'],[ui.languages,'refreshing'],[ui.languages,'queueRefreshing'],[ui.safety,'refreshing'],[ui.safety,'queueRefreshing'],[ui.savedBars,'refreshing']]){
     source[key]=true;const busy=ui.render('AccountProfileScreen');assert.equal(busy.props.refreshing,true);
-    busy.props.onRefresh();assert.equal(ui.calls.length,7);source[key]=false;
+    busy.props.onRefresh();assert.equal(ui.calls.length,8);source[key]=false;
   }
   assert.equal(ui.render('AccountProfileScreen').props.refreshing,false);
 });

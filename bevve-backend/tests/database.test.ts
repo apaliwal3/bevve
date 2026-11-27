@@ -17,6 +17,9 @@ const languageChecks = readFileSync(new URL('../supabase/tests/language-suggesti
 const safetyMigration = readFileSync(new URL('../supabase/migrations/006_account_safety.sql', import.meta.url), 'utf8');
 const safetyChecks = readFileSync(new URL('../supabase/tests/account-safety.sql', import.meta.url), 'utf8');
 
+const savedBarsMigration = readFileSync(new URL('../supabase/migrations/007_saved_bars.sql', import.meta.url), 'utf8');
+const savedBarsChecks = readFileSync(new URL('../supabase/tests/saved-bars.sql', import.meta.url), 'utf8');
+
 async function database() {
   const db = new PGlite();
   // Supabase supplies these roles, auth table, and JWT helper in hosted projects.
@@ -37,6 +40,7 @@ async function database() {
   await db.exec(contributionMigration);
   await db.exec(languageMigration);
   await db.exec(safetyMigration);
+  await db.exec(savedBarsMigration);
   await db.exec(seed);
   return db;
 }
@@ -185,4 +189,19 @@ test('the access check detects a broken ownership policy and rolls back failed f
     await assert.rejects(db.exec(accessChecks), /FAIL: other profiles are private/);
     assert.deepEqual((await db.query('select count(*)::int n from auth.users')).rows, [{ n: 0 }]);
   } finally { await db.close(); }
+});
+
+
+test('saved bars enforce ownership, prevent duplicates, keep ratings separate and roll back fixtures',async()=>{
+  const db=await database();
+  try {
+    for(let run=0;run<2;run++){
+      const results=await db.exec(savedBarsChecks);
+      assert.deepEqual(results.at(-1)?.rows,[{result:'Saved bar checks passed. All test data was rolled back.'}]);
+      assert.deepEqual((await db.query('select count(*)::int n from public.saved_bars')).rows,[{n:0}]);
+    }
+    await db.exec('alter policy saved_bars_read_own on public.saved_bars using (true)');
+    await assert.rejects(db.exec(savedBarsChecks),/FAIL: saved bars are private to their owner/);
+    assert.deepEqual((await db.query('select count(*)::int n from public.saved_bars')).rows,[{n:0}]);
+  } finally {await db.close();}
 });
