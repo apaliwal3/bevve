@@ -90,7 +90,8 @@ export function createLocationStore(repository: LocationRepository, clock: Clock
         if (!current() || receivedFix) return;
         const fix = readLocationFix(value, clock.now());
         if (typeof fix === 'string') { lastIssue = fix; return; }
-        if (snapshot.fix && fix.timestamp < snapshot.fix.timestamp) return;
+        // A cached copy of the previous reading must not count as a successful refresh.
+        if (snapshot.fix && fix.timestamp <= snapshot.fix.timestamp) return;
         // One acceptable reading per poll; release GPS until the next scheduled refresh.
         receivedFix = true;
         clearDeadline(); clearExpiry(); remove?.(); remove = null;

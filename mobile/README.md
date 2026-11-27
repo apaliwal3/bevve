@@ -135,6 +135,9 @@ The account-scoped store obtains a balanced-accuracy reading every two minutes
 while the app is active, releasing each native subscription after an acceptable
 reading. Automatic polls keep the previous valid coordinates and do not trigger
 Explore's pull-to-refresh animation. Only a manual pull shows that spinner.
+Checks, timeouts, expired readings and temporary native failures recover silently
+through the scheduled polls; they do not ask the user to refresh location.
+Permission, disabled services and precision settings still have recovery controls.
 Location stops and clears coordinates when backgrounded, and rechecks existing
 permission on return. A denied request is not repeated on every foreground
 transition; permission and settings actions remain available for recovery. Brief
@@ -152,8 +155,8 @@ blocked-permission states provide settings access. Coarse/unknown readings never
 supply invented distances. Silent polls retry failed acquisitions on the next two-minute tick. A previously
 accepted point remains visible during refreshes and temporary failures, but expires
 after two minutes and 20 seconds without a fresh acceptable update, allowing the
-next scheduled acquisition to finish before clearing existing distances. Until a fix is available, Nearby shows the
-location state instead of claiming zero venues. Other filters remain usable.
+next scheduled acquisition to finish before clearing existing distances. Nearby
+waits for an acceptable fix instead of claiming zero venues. Other filters remain usable.
 
 Local tests exercise geographic boundaries, filtering/order, native adapter/provider
 wiring, permission recovery, timers, cleanup, account isolation and UI states. Native

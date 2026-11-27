@@ -80,8 +80,7 @@ test('permission feedback distinguishes blocked access, services disabled, coars
   ui.set({ status: 'services-off' }); assert.ok(copy(ui.render('feedback')).includes('Turn on device location services, then retry.'));
   ui.set({ status: 'unavailable', issue: 'accuracy' }); nodes = ui.render('feedback'); assert.ok(copy(nodes).some(value => value.includes('precise location')));
   assert.ok(nodes.some(node => node.props.label === 'Open location settings'));
-  ui.set({ issue: 'timeout' }); nodes = ui.render('feedback'); assert.ok(copy(nodes).some(value => value.includes('took too long')));
-  nodes.find(node => node.props.label === 'Use my location').props.onPress(); assert.deepEqual(ui.calls, ['settings', 'enable']); ui.stop();
+  ui.set({ issue: 'timeout' });assert.deepEqual(ui.render('feedback'),[]);assert.deepEqual(ui.calls,['settings']);ui.stop();
 });
 
 test('ready location has no explanatory notes or controls', () => {
@@ -152,4 +151,15 @@ test('Quiet and Popular empty results keep the filter row compact and show a pro
     assert.equal(flattenStyle(heading.props.style).textAlign,'center');
   }
   ui.stop();
+});
+
+
+test('automatic location checks and temporary stale, timeout or native failures never ask the user to refresh',()=>{
+  const ui=setup();
+  for(const patch of [{status:'checking',fix:null},{status:'locating',fix:null},
+    ...['stale','timeout','unavailable'].map(issue=>({status:'unavailable',fix:null,issue}))]){
+    ui.set(patch);assert.deepEqual(ui.render('feedback'),[]);
+    assert.equal(ui.render().find(node=>node.type==='ScreenContainer').props.refreshing,false);
+  }
+  assert.deepEqual(ui.calls,[]);ui.stop();
 });

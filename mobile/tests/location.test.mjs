@@ -222,3 +222,15 @@ test('periodic polling stops in the background and after unmount and resumes on 
   ui.time.advance(1);await tick();assert.equal(ui.streams.length,3);ui.stop();
   const afterStop=ui.calls.length;ui.time.advance(LOCATION_REFRESH_INTERVAL_MS*3);await tick();assert.equal(ui.calls.length,afterStop);
 });
+
+
+test('a repeated cached reading cannot finish a scheduled refresh, and expiry recovers automatically without asking permission again',async()=>{
+  const ui=setup();await ui.ready();const first=ui.store.getSnapshot().fix;
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();
+  ui.streams[1].fix({timestamp:first.timestamp,coords:{latitude:first.latitude,longitude:first.longitude,accuracy:first.accuracy}});
+  assert.equal(ui.removed,1);assert.equal(ui.store.getSnapshot().fix,first);
+  ui.time.advance(LOCATION_TIMEOUT_MS);await tick();assert.equal(ui.store.getSnapshot().fix,null);
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS-LOCATION_TIMEOUT_MS);await tick();assert.equal(ui.streams.length,3);
+  ui.streams[2].fix(ui.raw());assert.equal(ui.store.getSnapshot().status,'ready');
+  assert.equal(ui.calls.filter(value=>value==='request').length,0);ui.stop();
+});
