@@ -121,9 +121,18 @@ test('Explore cards and Bar Details keep demo impressions separate from unavaila
     assert.ok(cardTree.props.accessibilityLabel.includes(t('Community opinions are unavailable in this demo.')));
     if (ownImpression) {
       assert.ok(cardTree.props.accessibilityLabel.includes(t('Your impression')));
+      assert.ok(!textValues(cardTree).some(value=>String(value).includes(t('Your impression'))));
+      const photo=[...elements(cardTree)].find(node=>node.props.style?.height===174);
+      const badge=[...elements(photo)].find(node=>node.props.accessibilityRole==='image');
+      assert.ok(badge.props.accessibilityLabel.includes(t('Your impression')));
+      const icons=[...elements(badge)].filter(node=>node.type==='AppIcon');
+      assert.equal(icons.length,ownImpression==='liked'?2:1);
+      assert.ok(icons.every(node=>node.props.name===(ownImpression==='disliked'?'thumbsDown':'thumbsUp')));
       assert.ok(textValues(detailsTree).includes(t('Your impression')));
       assert.ok(textValues(detailsTree).includes(t('Demo session only · Separate from community opinions')));
     }
+    assert.ok(!textValues(cardTree).includes(venue.vibe));
+    if (!ownImpression) assert.ok(![...elements(cardTree)].some(node=>node.props.accessibilityRole==='image'));
     assert.ok(textValues(cardTree).some((value) => String(value).includes('★')));
     const bathroomTiles = [...elements(detailsTree)].filter((node) => typeof node.type === 'function' && node.type.name === 'BathroomSummary');
     assert.equal(bathroomTiles.length, 3);
@@ -166,7 +175,8 @@ test('account venue cards and details override all demo metrics and use the acco
   const cardTree=card.VenueCard({venue,account,onPress(){}});
   assert.ok(cardTree.props.accessibilityLabel.includes('It was fine'));
   assert.ok(cardTree.props.accessibilityLabel.includes('25%'));
-  assert.ok(textValues(cardTree).some(value=>String(value).includes('Saved to your account')));
+  assert.ok(!textValues(cardTree).some(value=>String(value).includes('Saved to your account')));
+  assert.ok([...elements(cardTree)].some(node=>node.props.accessibilityRole==='image'&&node.props.accessibilityLabel.includes('It was fine')));
   assert.ok(!textValues(cardTree).some(value=>String(value).includes('Demo session')));
   const tree=details.BarDetailsScreen({venue,details:mockVenueDetails[venue.id],account,onBack(){},onComparePrices(){},onEditImpression(){opened++;}});
   const nodes=[...elements(tree)];

@@ -63,18 +63,22 @@ export function VenueCard({ venue, onPress, account }: VenueCardProps) {
           </View>
           <CommunityOpinionSummary opinion={community} compact />
         </View>
+        {ownImpression && <View accessible={!onPress} accessibilityRole="image" accessibilityLabel={impressionLabel}
+          pointerEvents="none" style={styles.impressionBadge}>
+          <AppIcon name={ownImpression === 'disliked' ? 'thumbsDown' : 'thumbsUp'} size={16} color={theme.colors.text} />
+          {ownImpression === 'liked' && <AppIcon name="thumbsUp" size={16} color={theme.colors.text} />}
+        </View>}
       </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
             <Text style={styles.name}>{venue.name}</Text>
-            <Text style={styles.subtitle}>{describe(venue.vibe)} · {venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
+            <Text style={styles.subtitle}>{venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
           </View>
           {onPress && (
             <Text style={styles.arrow} accessible={false}>›</Text>
           )}
         </View>
-        {ownImpression && <Text style={styles.metricLabel}>{impressionLabel}</Text>}
         <View style={styles.metrics}>
           <View style={styles.metric}>
             <View style={styles.metricIcon}>
@@ -154,6 +158,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: theme.spacing.sm
+  },
+  impressionBadge: {
+    position: 'absolute',
+    bottom: theme.spacing.md,
+    right: theme.spacing.md,
+    minHeight: 28,
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.purpleBorder,
+    backgroundColor: theme.colors.purpleButton,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   areaBadge: {
     flexDirection: 'row',

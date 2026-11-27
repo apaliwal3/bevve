@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { hookHarness } from './helpers/hook-harness.mjs';
-import { elements, loadNativeModule } from './helpers/native-module.mjs';
+import { elements, flattenStyle, loadNativeModule } from './helpers/native-module.mjs';
 import { createTranslator } from '../src/localization/translation.ts';
 import { createLocaleFormatters } from '../src/localization/formatting.ts';
 import * as adapters from '../src/features/catalog/catalog-adapters.ts';
@@ -22,7 +22,7 @@ function setup() {
   const shared = { react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
     '@/localization/language-provider': { useTranslation: () => translation }, '@/features/location/account-location-provider': mock };
   const explore = loadNativeModule('src/features/catalog/account-explore-screen.tsx', { ...shared,
-    'expo-router': { router: { navigate() {}, push: value => calls.push(value) } }, '@/components/logo': { Logo: 'Logo' },
+    'expo-router': { router: { navigate() {}, push: value => calls.push(value) } }, '@/components/logo': { Logo: 'Logo' }, '@/components/app-icon': { AppIcon: 'AppIcon' },
     '@/components/screen-container': { ScreenContainer: 'ScreenContainer' }, '@/components/venue-card': { VenueCard: 'VenueCard' },
     '@/features/prices/price-navigation': { priceComparisonHref: () => '/prices' }, './catalog-adapters': adapters, './catalog-feedback': { CatalogFeedback: 'CatalogFeedback' },
     '@/features/location/location-feedback': { LocationFeedback: 'LocationFeedback' }, '@/features/location/venue-distance': distances,
@@ -132,4 +132,24 @@ test('Explore only animates a manual pull and ignores automatic catalog and loca
   finishLocation();await first;
   const nodes=ui.render();assert.equal(nodes.find(node=>node.type==='ScreenContainer').props.refreshing,false);
   assert.ok(chip(nodes,'Quiet').props.accessibilityState.selected);ui.stop();
+});
+
+
+test('Quiet and Popular empty results keep the filter row compact and show a prominent empty-state heading',()=>{
+  const ui=setup();ui.catalog.venues=ui.catalog.venues.map(row=>({...row,crowd:{...row.crowd,classification:null},is_popular:false}));
+  const filterRow=nodes=>nodes.find(node=>node.props.horizontal===true);
+  const original=flattenStyle(filterRow(ui.render()).props.style);
+  for(const filter of ['Quiet','Popular']){
+    chip(ui.render(),filter).props.onPress();const nodes=ui.render();
+    assert.equal(nodes.filter(node=>node.type==='VenueCard').length,0);
+    const row=filterRow(nodes);assert.deepEqual(flattenStyle(row.props.style),original);
+    assert.equal(original.flexGrow,0);assert.equal(original.flexShrink,0);
+    const buttons=row.props.children;
+    assert.ok(buttons.every(button=>flattenStyle(button.props.style).minHeight===44));
+    assert.ok(buttons.every(button=>flattenStyle(button.props.style).flexShrink===0));
+    const heading=nodes.find(node=>node.props.children===`No ${filter.toLowerCase()} bars found`);
+    assert.equal(heading.props.accessibilityRole,'header');assert.equal(flattenStyle(heading.props.style).fontSize,22);
+    assert.equal(flattenStyle(heading.props.style).textAlign,'center');
+  }
+  ui.stop();
 });

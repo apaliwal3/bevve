@@ -1,5 +1,11 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  "Liked": "Liked",
+  "Fine": "Fine",
+  "Didn't like": "Didn't like",
+  "No quiet bars found": "No quiet bars found",
+  "No popular bars found": "No popular bars found",
+  "No bars nearby": "No bars nearby",
   "Community-reported, not verified. Observation dates are shown when available.": "Community-reported, not verified. Observation dates are shown when available.",
   "Saved for this demo session.": "Saved for this demo session.",
   "Your location shows distances to venues and finds bars nearby.": "Your location shows distances to venues and finds bars nearby.",
