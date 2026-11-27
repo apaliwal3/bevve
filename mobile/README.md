@@ -52,6 +52,43 @@ npm start -- --go --clear
 
 ## Supabase authentication
 
+Signed-in users can open **Profile → Settings → Account → Change Password**, enter their current
+password, a new password of at least six characters and a matching confirmation.
+The app verifies the current password and updates Supabase Auth through the same
+shared operation as the backend auth service. Loading, policy/network errors and
+success are shown in the form. Password drafts stay in screen memory and clear
+on success, route blur and account change. Demo profiles see a sign-in message
+when opening Change Password and cannot submit password updates.
+This profile flow requires the current password. Forgotten passwords use the
+email recovery flow below. No database migration or new environment variable is required.
+Local component and mocked SDK checks cover the flow; native-device and hosted
+password-change checks remain manual.
+
+**Forgotten passwords:** both Sign Up and Sign In offer **Forgot password?**.
+`/forgot-password` sends a Supabase recovery email and always shows the same
+confirmation regardless of account existence. The email opens `/recover-password`,
+which verifies the link's session before accepting a new password and confirmation.
+It never asks for the old password. Expired/invalid links offer a fresh request.
+Cold and warm app links are handled; recovery stays active across the account
+session change, and auth screens do not redirect it to Explore prematurely.
+Callback credentials are read outside router params and the callback route is
+replaced to remove them from browser history. Drafts clear on blur/success/account change.
+
+In **Supabase → Authentication → URL Configuration → Redirect URLs**, allow
+`mobile://recover-password` for installed/development builds (the existing app
+scheme is `mobile`). For web, allow `https://YOUR_APP_HOST/recover-password`, plus
+the exact localhost callback when testing locally. Expo Go uses a callback such
+as `exp://YOUR_LAN_IP:8081/--/recover-password`; allow that address for development
+and update it when the dev host changes. The request uses `Linking.createURL` to
+select the platform URL. Keep the recovery email template's `{{ .ConfirmationURL }}`
+link so Supabase can verify the email token and honor the callback. No custom email
+template or additional app dependency is required.
+
+Local SDK/component/store tests cover request payloads, link verification, expired
+links, account changes, validation and duplicate taps. Redirect allowlist changes,
+real email delivery and installed-app/browser round trips remain manual; no hosted
+auth settings or real account passwords were changed during implementation.
+
 Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_SUPABASE_URL` and
 `EXPO_PUBLIC_SUPABASE_KEY` to the existing project URL and **publishable** key.
 Use the project base URL (`https://YOUR_PROJECT_REF.supabase.co`), without
@@ -618,20 +655,20 @@ This audit inspected repository contracts, not the hosted dashboard:
   type/size limits and replacement cleanup; and mobile profile read/update/upload
   contracts with loading, validation, failure and refresh handling. Username is
   currently free text, not a unique handle; a production handle policy needs an
-  explicit contract if uniqueness/format is desired. Existing auth can be reused;
-  password recovery remains separate existing work.
+  explicit contract if uniqueness/format is desired. Existing auth and the
+  password recovery flows can be reused.
 
-`/change-password` replaces the retired `/edit-profile` preview. Change Password
-is an Account row in Settings. The screen uses the shared centered
-secondary header, all-edge safe areas, scrollable content and native Back history
-with a `/settings` fallback for direct links. It only says **Password changes are not
-available in the app yet.** There are no password inputs, credential state,
-logging, storage, requests or success claims. Authentication already works;
-password updates remain unimplemented. A future authenticated flow could use
-`supabase.auth.updateUser({ password: newPassword })`, with validation,
-reauthentication and error handling appropriate to hosted auth settings. That
-method is documented in the installed `@supabase/auth-js` client; it is not called
-by this feature. No backend, schema, migration or dependency changes are needed.
+`/change-password` replaces the retired `/edit-profile` preview and opens the
+working authenticated password form from **Settings → Account → Change Password**.
+`/reset-password` remains a compatible alias to the same form. The Change Password
+screen uses the shared secondary header, safe areas and native Back history with
+a `/settings` fallback for direct links; the reset alias keeps its `/profile`
+fallback. Signed-in users supply their current password, a new password and
+confirmation; demo users see a sign-in message without password inputs. Passwords
+are validated, the current password is verified and Supabase Auth saves the
+update. Loading, error, retry and success states stay in the existing password
+feature. Email-based forgotten-password recovery remains available from Sign Up
+and Sign In. See the authentication setup above for callback configuration.
 
 The top-right Settings control uses a gear. Its **Account** group contains compact
 **Change Password** and **Log Out** rows (guests retain **Return to Welcome**).
@@ -675,10 +712,10 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
    bar, stationary while switching tabs.
 3. Open Places Been, Want to Try and Settings. Their Back buttons and iOS
    edge-swipe Back must return to Profile. From Settings → Account, open Change
-   Password: its Back button and edge swipe return to Settings. It shows only
-   its unavailable message, with no input, keyboard or Save action. Test direct
-   links without previous history: Change Password falls back to Settings; the
-   other secondary routes fall back to Profile. A fresh Want to Try list is empty. Bookmark a bar in Explore and
+   Password: its Back button and edge swipe return to Settings. In demo mode it
+   shows a sign-in message without password inputs. Test direct links without
+   previous history: Change Password falls back to Settings; the other secondary
+   routes fall back to Profile. A fresh Want to Try list is empty. Bookmark a bar in Explore and
    confirm Want to Try increases once, opens that bar, and returns to the list
    from Bar Details. Remove it from the list and check the count decreases. Save
    and rate a bar: the bookmark must remain and Places Been must count only the
@@ -709,7 +746,8 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
     Check its actual username, honest
    initials avatar, database impressions/count and confirmed contribution
    history, sample-venue labels, pull-to-refresh and failure/retry states. Change
-   Password must show the same unavailable message, without inputs or updates.
+   Password must show the authenticated current/new/confirmation form. Check
+   validation, incorrect-current-password errors and retry using a test account.
    In Settings, expand/collapse both Contributions rows; confirm each heading
    appears once with no nested cards, and check existing pending statuses,
    private report descriptions and venue navigation/Back. Existing moderators
@@ -730,8 +768,9 @@ verify native layout, VoiceOver, gestures or real-device auth/network behavior.
 1. On Profile, confirm identity, both statistics and the chronological Activity
    feed remain intact, with no Change Password or Log Out buttons. Open the gear:
    Account contains Change Password and Log Out (Return to Welcome in demo).
-   Verify success/failure behavior on an existing test account without entering
-   credentials into Change Password. Returning to Welcome retains demo activity.
+   Verify password validation, success/failure and logout on an existing test
+   account. Demo Change Password shows a sign-in message with no password inputs.
+   Returning to Welcome retains demo activity.
 2. Expand both Contributions rows with empty and populated account histories.
    Check a single heading/card, pending/approved/rejected statuses, timestamps,
    private report descriptions, unavailable venue states, language venue links,

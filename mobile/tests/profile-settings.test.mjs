@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { test } from 'node:test';
 import { elements, flattenStyle, loadNativeModule } from './helpers/native-module.mjs';
 import { hookHarness } from './helpers/hook-harness.mjs';
@@ -8,7 +8,6 @@ import { profileDestinations } from '../src/features/profile/profile-navigation.
 import { venueFromSettingsHref } from '../src/features/venues/bar-details-navigation.ts';
 
 const nodes = tree => [...elements(tree)];
-const forbidden = () => { throw new Error('Informational screens must not access credentials or storage'); };
 
 test('Profile retains its statistics, activity and gear while account actions live only in Settings', () => {
   for (const session of [null, { user: { id: 'owner' } }]) {
@@ -28,31 +27,22 @@ test('Profile retains its statistics, activity and gear while account actions li
   }
 });
 
-test('Change Password has only informational copy, with safe-area/header Back and direct-link fallback', () => {
+test('Change Password uses the shared authenticated form with Settings navigation; the reset alias remains compatible', () => {
+  const ResetPasswordScreen = () => null;
+  const mocks = { '@/features/auth/reset-password-screen': { ResetPasswordScreen } };
+  const route = loadNativeModule('src/app/change-password.tsx', mocks).default();
+  assert.equal(route.type, ResetPasswordScreen);
+  assert.equal(route.props.backDestination, 'settings');
+  const reset = loadNativeModule('src/app/reset-password.tsx', mocks);
+  assert.equal(reset.default, ResetPasswordScreen);
   for (const canGoBack of [true, false]) {
     const ui = profileUi('en', { canGoBack });
-    const route = loadNativeModule('src/app/change-password.tsx', {
-      ...ui.mocks,
-      '@/features/auth/auth-provider': { useAuth: forbidden },
-      '@/lib/supabase': new Proxy({}, { get: forbidden }),
-      '@react-native-async-storage/async-storage': new Proxy({}, { get: forbidden }),
-    }, { fetch: forbidden, console: new Proxy({}, { get: forbidden }) }).default();
-    assert.equal(route.props.title, 'Change Password');
-    assert.ok(nodes(route).some(node => node.props.children === 'Password changes are not available in the app yet.'));
-    assert.ok(!nodes(route).some(node => /Input|Button|Pressable/.test(String(node.type)) || node.props.onChangeText || node.props.onSubmit));
-    assert.deepEqual(ui.calls, []);
-    const secondary = loadNativeModule('src/features/profile/profile-secondary-screen.tsx', ui.mocks).ProfileSecondaryScreen(route.props);
-    assert.equal(secondary.type, 'ScreenContainer');
-    const header = nodes(secondary).find(node => node.type === 'FlowHeader');
-    assert.equal(header.props.title, 'Change Password');
+    const screen = loadNativeModule('src/features/profile/profile-secondary-screen.tsx', ui.mocks).ProfileSecondaryScreen;
+    const header = nodes(screen({ title: 'Change Password', backDestination: route.props.backDestination })).find(node => node.type === 'FlowHeader');
     assert.equal(header.props.backLabel, 'Back to Settings');
     header.props.onBack();
     assert.deepEqual(ui.calls, canGoBack ? ['back'] : [['replace', '/settings']]);
   }
-  // Lock the dependency boundary as well as the rendered no-input behavior.
-  const source = readFileSync(new URL('../src/app/change-password.tsx', import.meta.url), 'utf8');
-  const imports = [...source.matchAll(/from '([^']+)'/g)].map(match => match[1]);
-  assert.deepEqual(imports, ['react-native', '@/constants/theme', '@/features/profile/profile-secondary-screen', '@/localization/language-provider']);
 });
 
 // These tests inspect actual component props and hook transitions, not native rendering.

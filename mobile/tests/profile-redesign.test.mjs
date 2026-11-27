@@ -20,7 +20,6 @@ const record = (impression = 'liked', bar_id = a, updated_at = at) => ({ user_id
 const emptySource = () => ({ impressions: {}, crowdReports: [], bathroomReviews: [], priceObservations: [] });
 const project = (source = emptySource()) => selectProfileContributions(source, user, mockVenues, mockDrinkCatalog);
 const props = activity => ({ activity, onOpenVenue() {} });
-const texts = tree => [...elements(tree)].filter(node => node.type === 'Text').map(node => node.props.children);
 function expanded(tree) {
   return [...elements(tree)].flatMap(node => typeof node.type === 'function' ? expanded(node.type(node.props)) : [node]);
 }
@@ -112,16 +111,6 @@ for (const language of ['en', 'it']) {
     [...elements(tree.props.header)].find(node => node.type === 'FlowHeader').props.onBack();
     assert.deepEqual(ui.calls, ['back']);
     assert.equal(screen.PlacesBeenScreen({ activity: project() }).props.empty.props.title, ui.t('No places yet'));
-  });
-  test('Change Password is informational in both account and demo modes in ' + language, () => {
-    for (const demo of [true, false]) {
-      const ui = profileUi(language, { auth: { session: demo ? null : { user: { id: user } } } });
-      const screen = loadNativeModule('src/app/change-password.tsx', ui.mocks).default();
-      assert.equal(screen.props.title, ui.t('Change Password'));
-      assert.ok(texts(screen).includes(ui.t('Password changes are not available in the app yet.')));
-      assert.equal([...elements(screen)].some(node => node.type === 'TextInput' || node.type === 'PrimaryButton'), false);
-      assert.deepEqual(ui.calls, []);
-    }
   });
 }
 test('the existing demo exit skips auth and real logout waits for successful auth', async () => {

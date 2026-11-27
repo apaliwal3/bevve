@@ -3,6 +3,20 @@ import type { Message } from './translation.ts';
 
 export const it: Record<keyof typeof en, Message> = {
   ...en, // Legacy copy falls back to English; Profile messages are translated.
+  'Reset password': 'Reimposta password',
+  'Current password': 'Password attuale',
+  'New password': 'Nuova password',
+  'Confirm new password': 'Conferma la nuova password',
+  'Show passwords': 'Mostra password',
+  'Hide passwords': 'Nascondi password',
+  'Current password is required.': 'La password attuale è obbligatoria.',
+  'Choose a different password.': 'Scegli una password diversa.',
+  'Passwords do not match.': 'Le password non corrispondono.',
+  'Your current password is incorrect.': 'La password attuale non è corretta.',
+  'Please sign in again to reset your password.': 'Accedi di nuovo per reimpostare la password.',
+  'Sign in to reset your password. Demo profiles do not have a password.': 'Accedi per reimpostare la password. I profili demo non hanno una password.',
+  'Enter your current password and choose a new password with at least 6 characters.': 'Inserisci la password attuale e scegli una nuova password di almeno 6 caratteri.',
+  'Your password has been updated. Use your new password next time you sign in.': 'La password è stata aggiornata. Usa la nuova password al prossimo accesso.',
   'Select one or more languages': 'Seleziona una o più lingue',
   'Select spoken languages': 'Seleziona le lingue parlate',
   'Suggest languages': 'Suggerisci lingue',

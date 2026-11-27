@@ -33,8 +33,8 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
   const visibleError = requestError ?? auth.error;
 
   useFocusEffect(useCallback(() => {
-    if (auth.session) router.replace('/explore');
-  }, [auth.session]));
+    if (auth.session && (!auth.recovery || auth.recovery === 'none')) router.replace('/explore');
+  }, [auth.session, auth.recovery]));
 
   useFocusEffect(useCallback(() => () => {
     // Clear transient input even when a blurred route remains mounted in the stack.
@@ -170,6 +170,10 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
           {visibleError && <Text accessibilityRole="alert" style={styles.description}>{t(visibleError)}</Text>}
           {state.status === 'confirm-email' && <Text accessibilityLiveRegion="polite" style={styles.description}>{t('Check your email to confirm your account, then return here to sign in.')}</Text>}
           <PrimaryButton label={submitting ? t('Please wait…') : isSignup ? t("Create Account") : t("Sign In")} onPress={() => { void submit(); }} disabled={submitting || state.status === 'confirm-email'} style={styles.submit} />
+          <Pressable accessibilityRole="link" accessibilityLabel={t('Forgot password?')} disabled={submitting}
+            onPress={() => leave(() => router.push('/forgot-password'))} style={styles.visibility}>
+            <Text style={styles.visibilityLabel}>{t('Forgot password?')}</Text>
+          </Pressable>
         </View>
 
         <Pressable
