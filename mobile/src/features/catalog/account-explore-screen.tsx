@@ -2,9 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppIcon } from '@/components/app-icon';
-import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
-import { ScreenContainer } from '@/components/screen-container';
+import { ExploreScreenContainer as ScreenContainer } from '@/features/explore/explore-screen-container';
+import { catalogMapPins } from '@/features/explore/venue-map-data';
 import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { useTranslation } from '@/localization/language-provider';
@@ -23,6 +23,7 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
   const [filter, setFilter] = useState<AccountVenueFilter>('All');
   const rows = useMemo(() => selectAccountVenues(catalog.venues, query, filter, location.fix), [catalog.venues, query, filter, location.fix]);
   const showRows = filter !== 'Nearby' || location.status === 'ready' && location.fix !== null;
+  const pins = useMemo(() => catalogMapPins(catalog.status === 'ready' && showRows ? rows : []), [catalog.status, showRows, rows]);
   const [refreshing, setRefreshing] = useState(false);
   const pulling = useRef(false);
   async function refresh() {
@@ -32,8 +33,7 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
     try { await Promise.allSettled([catalog.refresh(), location.refresh()]); }
     finally { pulling.current = false; setRefreshing(false); }
   }
-  return <ScreenContainer edges={['top','left','right']} contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
-    <Logo />
+  return <ScreenContainer pins={pins} contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
     <Text accessibilityRole="header" style={styles.title}>{t('Explore venues')}</Text>
     {catalog.venues.some(row => row.is_demo) && <Text style={styles.note}>{t('Sample venues are labeled. Your impressions are saved to your account.')}</Text>}
     <TextInput style={styles.search} accessibilityLabel={t('Search bars or neighborhoods')} placeholder={t('Search bars or neighborhoods')}
@@ -63,8 +63,8 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
   </ScreenContainer>;
 }
 const styles = StyleSheet.create({
-  content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
-  title: { fontFamily: theme.fonts.brand, fontSize: 32, color: theme.colors.text },
+  content: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.huge, gap: theme.spacing.md },
+  title: { fontFamily: theme.fonts.brand, fontSize: 26, color: theme.colors.text },
   note: { fontFamily: theme.fonts.body, color: theme.colors.textMuted, fontSize: 12, lineHeight: 19 },
   search: { backgroundColor: theme.colors.surface, padding: theme.spacing.lg, color: theme.colors.text, fontFamily: theme.fonts.body, borderRadius: theme.radii.button, fontSize: 14 },
   venue: { gap: theme.spacing.sm },

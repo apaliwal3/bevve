@@ -3,6 +3,13 @@ import type { Message } from './translation.ts';
 
 export const it: Record<keyof typeof en, Message> = {
   ...en, // Legacy copy falls back to English; Profile messages are translated.
+  'Map of bars': 'Mappa dei bar',
+  'No bars to show on the map': 'Nessun bar da mostrare sulla mappa',
+  'Sample location': 'Posizione di esempio',
+  'Sample locations are illustrative': 'Le posizioni di esempio sono illustrative',
+  'Map unavailable. Check your connection.': 'Mappa non disponibile. Controlla la connessione.',
+  'Expand bar list': 'Espandi elenco dei bar',
+  'Show map': 'Mostra mappa',
   "Back to Want to Try": "Torna ai locali da provare",
   "Back to Settings": "Torna alle impostazioni",
   "Unavailable": "Non disponibile",

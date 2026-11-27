@@ -1,5 +1,12 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  'Map of bars': 'Map of bars',
+  'No bars to show on the map': 'No bars to show on the map',
+  'Sample location': 'Sample location',
+  'Sample locations are illustrative': 'Sample locations are illustrative',
+  'Map unavailable. Check your connection.': 'Map unavailable. Check your connection.',
+  'Expand bar list': 'Expand bar list',
+  'Show map': 'Show map',
   "Back to Want to Try": "Back to Want to Try",
   "Retry": "Retry",
   "Want to visit": "Want to visit",

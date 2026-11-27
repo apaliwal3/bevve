@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppIcon } from '@/components/app-icon';
-import { Logo } from '@/components/logo';
-import { ScreenContainer } from '@/components/screen-container';
+import { ExploreScreenContainer as ScreenContainer } from '@/features/explore/explore-screen-container';
+import { demoMapPins } from '@/features/explore/venue-map-data';
 import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { filterVenues, venueFilters, type VenueFilter } from '@/features/explore/filter-venues';
@@ -29,6 +29,7 @@ export function DemoExploreScreen() {
   const priceVenues = useVenuePriceCatalog(mockVenues);
   const crowdFor = useVenueCrowdSelector();
   const venues = useMemo(() => filterVenues(priceVenues, query, filter, crowdFor), [priceVenues, query, filter, crowdFor]);
+  const pins = useMemo(() => demoMapPins(venues), [venues]);
 
   function resetFilters() {
     setQuery('');
@@ -38,14 +39,11 @@ export function DemoExploreScreen() {
 
   return (
     <View style={styles.screen}>
-    <ScreenContainer edges={['top', 'left', 'right']} contentContainerStyle={styles.content}>
-      <Logo />
+    <ScreenContainer pins={pins} contentContainerStyle={styles.content}>
 
       <View style={styles.hero}>
-        <Text style={styles.eyebrow}>{t("TONIGHT IN MILAN")}</Text>
         <Text accessibilityRole="header" style={styles.title}>{t("Where to") + ' '}<Text style={styles.titleAccent}>{t("tonight?")}</Text>
         </Text>
-        <Text style={styles.subtitle}>{t("Real talk from people already there.")}</Text>
         <Text style={styles.demoLabel}>{t('Demo venues · Sample prices and distances')}</Text>
       </View>
 
@@ -91,20 +89,6 @@ export function DemoExploreScreen() {
       </ScrollView>
       {filter === 'Nearby' && <Text style={styles.filterHint}>{t("Within 1 km · Demo distances")}</Text>}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("Compare drink prices")}
-        accessibilityHint={t("View community-reported prices across Milan")}
-        onPress={() => router.push(priceComparisonHref(drinkId))}
-        style={({ pressed }) => [styles.priceCard, pressed && styles.pressed]}>
-        <View style={styles.euroBadge}><Text style={styles.euro}>€</Text></View>
-        <View style={styles.priceCopy}>
-          <Text style={styles.priceTitle}>{t("Compare drink prices")}</Text>
-          <Text style={styles.priceSubtitle}>{t("Find the cheapest pour nearby")}</Text>
-        </View>
-        <AppIcon name="chevron" size={18} color={theme.colors.purpleLight} />
-      </Pressable>
-
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>{filter === 'All' ? t("Happening now") : t(filter)}</Text>
@@ -133,6 +117,19 @@ export function DemoExploreScreen() {
           </View>
         )}
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("Compare drink prices")}
+        accessibilityHint={t("View community-reported prices across Milan")}
+        onPress={() => router.push(priceComparisonHref(drinkId))}
+        style={({ pressed }) => [styles.priceCard, pressed && styles.pressed]}>
+        <View style={styles.euroBadge}><Text style={styles.euro}>€</Text></View>
+        <View style={styles.priceCopy}>
+          <Text style={styles.priceTitle}>{t("Compare drink prices")}</Text>
+          <Text style={styles.priceSubtitle}>{t("Find the cheapest pour nearby")}</Text>
+        </View>
+        <AppIcon name="chevron" size={18} color={theme.colors.purpleLight} />
+      </Pressable>
       <Link href="/" asChild>
         <Pressable style={styles.backLink}><Text style={styles.viewAllLabel}>{t("Back to Welcome")}</Text></Pressable>
       </Link>
@@ -145,35 +142,22 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: {
     paddingHorizontal: EXPLORE_HORIZONTAL_PADDING,
-    paddingTop: theme.spacing.lg,
-    paddingBottom: theme.spacing.xxl
+    paddingTop: 0,
+    paddingBottom: theme.spacing.huge
   },
   hero: {
-    paddingTop: 26,
-    paddingBottom: theme.spacing.xxl,
-    gap: theme.spacing.sm
-  },
-  eyebrow: {
-    color: theme.colors.purpleLight,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 11,
-    letterSpacing: 1.4
+    paddingBottom: theme.spacing.md,
+    gap: theme.spacing.xs
   },
   title: {
     color: theme.colors.text,
     fontFamily: theme.fonts.brand,
-    fontSize: 34,
-    lineHeight: 38,
-    letterSpacing: -1.7
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -1
   },
   titleAccent: {
     color: theme.colors.purpleLight
-  },
-  subtitle: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 14,
-    lineHeight: 20
   },
   demoLabel: {
     color: theme.colors.textMuted,
@@ -304,8 +288,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.spacing.sm,
-    paddingTop: theme.spacing.xxl,
-    paddingBottom: theme.spacing.md
+    paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.sm
   },
   sectionCopy: {
     flex: 1

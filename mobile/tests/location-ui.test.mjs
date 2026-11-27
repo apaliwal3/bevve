@@ -6,6 +6,7 @@ import { createTranslator } from '../src/localization/translation.ts';
 import { createLocaleFormatters } from '../src/localization/formatting.ts';
 import * as adapters from '../src/features/catalog/catalog-adapters.ts';
 import * as distances from '../src/features/location/venue-distance.ts';
+import * as mapData from '../src/features/explore/venue-map-data.ts';
 import { barId, userId, venue } from './helpers/catalog-fixtures.mjs';
 
 const theme = loadNativeModule('src/constants/theme.ts');
@@ -23,7 +24,8 @@ function setup() {
     '@/localization/language-provider': { useTranslation: () => translation }, '@/features/location/account-location-provider': mock };
   const explore = loadNativeModule('src/features/catalog/account-explore-screen.tsx', { ...shared,
     'expo-router': { router: { navigate() {}, push: value => calls.push(value) } }, '@/components/logo': { Logo: 'Logo' }, '@/components/app-icon': { AppIcon: 'AppIcon' },
-    '@/components/screen-container': { ScreenContainer: 'ScreenContainer' }, '@/components/venue-card': { VenueCard: 'VenueCard' },
+    '@/features/explore/explore-screen-container': { ExploreScreenContainer: 'ScreenContainer' },
+    '@/features/explore/venue-map-data': mapData, '@/components/venue-card': { VenueCard: 'VenueCard' },
     '@/features/prices/price-navigation': { priceComparisonHref: () => '/prices' }, './catalog-adapters': adapters, './catalog-feedback': { CatalogFeedback: 'CatalogFeedback' },
     '@/features/location/location-feedback': { LocationFeedback: 'LocationFeedback' }, '@/features/location/venue-distance': distances,
   });
@@ -49,8 +51,10 @@ test('Nearby cards use real distances and samples remain excluded; other filters
   const ui = setup(); chip(ui.render(), 'Nearby').props.onPress(); ui.set({ enabled: true, status: 'ready', fix: origin });
   let nodes = ui.render(); const cards = nodes.filter(node => node.type === 'VenueCard'); assert.equal(cards.length, 1);
   assert.equal(cards[0].props.venue.id, barId); assert.ok(cards[0].props.venue.distanceLabel.startsWith('About 110 m'));
+  assert.deepEqual(nodes.find(node => node.type === 'ScreenContainer').props.pins.map(pin => pin.id), cards.map(card => card.props.venue.id));
   ui.set({ status: 'denied', fix: null }); chip(ui.render(), 'All').props.onPress(); nodes = ui.render();
   assert.equal(nodes.filter(node => node.type === 'VenueCard').length, 3); assert.ok(nodes.some(node => node.type === 'LocationFeedback'));
+  assert.equal(nodes.find(node => node.type === 'ScreenContainer').props.pins.length, 3);
   assert.ok(nodes.filter(node => node.type === 'VenueCard').every(node => node.props.venue.distanceLabel === null)); ui.stop();
 });
 

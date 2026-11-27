@@ -329,6 +329,21 @@ unchanged. The following older manual journeys describe **guest demo mode**.
 
 ## Validation
 
+Explore opens with a map in the top half and the existing bar cards below it.
+Scrolling the cards moves the map offscreen, including for short or empty results;
+the floating **Show map** button returns to the split view. Search and filters
+update both cards and markers. Tap a marker, then **View Bar Details**, to open it.
+Guest markers are illustrative neighborhood locations; account markers use the
+catalog coordinates and label sample venues. No additional location access is
+requested by the map.
+
+The map uses Leaflet 1.9.4 and OpenStreetMap tiles over HTTPS, with attribution.
+It requires a network connection and displays a message if map assets cannot
+load. Web uses a sandboxed iframe; iOS and Android use `react-native-webview`
+14.0.1 (Expo SDK 58 compatible). Existing development builds must be rebuilt to
+include WebView; Expo Go includes it. Map rendering and touch gestures still
+need a physical-device check.
+
 Run from `mobile/` after installing the locked dependencies:
 
 ```sh
