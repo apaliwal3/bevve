@@ -16,7 +16,7 @@ function setup() {
   let state = { enabled: true, status: 'ready', fix: origin, canAskAgain: true, issue: null, settingsError: false };
   const actions = { enable: () => { calls.push('enable'); return Promise.resolve(); }, refresh: () => { calls.push('refresh'); return Promise.resolve(); },
     openSettings: async () => { calls.push('settings'); } };
-  const mock = { useAccountLocation: () => ({ ...state, ...actions }) };
+  const mock = { useAccountLocation: () => ({ ...actions, ...state }) };
   const catalog = { status: 'ready', refreshing: false, impressions: {}, drinks: [], userId,
     venues: [venue({ id: 'far', is_demo: false, latitude: 0.02, longitude: 0 }), venue({ id: barId, is_demo: false, latitude: 0.001, longitude: 0 }), venue({ id: 'sample', latitude: 0, longitude: 0 })], refresh: async () => { calls.push('catalog'); } };
   const shared = { react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
@@ -121,14 +121,15 @@ test('location provider skips guest stores, keys account lifetimes, and pauses o
 });
 
 
-test('Explore pull-to-refresh reloads venues and enabled location without changing filters or requesting new permission',()=>{
-  const ui=setup();let screen=ui.render().find(node=>node.type==='ScreenContainer');
-  assert.equal(screen.props.refreshing,false);screen.props.onRefresh();assert.deepEqual(ui.calls,['catalog','refresh']);
-  ui.calls.length=0;ui.set({enabled:true,status:'ready',fix:origin});
+test('Explore only animates a manual pull and ignores automatic catalog and location loading',async()=>{
+  const ui=setup();ui.set({status:'locating'});ui.catalog.refreshing=true;
+  let screen=ui.render().find(node=>node.type==='ScreenContainer');assert.equal(screen.props.refreshing,false);
+  let finishLocation;const locationPromise=new Promise(resolve=>{finishLocation=resolve;});
+  ui.set({refresh:()=>{ui.calls.push('refresh');return locationPromise;}});
   chip(ui.render(),'Quiet').props.onPress();screen=ui.render().find(node=>node.type==='ScreenContainer');
-  screen.props.onRefresh();assert.deepEqual(ui.calls,['catalog','refresh']);
-  const nodes=ui.render();assert.ok(chip(nodes,'Quiet').props.accessibilityState.selected);
-  assert.ok(!nodes.some(node=>node.props.label==='Refresh venues'));
-  ui.set({status:'locating'});screen=ui.render().find(node=>node.type==='ScreenContainer');
-  assert.equal(screen.props.refreshing,true);screen.props.onRefresh();assert.deepEqual(ui.calls,['catalog','refresh']);ui.stop();
+  const first=screen.props.onRefresh();screen.props.onRefresh();assert.deepEqual(ui.calls,['catalog','refresh']);
+  assert.equal(ui.render().find(node=>node.type==='ScreenContainer').props.refreshing,true);
+  finishLocation();await first;
+  const nodes=ui.render();assert.equal(nodes.find(node=>node.type==='ScreenContainer').props.refreshing,false);
+  assert.ok(chip(nodes,'Quiet').props.accessibilityState.selected);ui.stop();
 });

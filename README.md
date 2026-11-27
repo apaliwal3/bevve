@@ -69,8 +69,9 @@ Account location access starts automatically when the app is active, requesting
 foreground permission when needed. Location stays active across tabs and Explore
 filters, including All; there is no in-app stop-location control. Permission denial,
 blocked access, disabled services, imprecise/stale readings and timeouts have
-retry/settings controls. Foreground updates use device coordinates and real
-database venue coordinates. Location stays in memory on the device, clears on
+retry/settings controls. Silent foreground location polls run every two minutes and use device coordinates
+and real database venue coordinates. Automatic polls preserve valid distances
+without triggering Explore’s pull-to-refresh animation. Location stays in memory on the device, clears on
 background/sign-out, and is never uploaded to Supabase. Sample venues have no real
 distances; guest Nearby retains its explicitly fictional demo distances. No new
 database migration is needed. Physical-device location verification remains pending.

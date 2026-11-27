@@ -10,7 +10,7 @@ import { VenueCard } from '@/components/venue-card';
 import { BevveTheme as theme } from '@/constants/theme';
 import { filterVenues, venueFilters, type VenueFilter } from '@/features/explore/filter-venues';
 import { EXPLORE_HORIZONTAL_PADDING, filterChipLayout } from '@/features/explore/filter-layout';
-import { exploreMockUser, mockVenues } from '@/fixtures/venues';
+import { mockVenues } from '@/fixtures/venues';
 import { usePriceComparisonSelection, useVenueCrowdSelector, useVenuePriceCatalog } from '@/features/ratings/venue-ratings-provider';
 import { priceComparisonHref } from '@/features/prices/price-navigation';
 import { useVenueCatalog } from '@/features/catalog/catalog-provider';
@@ -39,18 +39,7 @@ export function DemoExploreScreen() {
   return (
     <View style={styles.screen}>
     <ScreenContainer edges={['top', 'left', 'right']} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Logo />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("Open demo profile")}
-          onPress={() => router.navigate('/profile')}
-          style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}>
-          <View style={styles.avatar}>
-            <Text style={styles.initials}>{exploreMockUser.initials}</Text>
-          </View>
-        </Pressable>
-      </View>
+      <Logo />
 
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>{t("TONIGHT IN MILAN")}</Text>
@@ -158,30 +147,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: EXPLORE_HORIZONTAL_PADDING,
     paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.xxl
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  avatarButton: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: theme.radii.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundImage: `linear-gradient(145deg, ${theme.colors.purpleLight}, ${theme.colors.purple})`
-  },
-  initials: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 11
   },
   hero: {
     paddingTop: 26,

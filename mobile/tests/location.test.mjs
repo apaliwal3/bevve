@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createLocationStore, readLocationFix, LOCATION_MAX_AGE_MS, LOCATION_TIMEOUT_MS } from '../src/features/location/location-store.ts';
+import { createLocationStore, readLocationFix, LOCATION_MAX_AGE_MS, LOCATION_TIMEOUT_MS, LOCATION_REFRESH_INTERVAL_MS } from '../src/features/location/location-store.ts';
 import { distanceMeters, distanceLabel, catalogDistance, locatedCatalogVenue, selectAccountVenues } from '../src/features/location/venue-distance.ts';
 import { createTranslator } from '../src/localization/translation.ts';
 import { createLocaleFormatters } from '../src/localization/formatting.ts';
@@ -92,7 +92,7 @@ test('automatic startup requests missing permission and coalesces retries until 
   const first = ui.store.enable(), second = ui.store.enable(); assert.equal(first, second);
   await tick(); assert.deepEqual(ui.calls, ['permissions', 'request', 'services', 'watch']); assert.equal(ui.store.getSnapshot().status, 'locating');
   ui.streams[0].fix(ui.raw()); await first; assert.equal(ui.store.getSnapshot().status, 'ready');
-  assert.equal(ui.store.getSnapshot().fix.latitude, 0); assert.equal(ui.time.size, 1); ui.stop(); assert.equal(ui.time.size, 0); assert.equal(ui.removed, 1);
+  assert.equal(ui.store.getSnapshot().fix.latitude, 0); assert.equal(ui.time.size, 2); ui.stop(); assert.equal(ui.time.size, 0); assert.equal(ui.removed, 1);
 });
 
 test('denied permission can be retried explicitly; permanently blocked permission never starts another native prompt', async () => {
@@ -127,15 +127,31 @@ test('stale native first readings never masquerade as current location', async (
   ui.time.advance(LOCATION_TIMEOUT_MS); await first; assert.equal(ui.store.getSnapshot().issue, 'stale'); assert.equal(ui.store.getSnapshot().fix, null); ui.stop();
 });
 
-test('accepted fixes expire and fresh foreground updates recover while older callbacks cannot move location backwards', async () => {
-  const ui = setup(); await ui.ready(); ui.time.advance(1000);
-  ui.streams[0].fix(ui.raw({ coords: { latitude: 1, longitude: 0, accuracy: 20 } }));
-  ui.streams[0].fix(ui.raw({ timestamp: ui.time.now() - 500, coords: { latitude: 2, longitude: 0, accuracy: 20 } }));
-  assert.equal(ui.store.getSnapshot().fix.latitude, 1);
-  ui.time.advance(LOCATION_MAX_AGE_MS); assert.equal(ui.store.getSnapshot().fix, null);assert.equal(ui.store.getSnapshot().status,'checking');
-  await tick();assert.equal(ui.streams.length,2);assert.equal(ui.removed,1);
-  ui.streams[0].fix(ui.raw({coords:{latitude:99,longitude:0,accuracy:20}}));assert.equal(ui.store.getSnapshot().fix,null);
-  ui.streams[1].fix(ui.raw({ coords: { latitude: 3, longitude: 0, accuracy: 20 } })); assert.equal(ui.store.getSnapshot().fix.latitude, 3); ui.stop();
+test('automatic location polls every two minutes and keeps the previous distances ready until a new fix arrives',async()=>{
+  const ui=setup();await ui.ready();const first=ui.store.getSnapshot().fix;
+  assert.equal(ui.removed,1); // Each poll stops its native subscription after the first acceptable fix.
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS-1);await tick();assert.equal(ui.streams.length,1);
+  ui.time.advance(1);await tick();assert.equal(ui.streams.length,2);
+  assert.equal(ui.store.getSnapshot().status,'ready');assert.equal(ui.store.getSnapshot().fix,first);
+  ui.streams[0].fix(ui.raw({coords:{latitude:9,longitude:0,accuracy:20}}));assert.equal(ui.store.getSnapshot().fix,first);
+  ui.streams[1].fix(ui.raw({coords:{latitude:1,longitude:0,accuracy:20}}));assert.equal(ui.store.getSnapshot().fix.latitude,1);
+  ui.streams[1].fix(ui.raw({coords:{latitude:2,longitude:0,accuracy:20}}));assert.equal(ui.store.getSnapshot().fix.latitude,1);
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();assert.equal(ui.streams.length,3);ui.stop();assert.equal(ui.time.size,0);
+});
+
+test('a failed silent poll keeps a fresh previous fix and the next poll retries without a new permission prompt',async()=>{
+  const ui=setup();await ui.ready();const first=ui.store.getSnapshot().fix;
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();ui.streams[1].error();
+  assert.equal(ui.store.getSnapshot().status,'ready');assert.equal(ui.store.getSnapshot().fix,first);
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();assert.equal(ui.streams.length,3);
+  ui.streams[2].fix(ui.raw({coords:{latitude:1,longitude:0,accuracy:20}}));
+  assert.equal(ui.store.getSnapshot().fix.latitude,1);assert.equal(ui.calls.filter(value=>value==='request').length,0);ui.stop();
+});
+
+test('coordinates still expire when repeated silent polls cannot obtain a valid replacement',async()=>{
+  const ui=setup();await ui.ready();
+  for(let i=0;i<4;i++){ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();ui.streams.at(-1).error();}
+  assert.equal(ui.store.getSnapshot().fix,null);assert.equal(ui.store.getSnapshot().status,'unavailable');ui.stop();
 });
 
 test('backgrounding removes GPS and coordinates; foreground refresh rechecks permission without prompting', async () => {
@@ -170,7 +186,7 @@ test('late permissions and watcher registration after cancellation cannot repopu
 test('effect replay and account changes automatically start fresh location without reusing old coordinates', async () => {
   const ui = setup(); await ui.ready(); ui.stop(); const end = ui.store.start(); await tick();
   ui.streams[0].fix(ui.raw({ coords: { latitude: 2, longitude: 2, accuracy: 30 } })); assert.equal(ui.store.getSnapshot().fix, null);
-  ui.streams[1].fix(ui.raw()); assert.equal(ui.store.getSnapshot().status, 'ready'); assert.equal(ui.removed, 1); end();
+  ui.streams[1].fix(ui.raw()); assert.equal(ui.store.getSnapshot().status, 'ready'); assert.equal(ui.removed, 2); end();
   const other = setup(); await tick(); assert.equal(other.store.getSnapshot().enabled, true); assert.equal(other.store.getSnapshot().fix, null); assert.deepEqual(other.calls, ['permissions','services','watch']); other.stop();
 });
 
@@ -195,4 +211,14 @@ test('a denied automatic request is not shown again on each foreground transitio
   const ui=setup();ui.permission({granted:false,canAskAgain:true});ui.requested({granted:false,canAskAgain:true});await tick();
   assert.equal(ui.store.getSnapshot().status,'denied');ui.store.suspend();ui.store.resume();await tick();
   assert.equal(ui.calls.filter(value=>value==='request').length,1);ui.stop();
+});
+
+
+test('periodic polling stops in the background and after unmount and resumes on a fresh two-minute schedule',async()=>{
+  const ui=setup();await ui.ready();ui.store.suspend();const calls=ui.calls.length;
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS*3);await tick();assert.equal(ui.calls.length,calls);assert.equal(ui.time.size,0);
+  ui.store.resume();await tick();assert.equal(ui.streams.length,2);ui.streams[1].fix(ui.raw());
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS-1);await tick();assert.equal(ui.streams.length,2);
+  ui.time.advance(1);await tick();assert.equal(ui.streams.length,3);ui.stop();
+  const afterStop=ui.calls.length;ui.time.advance(LOCATION_REFRESH_INTERVAL_MS*3);await tick();assert.equal(ui.calls.length,afterStop);
 });

@@ -45,7 +45,7 @@ function setup(mode, overrides) {
   return { render, fill, harness, navigations };
 }
 
-test('Login sends one request on rapid taps, disables inputs, and opens Profile on success', async () => {
+test('Login sends one request on rapid taps, disables inputs, and opens Explore on success', async () => {
   let resolve;
   const pending = new Promise(done => { resolve = done; });
   const calls = [];
@@ -59,7 +59,7 @@ test('Login sends one request on rapid taps, disables inputs, and opens Profile 
   assert.equal(ui.render().find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, 'password123');
   resolve();
   await tick();
-  assert.deepEqual(ui.navigations, ['/profile']);
+  assert.deepEqual(ui.navigations, ['/explore']);
   ui.harness.unmount();
 });
 

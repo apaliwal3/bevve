@@ -129,9 +129,12 @@ development/release binaries need rebuilding to include the module and bevve's
 permission wording. App configuration enables foreground permissions only, with
 background location, foreground services, Always access and motion tracking disabled.
 
-The account-scoped store watches foreground changes (balanced accuracy, 25 m
-movement threshold), stops and clears coordinates when backgrounded, and rechecks
-existing permission on return. A denied request is not repeated on every foreground
+The account-scoped store obtains a balanced-accuracy reading every two minutes
+while the app is active, releasing each native subscription after an acceptable
+reading. Automatic polls keep the previous valid coordinates and do not trigger
+Explore's pull-to-refresh animation. Only a manual pull shows that spinner.
+Location stops and clears coordinates when backgrounded, and rechecks existing
+permission on return. A denied request is not repeated on every foreground
 transition; permission and settings actions remain available for recovery. Brief
 inactive events from system permission dialogs do not cancel the request. There
 is no stop-location button. Sign-out or account changes destroy local location
@@ -139,14 +142,15 @@ state; the next account session starts location automatically.
 Coordinates are neither persisted nor sent to Supabase. Existing venue latitude/
 longitude columns supply destination coordinates; no new migration is required.
 
-An accepted reading must have valid coordinates, be less than two minutes old,
+An accepted reading must have valid coordinates, be less than two minutes and 20 seconds old,
 and report accuracy within 500 m. The first acceptable fix has a 20-second timeout;
 denied/blocked permission, disabled services, insufficient accuracy, stale fixes,
 native failures and timeouts have explicit recovery states. Precise-location and
 blocked-permission states provide settings access. Coarse/unknown readings never
-supply invented distances. A previously accepted point expires after two minutes
-without a fresh acceptable update, automatically restarting acquisition while the
-app is active to refresh stationary readings. Until a fix is available, Nearby shows the
+supply invented distances. Silent polls retry failed acquisitions on the next two-minute tick. A previously
+accepted point remains visible during refreshes and temporary failures, but expires
+after two minutes and 20 seconds without a fresh acceptable update, allowing the
+next scheduled acquisition to finish before clearing existing distances. Until a fix is available, Nearby shows the
 location state instead of claiming zero venues. Other filters remain usable.
 
 Local tests exercise geographic boundaries, filtering/order, native adapter/provider

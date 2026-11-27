@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Logo } from '@/components/logo';
@@ -22,14 +22,17 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
   const [filter, setFilter] = useState<AccountVenueFilter>('All');
   const rows = useMemo(() => selectAccountVenues(catalog.venues, query, filter, location.fix), [catalog.venues, query, filter, location.fix]);
   const showRows = filter !== 'Nearby' || location.status === 'ready' && location.fix !== null;
-  const refreshing = catalog.refreshing || location.enabled && (location.status === 'checking' || location.status === 'locating');
-  function refresh() {
-    if (refreshing) return;
-    void catalog.refresh();
-    if (location.enabled) void location.refresh();
+  const [refreshing, setRefreshing] = useState(false);
+  const pulling = useRef(false);
+  async function refresh() {
+    if (pulling.current) return;
+    pulling.current = true;
+    setRefreshing(true);
+    try { await Promise.allSettled([catalog.refresh(), location.refresh()]); }
+    finally { pulling.current = false; setRefreshing(false); }
   }
   return <ScreenContainer edges={['top','left','right']} contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
-    <View style={styles.header}><Logo /><PrimaryButton label={t('Profile')} variant="secondary" onPress={() => router.navigate('/profile')} /></View>
+    <Logo />
     <Text accessibilityRole="header" style={styles.title}>{t('Explore venues')}</Text>
     {catalog.venues.some(row => row.is_demo) && <Text style={styles.note}>{t('Sample venues are labeled. Your impressions are saved to your account.')}</Text>}
     <TextInput style={styles.search} accessibilityLabel={t('Search bars or neighborhoods')} placeholder={t('Search bars or neighborhoods')}
@@ -54,7 +57,6 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
 }
 const styles = StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: theme.fonts.brand, fontSize: 32, color: theme.colors.text },
   note: { fontFamily: theme.fonts.body, color: theme.colors.textMuted, fontSize: 12, lineHeight: 19 },
   search: { backgroundColor: theme.colors.surface, padding: theme.spacing.lg, color: theme.colors.text, fontFamily: theme.fonts.body, borderRadius: theme.radii.button, fontSize: 14 },

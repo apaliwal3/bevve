@@ -33,7 +33,7 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
   const visibleError = requestError ?? auth.error;
 
   useFocusEffect(useCallback(() => {
-    if (auth.session) router.replace('/profile');
+    if (auth.session) router.replace('/explore');
   }, [auth.session]));
 
   useFocusEffect(useCallback(() => () => {
@@ -66,7 +66,7 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
       else await auth.signIn(values.email, values.password);
       if (request !== attempt.current) return;
       if (outcome === 'confirm-email') dispatch({ type: 'confirm-email' });
-      else router.replace('/profile');
+      else router.replace('/explore');
     } catch (error) {
       if (request !== attempt.current) return;
       dispatch({ type: 'failed' });
