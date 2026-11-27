@@ -148,7 +148,7 @@ test('Explore cards and Bar Details keep demo impressions separate from unavaila
 
 test('Profile renders the current saved impression once, without stars, in both languages', () => {
   for (const language of ['en', 'it']) {
-    const { t, common, contributions } = ui(language, 'disliked');
+    const { common, contributions } = ui(language, 'disliked');
     const first = saveVenueImpression({}, record(1, 'liked', { user_id: SESSION_USER_ID, source: 'demo' }));
     const edited = saveVenueImpression(first, record(1, 'disliked', { user_id: SESSION_USER_ID, source: 'demo', updated_at: '2026-11-18T20:01:00Z' }));
     const activity = selectProfileContributions({ impressions: edited, crowdReports: [], bathroomReviews: [], priceObservations: [] }, SESSION_USER_ID, mockVenues, mockDrinkCatalog);
@@ -156,18 +156,16 @@ test('Profile renders the current saved impression once, without stars, in both 
       ...common, '@/components/logo': { Logo: 'Logo' }, '@/fixtures/venues': { exploreMockUser: {} },
       '@/features/auth/account-panel': { AccountPanel: 'AccountPanel' },
       '@/localization/translation': translations, './language-preference-feedback': { languagePreferenceFeedback: () => 'DEMO SESSION' },
-      './profile-activity-components': { ProfileActivitySection: 'ActivitySection', ProfileActivityRow: 'ActivityRow' },
+      './profile-view': { ProfileView: 'ProfileView' },
       '@/features/comparisons/personal-comparisons-provider': { useSavedImpressions: () => edited, usePersonalRankings: () => ({ entries: [], completedCount: 0 }) },
       '@/features/ratings/venue-ratings-provider': { ...contributions, useProfileContributions: (state) => { assert.equal(state, edited); return activity; } },
     });
     const tree = profile.ProfileScreen({ onOpenVenue() {}, onExplore() {}, onRankings() {}, onWelcome() {} });
-    const section = [...elements(tree)].find((node) => node.type === 'ActivitySection' && node.props.title === t('My impressions'));
-    assert.equal(section.props.count, 1);
-    const rows = [...elements(section)].filter((node) => node.type === 'ActivityRow');
-    assert.equal(rows.length, 1);
-    assert.ok(rows[0].props.summary.includes(t("I didn't like it")));
-    assert.equal(rows[0].props.trailing, undefined);
-    assert.ok(!textValues(section).some((value) => String(value).includes('★')));
+    assert.equal(tree.type, 'ProfileView');
+    assert.equal(tree.props.activity.impressions.length, 1);
+    assert.equal(tree.props.activity.impressions[0].impression, 'disliked');
+    assert.equal(tree.props.activity.counts.impressions, 1);
+    assert.ok(!JSON.stringify(tree.props.activity).includes('★'));
   }
 });
 

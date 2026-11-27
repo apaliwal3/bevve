@@ -63,21 +63,21 @@ works and sign-in reports that it is unavailable.
 
 Login and Signup call Supabase Auth. When confirmation is enabled, Signup asks
 the user to confirm the email, then return to Sign In. An immediate session goes
-to Profile, where the account panel reads the signed-in user's database profile.
+to Profile, where the header reads the signed-in user's database username.
 This initial step does not use a mobile email-confirmation redirect callback.
 
 Native AsyncStorage persists the Supabase session; passwords remain transient.
 Token refresh follows the app foreground lifecycle. The web/SSR adapter uses
-memory only. Profile's **Sign Out** clears this device's session; other devices
+memory only. Profile's **Log Out** clears this device's session; other devices
 stay signed in. Changing accounts also resets demo contribution/comparison state.
-The app interface is English-only and ignores old saved language preferences.
+The interface is English-only and ignores old saved Italian preferences.
 
 Signed-in venue screens use the Supabase catalog and persist impressions.
 Signed-out screens keep the original fictional demo. Guest submissions are never
 uploaded or merged into a real account. See the connected catalog section below.
 
 Manual device checks: sign in with a confirmed test account, reload the app and
-verify restoration; confirm Profile's account name/email; sign out and check that
+verify restoration; confirm Profile's actual username; sign out and check that
 account details/demo state clear. Check invalid credentials, offline requests,
 email-confirmation signup, rapid double submission, and a previously saved Italian
 preference (the interface must remain English).
@@ -86,7 +86,7 @@ preference (the interface must remain English).
 
 Apply `bevve-backend/supabase/migrations/007_saved_bars.sql` after migrations
 001–006 to enable account bookmarks. The bookmark on each bar image and in Bar
-Details saves/removes that bar. Profile's **Want to visit** list opens saved bars
+Details saves/removes that bar. Profile’s **Want to Try** statistic opens a dedicated saved-bars list
 and provides removal controls. Saves persist across sign-in and devices, stay
 private through row-level security, and remain saved after the user rates a bar.
 Saving/removing does not submit impressions or comparison votes.
@@ -206,8 +206,8 @@ choice/skipping is disabled until that uncertain write is confirmed.
 
 History restores across app restarts and sessions; unfinished batches are held
 only in the current session and reset on restart/sign-out. Rankings show ordinal
-positions without raw Elo. Profile shows confirmed comparison counts and links
-to Rankings. Private incident writes use the account safety flow below. Price comparison
+positions and confirmed comparison counts without raw Elo. Profile focuses on
+experienced venues and the four safe contribution categories. Private incident writes use the account safety flow below. Price comparison
 remains read-only; price submissions use a separate optional form in the venue's
 `+` overlay. Guest activity is never merged into an account.
 
@@ -259,17 +259,16 @@ API and physical-device verification outcomes have not been recorded.
 After saving an impression, open **Spoken languages** in the venue's `+` editor.
 Approved associations come only from the database. New suggestions remain private
 to the author and moderators, separate from approved associations. The form keeps
-uncertain details while navigating and retries the same request ID. Profile shows
+uncertain details while navigating and retries the same request ID. Settings shows
 all owned Pending, Approved and Rejected rows; they do not enter update counts or
 rankings. Pending operations reset on restart/sign-out; confirmed history restores.
 Language loading/retry states are independent of crowd, bathroom and price forms.
 
-Accounts in `private.moderators` see a review queue in Profile. Approval atomically
+Accounts in `private.moderators` see a review queue in Settings. Approval atomically
 adds the language without replacing existing evidence; rejection publishes nothing.
 An uncertain review retains its selected decision for retry. Reviews and refreshed
 history invalidate the public catalog, including when an older read is in flight.
-Moderator own-history reads still explicitly filter by owner. All interface copy
-remains English, including when the suggested spoken language is Italian.
+Moderator own-history reads still explicitly filter by owner. Venue spoken languages remain independent of the English-only interface.
 
 Remaining device checks include submission, rapid taps, lost-response retry, close/reopen,
 restart and account switching on a device. With two accounts and a moderator, check
@@ -291,7 +290,7 @@ the form preserves its draft; a confirmed submission clears it. Retries reuse th
 original request UUID and details. Restart/sign-out clears pending work; confirmed
 private history restores from Supabase. Reports never enter rankings or update counts.
 
-Profile shows **My private incident reports** with Pending/Approved/Rejected status,
+Settings shows **My private incident reports** with Pending/Approved/Rejected status,
 submission/review times and private details. Reads explicitly filter `reporter_id`,
 including for moderators. Accounts in the existing `private.moderators` allowlist
 see a separate pending review queue. Its public-summary field starts blank, persists
@@ -319,8 +318,7 @@ outcomes separately from the confirmed hosted deployment/verification.
 With 003 deployed, manually verify rapid repeated choice taps, retry after a
 lost response, skip one/all, closing/reopening, navigation from Rankings back to
 Rankings, app restart and account switching. Confirm choices persist and batches
-reset on restart, and that editing an impression adds no vote. The app remains
-English-only. Physical-device and hosted comparison API verification are pending.
+reset on restart, and that editing an impression adds no vote. Physical-device and hosted comparison API verification are pending.
 
 Manual device checks: save all three choices, edit one venue, reload, sign out/in,
 verify Profile counts once, cancel a draft, retry a failed network save and check
@@ -360,7 +358,7 @@ The lint command checks mobile source, tests and scripts without applying fixes.
 Generated native folders, Expo caches, build outputs and dependencies are ignored.
 Backend code is outside the mobile lint scope.
 
-## Guest demo session and English interface
+## Guest demo session and interface language
 
 - UUID-based fictional venues and a structured drink catalog are in `src/fixtures/`.
   Prices use integer EUR cents internally.
@@ -369,10 +367,10 @@ Backend code is outside the mobile lint scope.
   activity survives navigation, but resets on full reload or account changes.
 - Form drafts are local to their screen or overlay. Closing a form may discard
   unsaved input. Returning to Welcome does not sign out or clear saved activity.
-- English is the only interface language. There is no language selector and old
-  device language preferences are ignored. Native AsyncStorage now persists the
-  Supabase session, not demo reports or ranking history.
-- Venue spoken-language suggestions are separate from the English interface and
+- The interface is English-only. Settings has no language switch and old
+  device language preferences are ignored. Native AsyncStorage persists Supabase
+  sessions, never demo reports or ranking history.
+- Venue spoken-language suggestions are separate from the interface language and
   remain pending in the guest demo. Account suggestions use the review flow above.
   Guest private incident reports are demo-only and are never published. Account
   reports use the separate private-review/public-summary flow above.
@@ -384,7 +382,7 @@ Backend code is outside the mobile lint scope.
   Skip one or all comparisons without creating votes. Reopening can resume a
   pending comparison flow; editing an impression does not automatically repeat it.
 - Impression choices use one row of muted green, yellow and pink 56-point circles
-  with wrapping EN/IT labels, check/minus/X symbols and a selected outline/badge.
+  with wrapping English labels, check/minus/X symbols and a selected outline/badge.
   The long introductory paragraph is removed; the modal still scrolls at larger
   text sizes and retains its top-down animation and reduced-motion behavior.
 - A saved, unchanged impression offers **Resume comparisons** for pending work,
@@ -399,8 +397,8 @@ Backend code is outside the mobile lint scope.
 - Impressions do not change Elo. Only explicit comparison choices affect personal
   rankings, which display ordinal positions.
 - Explore, Rankings and Profile are the three persistent tabs. Tab changes keep
-  the bottom bar mounted and disable scene animations. Rankings and Profile lead
-  to Explore and a bar's `+` action to add impressions or resume comparisons.
+  the bottom bar mounted and disable scene animations. Rankings leads
+  to Explore and a bar's `+` action; Profile presents saved activity.
 - Bathroom categories and crowd reports retain their separate five-point scales.
 
 The pure community-opinion helper supports genuine data: each distinct
@@ -536,3 +534,133 @@ QR code in Expo Go to refresh project metadata. This does not rename the install
 Expo Go application itself. Updating an installed development/standalone app's
 native name or icon requires a new native build. See the
 [Expo app-config reference](https://docs.expo.dev/versions/v58.0.0/config/app/).
+
+## Profile redesign
+
+Profile uses the same navy/purple theme, Manrope/DM Sans fonts and three persistent
+primary tabs. Its header uses an honest **Demo profile** / **Your profile** name,
+initials avatar, actual account username when loaded, and one demo-mode badge for
+guests. First names, surnames and photos are not invented.
+
+Exactly two clickable statistics lead to root-stack routes: `/places-been` counts
+one current saved liked/fine/disliked impression per distinct venue; `/want-to-try`
+shows the existing saved-bars list with real saved dates and removal controls.
+The Want to Try count comes from confirmed bookmarks in SavedBarsProvider; loading
+or failed initial reads show an unavailable count, with retry feedback. Bookmarks
+remain independent of impressions and are kept after rating a venue. Merely
+opening venues, comparison votes and optional contributions never add visits.
+Places Been has photographs/fallbacks, neighborhoods, concise saved impressions
+and venue links; impression submission dates are not presented as visit dates.
+
+One FlatList owns the Profile header and chronological feed. It combines saved
+impressions, crowd reports, bathroom reviews and drink-price observations from
+the existing guest/session or signed-in providers. Impressions and bathroom edits
+show the current editable record with its real update timestamp; crowd/price
+history retains submissions. Reliable timestamps sort newest first, ties use
+stable IDs, and invalid/missing timestamps are omitted and sorted last. Bathroom
+scores retain their own /5 scale; no overall stars or raw Elo enter the feed.
+Private incidents, pending language suggestions, moderation and comparisons stay
+out of it. Account history/moderation tools remain separately accessible in
+`/settings`; the underlying forms, models and stores are retained.
+
+Activity opens `/bars/[barId]?returnTo=profile`; native Back returns to Profile
+and direct links fall back there. Places Been uses `returnTo=places`, returning
+to the list before Profile. Want to Try uses `returnTo=wants`, returning to
+the saved list. Edit Profile, Want to Try and Settings use native
+root-stack history with a Profile fallback, following the existing Bar Details
+pattern. Primary tabs remain mounted; secondary screens follow existing full-screen
+stack behavior. Price-comparison and Rankings origins remain intact.
+
+### Profile backend compatibility audit
+
+This audit inspected repository contracts, not the hosted dashboard:
+
+- Migration 001 defines `profiles.id` (UUID auth-user PK), `username` (required
+  trimmed length 1–40), `preferred_language` (`en`/`it`, default `en`), and
+  `created_at` (server timestamp). No later migration adds identity fields.
+- Backend `authService.getMyProfile()` reads the current row.
+  `updateMyProfile(username, language)` writes only username/preferred_language.
+  The existing mobile client reads username; no full profile-update adapter exists.
+- Real Expo authentication is already connected: password sign-in/signup,
+  confirmation handling, session restoration/refresh and local-device sign-out.
+  A trigger creates the profile. Guest data is isolated and never uploaded.
+- `profile_read` / `profile_edit` RLS restrict select/update to `auth.uid() = id`;
+  authenticated column grants permit only username/preferred_language updates.
+- First name, surname and avatar URL/object-key fields do not exist. There is no
+  avatar bucket, upload service or Storage policy in the repository. Hosted
+  configuration outside these contracts was not verified.
+- Full editing requires an agreed names/avatar schema migration, validation and
+  update grants; avatar Storage bucket/read/write/delete ownership rules, file
+  type/size limits and replacement cleanup; and mobile profile read/update/upload
+  contracts with loading, validation, failure and refresh handling. Username is
+  currently free text, not a unique handle; a production handle policy needs an
+  explicit contract if uniqueness/format is desired. Existing auth can be reused;
+  password recovery remains separate existing work.
+
+`/edit-profile` therefore implements a read-only capability preview in both modes,
+showing the actual username when available and honest unavailable fields. No edit,
+Save button, local competing profile store, fake success or Supabase write was
+introduced. No editing validation is claimed because inputs are unavailable.
+
+**Log Out** awaits the existing `signOut()` (local-device Supabase session) and
+returns to Welcome only on success; failures remain visible for retry. Guests get
+**Return to Welcome**, which performs no auth call and retains demo activity for
+the current app session. The interface remains English through both paths. A full reload
+may clear guest activity, as before.
+
+### Physical iPhone checks for the Profile redesign
+
+These remain manual; Node component/state tests and JavaScript export do not
+verify native layout, VoiceOver, gestures or real-device auth/network behavior.
+
+1. From `mobile/`, run `npm start -- --go`. Use SDK-58-compatible Expo Go, put the
+   iPhone and computer on the same Wi-Fi, scan the current terminal QR code, and
+   choose **Explore demo**. Start with a full reload for empty demo state.
+2. Open Profile: check honest demo identity, initials and a single demo badge,
+   Places Been = 0, Want to Try = 0, two action buttons and the
+   empty Activity state. Check exactly Explore, Rankings, Profile in the bottom
+   bar, stationary while switching tabs.
+3. Open each of Places Been, Want to Try, Edit Profile and Settings. Use both
+   their Back button and iOS edge-swipe Back. Each must return to Profile. A fresh Want
+   to Try list has no saved venues; Edit Profile explicitly offers no editing
+   or saving. Test a direct link to each route with no previous history: the
+   visible Back button must still reach Profile. Bookmark a bar in Explore and
+   confirm Want to Try increases once, opens that bar, and returns to the list
+   from Bar Details. Remove it from the list and check the count decreases. Save
+   and rate a bar: the bookmark must remain and Places Been must count only the
+   impression. Repeat with an unavailable venue and confirm removal still works.
+4. In Explore open Luna Rossa → `+`, save Liked, skip any comparisons, finish
+   contributions. Repeat with Fine at Basso Club and Disliked at Nottetempo.
+   Profile/Places Been must show exactly three venues. Edit one impression:
+   count remains three, saved label changes, and its activity moves by update
+   time. Compare or contribute again without adding an impression: count stays
+   three. Verify Rankings and community percentages are unchanged by edits.
+5. Submit a crowd report, bathroom scores (e.g. 4/3/5) and a catalog drink price
+   using the existing optional forms. Profile must show actual values and real
+   submission/update times in descending order; only bathrooms use /5. No
+   submission creates a visit timestamp. Submit a private incident and pending
+   language suggestion: neither may appear in this feed. All five forms remain.
+6. Tap each feed category → Bar Details → Back: return to Profile, retaining
+   state. Places Been → venue → Back returns to Places Been → Profile. Also
+   check Rankings → venue and Bar Details → Compare Drink Prices → another
+   venue → Back, preserving the drink and original venue.
+7. Check that Settings shows English without a language switch. Reload an
+   installation that previously saved Italian: the interface must remain English.
+   Return to Welcome and enter the demo again; current-session activity survives.
+8. Sign in with an existing test account. Account bookmarks require the existing
+   migration 007 to be deployed; no migration or hosted change is performed here.
+   Verify bookmark persistence after reload/sign-out and a failed-read retry.
+    Check its actual username, honest
+   missing names/photo, database impressions/count and confirmed contribution
+   history, sample-venue labels, pull-to-refresh and failure/retry states. Edit
+   Profile must show a read-only account preview. Private history/moderator tools
+   are in Settings, never the Profile feed. Log Out must return to Welcome and
+   keep the interface in English; signing back in restores server data. Do not create a new
+   account or change hosted configuration for this check.
+9. On the smallest available iPhone and one with Dynamic Island, enable Settings
+   → Accessibility → Display & Text Size → Larger Text → Larger Accessibility
+   Sizes, then the largest size. Enable VoiceOver and repeat all actions. Check
+   labels wrap, touch targets stay reachable, initials fit,
+   the screen scrolls as one surface, the Profile bottom bar remains visible,
+   and camera/home safe areas and native swipe Back work. Turn on Reduce Motion
+   and repeat primary tab changes.

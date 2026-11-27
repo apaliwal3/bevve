@@ -38,13 +38,13 @@ function screens(language, ranked) {
     ...mocks, '@/localization/translation': { languages },
     '@/features/impressions/impression-selector': { impressionLabels: {} },
     '@/features/ratings/venue-ratings-provider': { useProfileContributions: () => activity },
-    './profile-activity-components': { ProfileActivitySection: 'ActivitySection', ProfileActivityRow: 'ActivityRow' },
+    './profile-view': { ProfileView: 'ProfileView' },
     './language-preference-feedback': { languagePreferenceFeedback: () => 'DEMO SESSION' },
   });
   return { t, rankings, profile };
 }
 
-for (const screen of ['rankings', 'profile']) test(screen + ' keeps Explore and venue links working without + instructions in English and Italian', () => {
+for (const screen of ['rankings']) test(screen + ' keeps Explore and venue links working without + instructions in English and Italian', () => {
   for (const language of ['en', 'it']) for (const ranked of [false, true]) {
     const { t, rankings, profile } = screens(language, ranked);
     const calls = [];

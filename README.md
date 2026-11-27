@@ -18,7 +18,7 @@ the original fictional, in-memory demo. The interface is English-only.
   and venue details show approximate distances; Nearby shows real venues within
   1 km and sorts closest first.
 - Private **Want to visit** bookmarks on venue images and Bar Details, with a
-  saved list in Profile. Requires migration `007_saved_bars.sql`; guest saves
+  saved list reached through Profile’s **Want to Try** statistic. Requires migration `007_saved_bars.sql`; guest saves
   stay in the demo session. Bookmarks remain saved after rating a bar.
 - A venue's `+` action saves/edits an impression. Profile and cards update only
   after the server confirms the write. Failures retain the draft for retry.
@@ -39,8 +39,8 @@ Price comparison uses the database drink UUID and serving size.
 Comparison history restores from Supabase across sessions. Each batch offers at
 most three distinct experienced opponents and survives navigation in the current
 session; unfinished batches reset on app restart or sign-out. Retried choices
-reuse a request ID, including when a server response was lost. Rankings and Profile
-show confirmed comparison counts, with raw Elo values hidden. Guest activity is
+reuse a request ID, including when a server response was lost. Rankings
+shows confirmed comparison counts, with raw Elo values hidden. Guest activity is
 never uploaded.
 
 The same optional inline cards used in the demo appear below account comparisons.
@@ -56,13 +56,12 @@ Account spoken-language suggestions, private review history and a moderator
 queue use migration `005_language_suggestions.sql`. The owner confirmed deployment
 and passing hosted language-suggestion checks on 2026-11-23. Pending and rejected suggestions
 stay out of venue languages. Approval adds the language and refreshes the catalog;
-the interface remains English-only. Profile shows Pending, Approved and Rejected
-statuses separately from the existing activity counts.
+Settings shows Pending, Approved and Rejected statuses separately from the Profile activity feed.
 
 The account incident → moderation → published-summary flow is implemented for
 `006_account_safety.sql`. The owner confirmed deployment and verification on 2026-11-23.
 Venue `+` offers a private report without requiring an impression. Drafts and
-uncertain submissions stay in the account session; Profile restores only that
+uncertain submissions stay in the account session; Settings restores only that
 reporter's history/statuses, including for moderator accounts. A separate moderator
 queue requires a separately written public summary for approval. Only published
 summary records appear on venue details; raw descriptions and reporter IDs never
@@ -99,7 +98,8 @@ database migration is needed. Physical-device location verification remains pend
   hidden and independent of impressions and community opinions.
 - Three persistent main tabs: Explore, Rankings and Profile. Add impressions and
   comparisons through a venue's `+` overlay; drink price comparison stays separate.
-- An English-only interface and a Profile with demo activity counts.
+- A personal Profile with Places Been, a working Want to Try list, and one chronological
+  activity feed. Profile → Settings provides separate account tools.
 - Real Supabase Login/Signup, email-confirmation handling, native session
   restoration, account-profile reads and local-device sign-out.
 
@@ -177,8 +177,7 @@ ESLint uses the official Expo flat configuration and reports findings without ap
 
 ## Languages and demo boundaries
 
-The interface is English-only. The former language switch is removed and any
-previously saved Italian preference is ignored. Venue spoken-language information
+The interface is English-only. Old saved Italian preferences are ignored; Settings has no language switch. Venue spoken-language information
 remains venue data. See the [copy and formatting guide](mobile/src/localization/README.md).
 
 While signed out, impressions, reports, price observations, language suggestions,
@@ -188,7 +187,7 @@ Signed-in impressions are persisted and survive reload/sign-out; signing out cle
 only their local view. Sample venues remain explicitly labeled even when their
 catalog rows and personal impressions come from the database.
 
-Rankings and Profile guide users to Explore and a bar's `+` action. The former
+Rankings guides users to Explore and a bar's `+` action. Profile lists saved activity. The former
 standalone personal Compare screen is retired. Legacy `/compare` links redirect
 to Rankings outside the tab navigator, reusing existing tab history or replacing
 the compatibility route for a direct link. Old `returnTo=compare` contexts also

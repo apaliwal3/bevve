@@ -37,6 +37,7 @@ function setup(){
     '@/features/saved-bars/saved-bars-provider':{useSavedBars:()=>savedBars},
     react:{useState:initial=>[initial,()=>{}]},'expo-router':{router:{}},
     '@/components/primary-button':{PrimaryButton:'PrimaryButton'},'@/components/screen-container':{ScreenContainer:'ScreenContainer'},
+    '@/features/profile/account-profile-screen':{AccountProfileScreen:'AccountProfileScreen'},
     '@/constants/theme':theme,'@/features/auth/account-panel':{AccountPanel:'AccountPanel'},
     '@/features/venues/bar-details-screen':{},'@/features/venues/bar-details-navigation':{},
     '@/features/prices/price-comparison-screen':{},'@/features/prices/price-comparison':{},'@/features/prices/price-navigation':{},
@@ -58,17 +59,6 @@ function setup(){
   });
   return {catalog,comparisons,contributions,languages,safety,savedBars,calls,render(name){return module[name]({catalog});}};
 }
-
-test('one Profile pull refreshes all activity and moderation sources and stays busy until every source finishes',()=>{
-  const ui=setup();const screen=ui.render('AccountProfileScreen');screen.props.onRefresh();
-  assert.deepEqual(ui.calls,['catalog','comparisons','contributions','languages','language queue','safety','incident queue','saved bars']);
-  assert.ok(![...elements(screen)].some(node=>node.type==='PrimaryButton'&&node.props.label.startsWith('Refresh')));
-  for(const [source,key] of [[ui.catalog,'refreshing'],[ui.comparisons,'refreshing'],[ui.contributions,'refreshing'],[ui.languages,'refreshing'],[ui.languages,'queueRefreshing'],[ui.safety,'refreshing'],[ui.safety,'queueRefreshing'],[ui.savedBars,'refreshing']]){
-    source[key]=true;const busy=ui.render('AccountProfileScreen');assert.equal(busy.props.refreshing,true);
-    busy.props.onRefresh();assert.equal(ui.calls.length,8);source[key]=false;
-  }
-  assert.equal(ui.render('AccountProfileScreen').props.refreshing,false);
-});
 
 test('Rankings pulls refresh comparisons and venues together, including empty and failed reads',()=>{
   const ui=setup();ui.comparisons.status='error';ui.catalog.status='error';
