@@ -5,6 +5,7 @@ import { EXPLORE_HORIZONTAL_PADDING, filterChipLayout } from '../src/features/ex
 import * as filters from '../src/features/explore/filter-venues.ts';
 import { selectVenueCrowd } from '../src/features/explore/venue-crowd.ts';
 import * as fixtures from '../src/fixtures/venues.ts';
+import * as mapData from '../src/features/explore/venue-map-data.ts';
 import { createTranslator } from '../src/localization/translation.ts';
 import { elements, flattenStyle, loadNativeModule, nativeStub } from './helpers/native-module.mjs';
 
@@ -20,7 +21,8 @@ function explore(language) {
     '@/constants/theme': theme,
     '@/components/app-icon': { AppIcon: 'AppIcon' },
     '@/components/logo': { Logo: 'Logo' },
-    '@/components/screen-container': { ScreenContainer: 'ScreenContainer' },
+    '@/features/explore/explore-screen-container': { ExploreScreenContainer: 'ScreenContainer' },
+    '@/features/explore/venue-map-data': mapData,
     '@/components/venue-card': { VenueCard: 'VenueCard' },
     '@/features/explore/filter-venues': filters,
     '@/features/explore/filter-layout': { EXPLORE_HORIZONTAL_PADDING, filterChipLayout },

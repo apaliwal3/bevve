@@ -1,3 +1,4 @@
+import { useBatchedContribution } from './contribution-batch';
 import { useTranslation } from '@/localization/language-provider';
 import { useReducer, useState, type ReactNode } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
@@ -14,7 +15,7 @@ import type { ContributionFormFeedback } from './contribution-form-feedback';
 type SafetyInformationFormProps = {
   demoNotes: readonly string[];
   disabled?: boolean;
-  onSubmit: (incident: IncidentSubmission) => void;
+  onSubmit: (incident: IncidentSubmission) => void | Promise<void>;
   onCancel: () => void;
   feedback?: ContributionFormFeedback;
   draft?: IncidentDraft;
@@ -29,10 +30,12 @@ export function SafetyInformationForm({ demoNotes, disabled: parentDisabled = fa
   const [localDraft, dispatchLocalDraft] = useReducer(incidentDraftReducer, emptyIncidentDraft);
   const draft = accountDraft ?? localDraft;
   const dispatchDraft = (action: IncidentDraftAction) => { if (onDraftAction) onDraftAction(action); else dispatchLocalDraft(action); };
-  const disabled = parentDisabled || Boolean(feedback?.pending);
   const [success, setSuccess] = useState(false);
   const validation = incidentSubmission(draft);
   const hasDraft = draft.category !== null || draft.description.length > 0 || draft.date.length > 0;
+
+  const batch = useBatchedContribution('safety', draft, !submitUnavailable && validation.ok, () => { if (validation.ok && !submitUnavailable) return onSubmit(validation.value); }, feedback, hasDraft);
+  const disabled = parentDisabled || batch.saving || Boolean(feedback?.pending);
 
   function cancel() {
     if (!feedback) dispatchDraft({ type: 'reset' });
@@ -76,7 +79,7 @@ export function SafetyInformationForm({ demoNotes, disabled: parentDisabled = fa
             disabled={disabled}
             onPress={() => { dispatchDraft({ type: 'category', category }); setSuccess(false); }}
             style={({ pressed }) => [styles.option, draft.category === category && styles.selected, pressed && styles.pressed]}>
-            <Text style={styles.label}>{t(category)}</Text>
+            <Text style={[styles.label, draft.category === category && styles.selectedLabel]}>{t(category)}</Text>
           </Pressable>
         ))}
       </View>
@@ -117,10 +120,10 @@ export function SafetyInformationForm({ demoNotes, disabled: parentDisabled = fa
         ? t('Private report saved to your account. Check its review status in Profile.') : t("Saved in demo only — pending moderation")}</Text>}
       {feedback?.saving && <Text accessibilityLiveRegion="polite" style={styles.hint}>{t('Saving private report…')}</Text>}
       {feedback?.error && <Text accessibilityRole="alert" style={styles.error}>{t('Your private report could not be confirmed. Retry the same details without duplicates.')}</Text>}
-      <View style={styles.actions}>
+      {!batch.batched && <View style={styles.actions}>
         <PrimaryButton label={feedback ? t('Close') : t("Cancel")} variant="secondary" disabled={parentDisabled} onPress={cancel} style={styles.button} />
         <PrimaryButton label={feedback?.pending ? t('Retry save') : t("Submit report")} disabled={parentDisabled || feedback?.saving || submitUnavailable || (!validation.ok && !feedback?.pending)} onPress={feedback?.pending ? feedback.retry : submit} style={styles.button} />
-      </View>
+      </View>}
     </View>
   );
 }

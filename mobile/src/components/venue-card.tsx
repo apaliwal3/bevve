@@ -1,3 +1,4 @@
+import { BookmarkButton } from '@/features/saved-bars/bookmark-button';
 import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState } from 'react';
@@ -63,51 +64,53 @@ export function VenueCard({ venue, onPress, account }: VenueCardProps) {
           </View>
           <CommunityOpinionSummary opinion={community} compact />
         </View>
+        {ownImpression && <View accessible={!onPress} accessibilityRole="image" accessibilityLabel={impressionLabel}
+          pointerEvents="none" style={styles.impressionBadge}>
+          <AppIcon name={ownImpression === 'disliked' ? 'thumbsDown' : 'thumbsUp'} size={16} color={theme.colors.onAccent} />
+          {ownImpression === 'liked' && <AppIcon name="thumbsUp" size={16} color={theme.colors.onAccent} />}
+        </View>}
       </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
             <Text style={styles.name}>{venue.name}</Text>
-            <Text style={styles.subtitle}>{describe(venue.vibe)} · {venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
+            <Text style={styles.subtitle}>{venue.distanceLabel ? describe(venue.distanceLabel) : t("Distance unavailable")}</Text>
           </View>
           {onPress && (
             <Text style={styles.arrow} accessible={false}>›</Text>
           )}
         </View>
-        {ownImpression && <Text style={styles.metricLabel}>{impressionLabel}</Text>}
         <View style={styles.metrics}>
           <View style={styles.metric}>
-            <View style={styles.metricIcon}>
-              <AppIcon name="crowd" size={15} color={theme.colors.purpleLight} />
+            <View style={styles.metricHeader}>
+              <AppIcon name="crowd" size={13} color={theme.colors.textMuted} />
+              <Text style={styles.metricLabel}>{t('Crowd')}</Text>
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>{account ? t('Community crowd') : crowd.source === 'session' ? t("Session crowd") : t("Demo crowd")}</Text>
-              <Text style={styles.metricValue}>{crowdLabel}</Text>
+              <Text style={[styles.metricValue, styles.crowdValue, crowd.level === null && styles.missingValue]}>{crowdLabel}</Text>
               {crowd.level !== null && <CrowdMeter level={crowd.level} />}
             </View>
           </View>
           <View style={styles.metric}>
-            <View style={styles.metricIcon}>
+            <View style={styles.metricHeader}>
               <Text style={styles.currencyIcon} accessible={false}>€</Text>
+              <Text style={styles.metricLabel}>{t('Prices from')}</Text>
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>{t("Community prices from")}</Text>
-              <Text style={styles.metricValue}>{priceLabel}</Text>
-              <Text style={styles.metricLabel}>{t("Not verified")}</Text>
+              <Text style={[styles.metricValue, startingPriceCents === null && styles.missingValue]}>{priceLabel}</Text>
             </View>
           </View>
           <View style={styles.metric}>
-            <View style={styles.metricIcon}>
-              <AppIcon name="bathroom" size={15} color={theme.colors.purpleLight} />
+            <View style={styles.metricHeader}>
+              <AppIcon name="bathroom" size={13} color={theme.colors.textMuted} />
+              <Text style={styles.metricLabel}>{t("Bathrooms")}</Text>
             </View>
             <View style={styles.metricCopy}>
-              <Text style={styles.metricLabel}>{t("Bathrooms")}</Text>
-              <Text style={styles.metricValue}>
+              <Text style={[styles.metricValue, bathroomCleanliness === null && styles.missingValue]}>
                 {bathroomCleanliness === null
                   ? t("No reviews yet")
                   : format.decimal(bathroomCleanliness) + ' ★'}
               </Text>
-              {bathroomCleanliness !== null && <Text style={styles.metricLabel}>{t("Cleanliness")}</Text>}
             </View>
           </View>
         </View>
@@ -115,16 +118,17 @@ export function VenueCard({ venue, onPress, account }: VenueCardProps) {
     </>
   );
 
-  if (!onPress) return <View style={styles.card}>{content}</View>;
-
   return (
-    <Pressable
+    <View style={styles.card}>
+    {onPress ? <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('{name}, {area}. {opinion}. {impression}. View venue', { name: venue.name, area: venue.area, opinion: communityOpinionLabel(community, t), impression: impressionLabel })}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      style={({ pressed }) => pressed && styles.pressed}>
       {content}
-    </Pressable>
+    </Pressable> : content}
+    <View style={styles.bookmarkPosition}><BookmarkButton barId={venue.id} name={venue.name} /></View>
+    </View>
   );
 }
 
@@ -136,6 +140,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     overflow: 'hidden'
   },
+  bookmarkPosition: { position: 'absolute', top: 122, left: theme.spacing.sm },
   photo: {
     height: 174,
     backgroundColor: theme.colors.surfaceRaised
@@ -154,6 +159,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: theme.spacing.sm
+  },
+  impressionBadge: {
+    position: 'absolute',
+    bottom: theme.spacing.md,
+    right: theme.spacing.md,
+    minHeight: 28,
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.purpleBorder,
+    backgroundColor: theme.colors.purpleButton,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   areaBadge: {
     flexDirection: 'row',
@@ -207,37 +228,39 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md
   },
   metric: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     flexGrow: 1,
-    flexBasis: 90,
-    gap: theme.spacing.xs
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 70,
+    gap: theme.spacing.sm
   },
-  metricIcon: {
-    width: 25,
-    height: 25,
+  metricHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radii.sm,
-    backgroundColor: theme.colors.purpleTint,
+    gap: theme.spacing.xs,
+    minHeight: 18
   },
   metricCopy: { flex: 1, gap: theme.spacing.xs },
   currencyIcon: {
-    color: theme.colors.purpleLight,
+    color: theme.colors.textMuted,
     fontFamily: theme.fonts.bodyBold,
-    fontSize: 14,
+    fontSize: 12,
     lineHeight: 16
   },
   metricLabel: {
     color: theme.colors.textMuted,
     fontFamily: theme.fonts.body,
-    fontSize: 10
+    fontSize: 10,
+    flexShrink: 1
   },
   metricValue: {
     color: theme.colors.text,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 11
+    fontFamily: theme.fonts.heading,
+    fontSize: 22,
+    lineHeight: 28
   },
+  crowdValue: { fontSize: 18, lineHeight: 28 },
+  missingValue: { color: theme.colors.textSecondary, fontFamily: theme.fonts.body, fontSize: 11, lineHeight: 17 },
   pressed: {
     opacity: 0.85
   }

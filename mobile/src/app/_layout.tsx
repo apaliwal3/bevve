@@ -1,5 +1,6 @@
+import { SavedBarsProvider } from '@/features/saved-bars/saved-bars-provider';
 import { useFonts } from 'expo-font';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, router, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -36,6 +37,12 @@ function AppLayout() {
     if (ready && auth.ready && (fontsLoaded || fontError)) SplashScreen.hideAsync();
   }, [fontsLoaded, fontError, ready, auth.ready]);
 
+  const recovering = auth.recovery !== 'none';
+  useEffect(() => {
+    // Replace the callback URL promptly so tokens do not remain in browser history.
+    if (recovering && auth.ready && ready && fontsLoaded) router.replace('/recover-password');
+  }, [recovering, auth.ready, ready, fontsLoaded]);
+
   if (fontError) throw fontError;
   if (!fontsLoaded || !ready || !auth.ready) return null;
 
@@ -54,21 +61,25 @@ function AppLayout() {
       }}>
       <StatusBar style="light" />
       <VenueCatalogProvider>
-        <AccountLocationProvider>
-          <AccountSafetyProvider>
-            <AccountLanguagesProvider>
-              <AccountContributionsProvider>
-                <AccountComparisonsProvider>
-                  <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
-                    <PersonalComparisonsProvider>
-                      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
-                    </PersonalComparisonsProvider>
-                  </VenueRatingsProvider>
-                </AccountComparisonsProvider>
-              </AccountContributionsProvider>
-            </AccountLanguagesProvider>
-          </AccountSafetyProvider>
-        </AccountLocationProvider>
+        <SavedBarsProvider>
+          <AccountLocationProvider>
+            <AccountSafetyProvider>
+              <AccountLanguagesProvider>
+                <AccountContributionsProvider>
+                  <AccountComparisonsProvider>
+                    <VenueRatingsProvider key={auth.session?.user.id ?? 'demo'}>
+                      <PersonalComparisonsProvider>
+                        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}>
+                          <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, fullScreenGestureEnabled: false }} />
+                        </Stack>
+                      </PersonalComparisonsProvider>
+                    </VenueRatingsProvider>
+                  </AccountComparisonsProvider>
+                </AccountContributionsProvider>
+              </AccountLanguagesProvider>
+            </AccountSafetyProvider>
+          </AccountLocationProvider>
+        </SavedBarsProvider>
       </VenueCatalogProvider>
     </ThemeProvider>
   );

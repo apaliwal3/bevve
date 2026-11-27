@@ -32,7 +32,12 @@ test('real community zero, one, and edited opinions use database aggregates', ()
   const row=venue({ is_demo: false, opinions: { available: true, liked_count: 0, fine_count: 0, disliked_count: 0, total_opinions: 0, liked_percentage: null } });
   assert.deepEqual(catalogOpinion(row),{ status: 'empty',count: 0 });
   row.opinions={ available: true,liked_count: 1,fine_count: 1,disliked_count: 1,total_opinions: 3,liked_percentage: 100/3 };
-  assert.deepEqual(catalogOpinion(decodeCatalogVenue(row)),{ status: 'ready',count: 3,percentage: 33 });
+  assert.deepEqual(catalogOpinion(decodeCatalogVenue(row)),{ status: 'ready',count: 3,sentiment: 'mixed' });
+  for (const [liked, fine, disliked, sentiment] of [[8,0,0,'liked'],[0,8,0,'fine'],[0,0,8,'disliked'],
+    [4,3,1,'liked'],[1,4,3,'fine'],[3,1,4,'disliked'],[4,4,0,'mixed'],[0,4,4,'mixed'],[4,0,4,'mixed']]) {
+    row.opinions={ available: true,liked_count: liked,fine_count: fine,disliked_count: disliked,total_opinions: 8,liked_percentage: liked/8*100 };
+    assert.deepEqual(catalogOpinion(decodeCatalogVenue(row)),{ status: 'ready',count: 8,sentiment });
+  }
 });
 
 test('malformed or cross-account responses fail instead of becoming successful empty data', () => {

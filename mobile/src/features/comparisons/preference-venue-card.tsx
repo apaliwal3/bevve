@@ -122,10 +122,10 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.purple
+    backgroundColor: theme.colors.purpleButton
   },
   checkText: {
-    color: theme.colors.text,
+    color: theme.colors.onAccent,
     fontFamily: theme.fonts.bodyBold,
     fontSize: 21
   },

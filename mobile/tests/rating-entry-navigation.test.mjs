@@ -12,7 +12,6 @@ import { elements, loadNativeModule, nativeStub } from './helpers/native-module.
 
 const theme = loadNativeModule('src/constants/theme.ts');
 const guide = 'To add impressions or resume comparisons, open a bar in Explore and tap +.';
-const hint = 'Open Explore, choose a bar and tap + to add an impression or resume comparisons.';
 const empty = 'Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.';
 
 function screens(language, ranked) {
@@ -20,6 +19,7 @@ function screens(language, ranked) {
   const personal = { entries: ranked ? [{ position: 1, venue: mockVenues[0], comparisonCount: 1 }] : [], completedCount: ranked ? 1 : 0 };
   const activity = selectProfileContributions({ impressions: {}, crowdReports: [], bathroomReviews: [], priceObservations: [] }, SESSION_USER_ID, mockVenues, []);
   const mocks = {
+    '@/features/saved-bars/saved-bars-section': { SavedBarsSection: 'SavedBarsSection' },
     'react-native': { ...nativeStub, useWindowDimensions: () => ({ fontScale: 2, width: 320 }) },
     '@/constants/theme': theme,
     '@/localization/language-provider': { useTranslation: () => ({ t, language, format: createLocaleFormatters(language), describe: (value) => describeFixture(value, t) }) },
@@ -38,13 +38,13 @@ function screens(language, ranked) {
     ...mocks, '@/localization/translation': { languages },
     '@/features/impressions/impression-selector': { impressionLabels: {} },
     '@/features/ratings/venue-ratings-provider': { useProfileContributions: () => activity },
-    './profile-activity-components': { ProfileActivitySection: 'ActivitySection', ProfileActivityRow: 'ActivityRow' },
+    './profile-view': { ProfileView: 'ProfileView' },
     './language-preference-feedback': { languagePreferenceFeedback: () => 'DEMO SESSION' },
   });
   return { t, rankings, profile };
 }
 
-for (const screen of ['rankings', 'profile']) test(screen + ' guides users to Explore and + in English and Italian, preserving contextual venue links', () => {
+for (const screen of ['rankings']) test(screen + ' keeps Explore and venue links working without + instructions in English and Italian', () => {
   for (const language of ['en', 'it']) for (const ranked of [false, true]) {
     const { t, rankings, profile } = screens(language, ranked);
     const calls = [];
@@ -62,12 +62,12 @@ for (const screen of ['rankings', 'profile']) test(screen + ' guides users to Ex
     const nodes = [...elements(tree)];
     const cta = nodes.find((node) => node.type === 'PrimaryButton' && node.props.label === t('Explore bars'));
     assert.ok(cta);
-    assert.equal(cta.props.accessibilityHint, t(hint));
+    assert.equal(cta.props.accessibilityHint, undefined);
     cta.props.onPress();
     assert.deepEqual(calls, [['navigate', '/explore']]);
-    assert.ok(nodes.some((node) => node.type === 'Text' && node.props.children === t(guide)));
+    assert.ok(!nodes.some((node) => node.type === 'Text' && node.props.children === t(guide)));
     if (!ranked) {
-      assert.ok(screen === 'rankings' ? nodes.some((node) => node.props.children === t(empty)) : nodes.some((node) => node.props.emptyHint === t(empty)));
+      assert.ok(!nodes.some((node) => node.props.children === t(empty) || node.props.emptyHint === t(empty)));
     }
     assert.ok(!nodes.some((node) => node.type === 'PrimaryButton' && /Continue comparing|Start comparing|Compare more bars|Continua a confrontare/.test(node.props.label)));
     calls.length = 0;

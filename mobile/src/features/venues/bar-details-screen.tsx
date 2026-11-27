@@ -1,3 +1,4 @@
+import { BookmarkButton } from '@/features/saved-bars/bookmark-button';
 import { useTranslation } from '@/localization/language-provider';
 import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
@@ -29,9 +30,10 @@ type BarDetailsScreenProps = {
   account?: AccountVenueData;
   onEditImpression?: () => void;
   accountSafety?: ReactNode;
+  accountLanguages?: ReactNode;
 };
 
-export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices, account, onEditImpression, accountSafety }: BarDetailsScreenProps) {
+export function BarDetailsScreen({ venue, details, onBack, backLabel, onComparePrices, account, onEditImpression, accountSafety, accountLanguages }: BarDetailsScreenProps) {
   const { t, format, describe } = useTranslation();
   const insets = useSafeAreaInsets();
   const [imageFailed, setImageFailed] = useState(false);
@@ -47,8 +49,10 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
   const { community, ownImpression } = account ?? demoOpinion;
   const demoExtras = useVenueExtras(venue.id);
   const drinks = account?.drinks ?? demoExtras.drinks;
-  const pendingLanguages = account ? [] : demoExtras.pendingLanguages;
   const languages = details?.languages ?? [];
+  const pendingLanguages = account ? [] : [...new Map(demoExtras.pendingLanguages
+    .filter(row => !languages.some(language => language.code === row.language_code))
+    .map(row => [row.language_code, row])).values()];
 
   return (
     <>
@@ -67,6 +71,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
           <Pressable accessibilityRole="button" accessibilityLabel={backLabel ?? t('Back to Explore')} onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <AppIcon name="back" color={theme.colors.text} />
           </Pressable>
+          <BookmarkButton barId={venue.id} name={venue.name} />
         </View>
         <View style={styles.heroCopy}>
           {details?.openingHoursLabel && (
@@ -82,7 +87,7 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
               accessibilityHint={account ? t('Save or edit your impression') : t('Open experience, personal comparisons and optional bar actions')}
               onPress={account ? onEditImpression : () => setRatingOverlayOpen(true)}
               style={({ pressed }) => [styles.plusButton, pressed && styles.plusPressed]}>
-              <AppIcon name="plus" size={20} color={theme.colors.text} />
+              <AppIcon name="plus" size={20} color={theme.colors.onAccent} />
             </Pressable>
           </View>
           <View style={styles.locationRow}>
@@ -160,18 +165,13 @@ export function BarDetailsScreen({ venue, details, onBack, backLabel, onCompareP
           <View style={[styles.card, styles.infoCard]}>
             <AppIcon name="languages" size={22} color={theme.colors.purpleLight} />
             <Text style={styles.sectionLabel}>{t("SPOKEN LANGUAGES")}</Text>
+            {account && accountLanguages ? accountLanguages : <>
             <View style={styles.languageList}>
               {languages.map((language) => <Text key={language.code} style={styles.languageTag}>{venueLanguageLabel(language.code, t, language.name)}</Text>)}
+              {pendingLanguages.map(suggestion => <Text key={suggestion.language_code} style={styles.languageTag}>{venueLanguageLabel(suggestion.language_code, t)} · {t('Not verified')}</Text>)}
             </View>
-            {languages.length === 0 && <Text style={styles.description}>{t("No languages reported yet.")}</Text>}
-            {pendingLanguages.length > 0 && (
-              <>
-                <Text style={styles.meta}>{t("Suggestions awaiting review")}</Text>
-                <View style={styles.languageList}>
-                  {pendingLanguages.map((suggestion) => <Text key={suggestion.id} style={styles.languageTag}>{venueLanguageLabel(suggestion.language_code, t)} · {t('Pending')}</Text>)}
-                </View>
-              </>
-            )}
+            {languages.length === 0 && pendingLanguages.length === 0 && <Text style={styles.description}>{t("No languages reported yet.")}</Text>}
+            </>}
           </View>
         </View>
 
@@ -257,6 +257,9 @@ const styles = StyleSheet.create({
     backgroundImage: `linear-gradient(180deg, ${theme.colors.imageBadge}, ${theme.colors.transparent} 42%, ${theme.colors.background} 100%)`
   },
   backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 18
   },
   backButton: {

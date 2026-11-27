@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createLocationStore, readLocationFix, LOCATION_MAX_AGE_MS, LOCATION_TIMEOUT_MS } from '../src/features/location/location-store.ts';
+import { createLocationStore, readLocationFix, LOCATION_MAX_AGE_MS, LOCATION_TIMEOUT_MS, LOCATION_REFRESH_INTERVAL_MS } from '../src/features/location/location-store.ts';
 import { distanceMeters, distanceLabel, catalogDistance, locatedCatalogVenue, selectAccountVenues } from '../src/features/location/venue-distance.ts';
 import { createTranslator } from '../src/localization/translation.ts';
 import { createLocaleFormatters } from '../src/localization/formatting.ts';
@@ -19,14 +19,14 @@ function clock() {
       now = target;
     }, get size() { return timers.size; } };
 }
-function setup(overrides = {}) {
+function setup(overrides = {}, foreground = true) {
   const time = clock(), calls = [], streams = [];
   let permission = { granted: true, canAskAgain: true }, requested = { granted: true, canAskAgain: true }, services = true, removed = 0;
-  const repository = { permissions: async () => { calls.push('permissions'); return permission; },
+  const repository = { permissions: async () => { calls.push('permissions'); await Promise.resolve(); return permission; },
     requestPermissions: async () => { calls.push('request'); return requested; }, servicesEnabled: async () => { calls.push('services'); return services; },
     watch: async (fix, error) => { calls.push('watch'); streams.push({ fix, error }); return () => { removed++; }; },
     openSettings: async () => { calls.push('settings'); }, ...overrides };
-  const store = createLocationStore(repository, time), stop = store.start();
+  const store = createLocationStore(repository, time), stop = store.start(foreground);
   const raw = (overrides = {}) => ({ timestamp: time.now(), coords: { ...origin, accuracy: 30 }, ...overrides });
   return { store, stop, calls, streams, time, raw, permission(value) { permission = value; }, requested(value) { requested = value; }, services(value) { services = value; },
     get removed() { return removed; }, async ready() { const promise = store.enable(); await tick(); streams.at(-1).fix(raw()); await promise; } };
@@ -81,17 +81,18 @@ test('location decoding rejects stale, non-finite, invalid and too imprecise rea
   assert.equal(readLocationFix({ ...raw, coords: { latitude: 99, longitude: 0, accuracy: 30 } }, at), 'unavailable');
 });
 
-test('starting an account does not inspect permission or start GPS until explicitly enabled', async () => {
-  const ui = setup(); await tick(); assert.deepEqual(ui.calls, []); assert.equal(ui.store.getSnapshot().status, 'idle');
-  assert.equal(ui.store.getSnapshot().enabled, false); assert.equal(ui.store.getSnapshot().fix, null); ui.stop();
+test('an active account starts location automatically before any filter or enable action', async () => {
+  const ui = setup(); await tick(); assert.deepEqual(ui.calls, ['permissions','services','watch']);
+  assert.equal(ui.store.getSnapshot().status, 'locating');assert.equal(ui.store.getSnapshot().enabled, true);
+  ui.streams[0].fix(ui.raw());assert.equal(ui.store.getSnapshot().status,'ready');ui.stop();
 });
 
-test('explicit enable asks only for missing permission and coalesces repeated taps until the first acceptable fix', async () => {
+test('automatic startup requests missing permission and coalesces retries until the first acceptable fix', async () => {
   const ui = setup(); ui.permission({ granted: false, canAskAgain: true });
   const first = ui.store.enable(), second = ui.store.enable(); assert.equal(first, second);
   await tick(); assert.deepEqual(ui.calls, ['permissions', 'request', 'services', 'watch']); assert.equal(ui.store.getSnapshot().status, 'locating');
   ui.streams[0].fix(ui.raw()); await first; assert.equal(ui.store.getSnapshot().status, 'ready');
-  assert.equal(ui.store.getSnapshot().fix.latitude, 0); assert.equal(ui.time.size, 1); ui.stop(); assert.equal(ui.time.size, 0); assert.equal(ui.removed, 1);
+  assert.equal(ui.store.getSnapshot().fix.latitude, 0); assert.equal(ui.time.size, 2); ui.stop(); assert.equal(ui.time.size, 0); assert.equal(ui.removed, 1);
 });
 
 test('denied permission can be retried explicitly; permanently blocked permission never starts another native prompt', async () => {
@@ -126,13 +127,31 @@ test('stale native first readings never masquerade as current location', async (
   ui.time.advance(LOCATION_TIMEOUT_MS); await first; assert.equal(ui.store.getSnapshot().issue, 'stale'); assert.equal(ui.store.getSnapshot().fix, null); ui.stop();
 });
 
-test('accepted fixes expire and fresh foreground updates recover while older callbacks cannot move location backwards', async () => {
-  const ui = setup(); await ui.ready(); ui.time.advance(1000);
-  ui.streams[0].fix(ui.raw({ coords: { latitude: 1, longitude: 0, accuracy: 20 } }));
-  ui.streams[0].fix(ui.raw({ timestamp: ui.time.now() - 500, coords: { latitude: 2, longitude: 0, accuracy: 20 } }));
-  assert.equal(ui.store.getSnapshot().fix.latitude, 1);
-  ui.time.advance(LOCATION_MAX_AGE_MS); assert.equal(ui.store.getSnapshot().fix, null); assert.equal(ui.store.getSnapshot().issue, 'stale');
-  ui.streams[0].fix(ui.raw({ coords: { latitude: 3, longitude: 0, accuracy: 20 } })); assert.equal(ui.store.getSnapshot().fix.latitude, 3); ui.stop();
+test('automatic location polls every two minutes and keeps the previous distances ready until a new fix arrives',async()=>{
+  const ui=setup();await ui.ready();const first=ui.store.getSnapshot().fix;
+  assert.equal(ui.removed,1); // Each poll stops its native subscription after the first acceptable fix.
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS-1);await tick();assert.equal(ui.streams.length,1);
+  ui.time.advance(1);await tick();assert.equal(ui.streams.length,2);
+  assert.equal(ui.store.getSnapshot().status,'ready');assert.equal(ui.store.getSnapshot().fix,first);
+  ui.streams[0].fix(ui.raw({coords:{latitude:9,longitude:0,accuracy:20}}));assert.equal(ui.store.getSnapshot().fix,first);
+  ui.streams[1].fix(ui.raw({coords:{latitude:1,longitude:0,accuracy:20}}));assert.equal(ui.store.getSnapshot().fix.latitude,1);
+  ui.streams[1].fix(ui.raw({coords:{latitude:2,longitude:0,accuracy:20}}));assert.equal(ui.store.getSnapshot().fix.latitude,1);
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();assert.equal(ui.streams.length,3);ui.stop();assert.equal(ui.time.size,0);
+});
+
+test('a failed silent poll keeps a fresh previous fix and the next poll retries without a new permission prompt',async()=>{
+  const ui=setup();await ui.ready();const first=ui.store.getSnapshot().fix;
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();ui.streams[1].error();
+  assert.equal(ui.store.getSnapshot().status,'ready');assert.equal(ui.store.getSnapshot().fix,first);
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();assert.equal(ui.streams.length,3);
+  ui.streams[2].fix(ui.raw({coords:{latitude:1,longitude:0,accuracy:20}}));
+  assert.equal(ui.store.getSnapshot().fix.latitude,1);assert.equal(ui.calls.filter(value=>value==='request').length,0);ui.stop();
+});
+
+test('coordinates still expire when repeated silent polls cannot obtain a valid replacement',async()=>{
+  const ui=setup();await ui.ready();
+  for(let i=0;i<4;i++){ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();ui.streams.at(-1).error();}
+  assert.equal(ui.store.getSnapshot().fix,null);assert.equal(ui.store.getSnapshot().status,'unavailable');ui.stop();
 });
 
 test('backgrounding removes GPS and coordinates; foreground refresh rechecks permission without prompting', async () => {
@@ -142,30 +161,33 @@ test('backgrounding removes GPS and coordinates; foreground refresh rechecks per
   const before = ui.calls.length; ui.store.resume(); await tick(); assert.equal(ui.calls.length, before); ui.stop();
 });
 
-test('enabling while backgrounded cannot prompt or track; resume checks existing permission only', async () => {
-  const ui = setup(); ui.store.suspend(); ui.permission({ granted: false, canAskAgain: true }); await ui.store.enable(); assert.deepEqual(ui.calls, []);
-  ui.store.resume(); await tick(); assert.deepEqual(ui.calls, ['permissions']); assert.equal(ui.store.getSnapshot().status, 'denied'); ui.stop();
+test('a session opened in the background waits for active state before requesting location permission', async () => {
+  const ui = setup({}, false);ui.permission({granted:false,canAskAgain:true});
+  await ui.store.enable();assert.deepEqual(ui.calls,[]);assert.equal(ui.store.getSnapshot().status,'paused');
+  ui.store.resume();await tick();assert.deepEqual(ui.calls,['permissions','request','services','watch']);
+  ui.streams[0].fix(ui.raw());assert.equal(ui.store.getSnapshot().status,'ready');ui.stop();
 });
 
-test('Stop using location clears the point and watcher and returning to the foreground does not restart it', async () => {
-  const ui = setup(); await ui.ready(); ui.store.disable(); assert.equal(ui.removed, 1); assert.equal(ui.store.getSnapshot().fix, null);
-  assert.equal(ui.store.getSnapshot().enabled, false); ui.store.suspend(); ui.store.resume(); await tick();
-  assert.equal(ui.calls.filter(value => value === 'watch').length, 1); ui.stop();
+test('location stays enabled for the session and automatically restarts after backgrounding', async () => {
+  const ui=setup();await ui.ready();ui.store.suspend();assert.equal(ui.removed,1);
+  assert.equal(ui.store.getSnapshot().enabled,true);ui.store.resume();await tick();
+  assert.equal(ui.calls.filter(value=>value==='watch').length,2);ui.streams[1].fix(ui.raw());
+  assert.equal(ui.store.getSnapshot().status,'ready');ui.stop();
 });
 
 test('late permissions and watcher registration after cancellation cannot repopulate an account', async () => {
-  const permission = deferred(); const ui = setup({ permissions: () => permission.promise }); const enable = ui.store.enable(); ui.store.disable();
+  const permission = deferred(); const ui = setup({ permissions: () => permission.promise }); const enable = ui.store.enable(); ui.stop();
   permission.resolve({ granted: true, canAskAgain: true }); await enable; await tick(); assert.equal(ui.streams.length, 0); ui.stop();
   const registration = deferred(); let callback, removed = 0;
   const late = setup({ watch: async fix => { callback = fix; return registration.promise; } }); const first = late.store.enable(); await tick(); late.stop();
   callback(late.raw()); registration.resolve(() => { removed++; }); await first; await tick(); assert.equal(removed, 1); assert.equal(late.store.getSnapshot().fix, null);
 });
 
-test('effect replay preserves opt-in while stale old subscriptions are removed and a new account starts with no location', async () => {
+test('effect replay and account changes automatically start fresh location without reusing old coordinates', async () => {
   const ui = setup(); await ui.ready(); ui.stop(); const end = ui.store.start(); await tick();
   ui.streams[0].fix(ui.raw({ coords: { latitude: 2, longitude: 2, accuracy: 30 } })); assert.equal(ui.store.getSnapshot().fix, null);
-  ui.streams[1].fix(ui.raw()); assert.equal(ui.store.getSnapshot().status, 'ready'); assert.equal(ui.removed, 1); end();
-  const other = setup(); await tick(); assert.equal(other.store.getSnapshot().enabled, false); assert.equal(other.store.getSnapshot().fix, null); assert.deepEqual(other.calls, []); other.stop();
+  ui.streams[1].fix(ui.raw()); assert.equal(ui.store.getSnapshot().status, 'ready'); assert.equal(ui.removed, 2); end();
+  const other = setup(); await tick(); assert.equal(other.store.getSnapshot().enabled, true); assert.equal(other.store.getSnapshot().fix, null); assert.deepEqual(other.calls, ['permissions','services','watch']); other.stop();
 });
 
 test('native errors and settings failures expose recoverable states without raw device messages or unhandled promises', async () => {
@@ -173,4 +195,42 @@ test('native errors and settings failures expose recoverable states without raw 
   assert.equal(ui.store.getSnapshot().issue, 'unavailable'); await ui.store.openSettings(); assert.equal(ui.store.getSnapshot().settingsError, true); ui.stop();
   const failed = setup({ permissions: async () => { throw Error('Native private details'); } }); await failed.store.enable();
   assert.equal(failed.store.getSnapshot().status, 'unavailable'); assert.ok(!JSON.stringify(failed.store.getSnapshot()).includes('Native private')); failed.stop();
+});
+
+
+test('a permission prompt survives effect replay without duplicate requests or losing its result',async()=>{
+  const prompt=deferred();const ui=setup({requestPermissions:()=>{ui.calls.push('request');return prompt.promise;}});
+  ui.permission({granted:false,canAskAgain:true});await tick();assert.equal(ui.calls.filter(value=>value==='request').length,1);
+  ui.stop();const stop=ui.store.start();await tick();
+  assert.equal(ui.calls.filter(value=>value==='request').length,1);
+  prompt.resolve({granted:true,canAskAgain:true});await tick();assert.equal(ui.streams.length,1);
+  ui.streams[0].fix(ui.raw());assert.equal(ui.store.getSnapshot().status,'ready');stop();
+});
+
+test('a denied automatic request is not shown again on each foreground transition',async()=>{
+  const ui=setup();ui.permission({granted:false,canAskAgain:true});ui.requested({granted:false,canAskAgain:true});await tick();
+  assert.equal(ui.store.getSnapshot().status,'denied');ui.store.suspend();ui.store.resume();await tick();
+  assert.equal(ui.calls.filter(value=>value==='request').length,1);ui.stop();
+});
+
+
+test('periodic polling stops in the background and after unmount and resumes on a fresh two-minute schedule',async()=>{
+  const ui=setup();await ui.ready();ui.store.suspend();const calls=ui.calls.length;
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS*3);await tick();assert.equal(ui.calls.length,calls);assert.equal(ui.time.size,0);
+  ui.store.resume();await tick();assert.equal(ui.streams.length,2);ui.streams[1].fix(ui.raw());
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS-1);await tick();assert.equal(ui.streams.length,2);
+  ui.time.advance(1);await tick();assert.equal(ui.streams.length,3);ui.stop();
+  const afterStop=ui.calls.length;ui.time.advance(LOCATION_REFRESH_INTERVAL_MS*3);await tick();assert.equal(ui.calls.length,afterStop);
+});
+
+
+test('a repeated cached reading cannot finish a scheduled refresh, and expiry recovers automatically without asking permission again',async()=>{
+  const ui=setup();await ui.ready();const first=ui.store.getSnapshot().fix;
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS);await tick();
+  ui.streams[1].fix({timestamp:first.timestamp,coords:{latitude:first.latitude,longitude:first.longitude,accuracy:first.accuracy}});
+  assert.equal(ui.removed,1);assert.equal(ui.store.getSnapshot().fix,first);
+  ui.time.advance(LOCATION_TIMEOUT_MS);await tick();assert.equal(ui.store.getSnapshot().fix,null);
+  ui.time.advance(LOCATION_REFRESH_INTERVAL_MS-LOCATION_TIMEOUT_MS);await tick();assert.equal(ui.streams.length,3);
+  ui.streams[2].fix(ui.raw());assert.equal(ui.store.getSnapshot().status,'ready');
+  assert.equal(ui.calls.filter(value=>value==='request').length,0);ui.stop();
 });

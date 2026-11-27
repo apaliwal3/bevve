@@ -14,7 +14,7 @@ import { BevveTheme as theme } from '@/constants/theme';
 import { authFormReducer, createAuthFormState } from './auth-form-state';
 import { validateAuthForm, type AuthMode } from './auth-validation';
 import { useAuth } from './auth-provider';
-import { authErrorMessage } from './auth-store';
+import { authErrorDetails, authErrorMessage } from './auth-store';
 
 type AuthScreenProps = { mode: AuthMode; onBack: () => void; onSwitch: () => void };
 
@@ -33,8 +33,8 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
   const visibleError = requestError ?? auth.error;
 
   useFocusEffect(useCallback(() => {
-    if (auth.session) router.replace('/profile');
-  }, [auth.session]));
+    if (auth.session && (!auth.recovery || auth.recovery === 'none')) router.replace('/explore');
+  }, [auth.session, auth.recovery]));
 
   useFocusEffect(useCallback(() => () => {
     // Clear transient input even when a blurred route remains mounted in the stack.
@@ -66,9 +66,12 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
       else await auth.signIn(values.email, values.password);
       if (request !== attempt.current) return;
       if (outcome === 'confirm-email') dispatch({ type: 'confirm-email' });
-      else router.replace('/profile');
+      else router.replace('/explore');
     } catch (error) {
       if (request !== attempt.current) return;
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn('[auth] Request failed', { operation: mode, ...authErrorDetails(error) });
+      }
       dispatch({ type: 'failed' });
       setRequestError(authErrorMessage(error));
     } finally {
@@ -167,6 +170,10 @@ export function AuthScreen({ mode, onBack, onSwitch }: AuthScreenProps) {
           {visibleError && <Text accessibilityRole="alert" style={styles.description}>{t(visibleError)}</Text>}
           {state.status === 'confirm-email' && <Text accessibilityLiveRegion="polite" style={styles.description}>{t('Check your email to confirm your account, then return here to sign in.')}</Text>}
           <PrimaryButton label={submitting ? t('Please wait…') : isSignup ? t("Create Account") : t("Sign In")} onPress={() => { void submit(); }} disabled={submitting || state.status === 'confirm-email'} style={styles.submit} />
+          <Pressable accessibilityRole="link" accessibilityLabel={t('Forgot password?')} disabled={submitting}
+            onPress={() => leave(() => router.push('/forgot-password'))} style={styles.visibility}>
+            <Text style={styles.visibilityLabel}>{t('Forgot password?')}</Text>
+          </Pressable>
         </View>
 
         <Pressable

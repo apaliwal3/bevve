@@ -32,6 +32,7 @@ function NavButton({ label, icon, isFocused = false, ...props }: NavButtonProps)
 
 const mainTabs = [
   { name: 'explore', label: 'Explore', icon: 'explore' },
+  { name: 'drink-prices', label: 'Drink prices', icon: 'compare' },
   { name: 'rankings', label: 'Rankings', icon: 'rankings' },
   { name: 'profile', label: 'Profile', icon: 'profile' },
 ] as const;
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: theme.layout.maxWidth,
     alignSelf: 'center',
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.navigation,
     borderTopWidth: 1,
     borderColor: theme.colors.border,
     paddingHorizontal: theme.spacing.md,

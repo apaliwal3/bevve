@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { OptionalContributionCard } from './optional-contribution-card';
 import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
 import { BevveTheme as theme } from '@/constants/theme';
@@ -23,20 +23,33 @@ export function AccountLanguageFeedback() {
 }
 export function AccountLanguagePanel({ catalog, barId }: { catalog: AccountCatalogValue; barId: string }) {
   const state = useAccountLanguages(), { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
   const venue = catalog.venues.find(row => row.id === barId);
   const op = state.operations[barId] ?? emptyLanguageOperation;
   if (!venue || !catalog.impressions[barId]) return null;
   return <View style={styles.section}>
-    <PrimaryButton label={t('Spoken languages')} variant="secondary" disabled={op.saving} onPress={() => setExpanded(value => !value)} />
-    {expanded && <>
+    <OptionalContributionCard titleKey="Spoken languages" hintKey="Languages spoken by staff" icon="languages" disabled={op.saving}>
       <AccountLanguageFeedback />
       {state.status === 'ready' && <SpokenLanguagesForm languages={venue.languages.map(row => ({ ...row, name: venueLanguageLabel(row.code, t) }))}
         pending={state.history.filter(row => row.bar_id === barId && row.status === 'pending')}
-        initialCode={op.request?.code} feedback={{ pending: Boolean(op.request), saving: op.saving, error: op.error, saved: op.saved,
-          retry: () => { if (op.request) void state.retry(barId, op.request.id).catch(() => {}); } }}
-        onSubmit={code => { void state.submit(barId, code, op.version).catch(() => {}); }} onCancel={() => setExpanded(false)} />}
-    </>}
+        initialCodes={op.remainingCodes ?? (op.request ? [op.request.code] : [])}
+        feedback={{ pending: Boolean(op.request || op.remainingCodes?.length), saving: op.saving, error: op.error, saved: op.saved,
+          retry: () => state.retryMany(barId) }}
+        onSubmit={codes => state.submitMany(barId, codes, op.version)} onCancel={() => {}} />}
+    </OptionalContributionCard>
+  </View>;
+}
+export function AccountVenueLanguages({ barId, languages }: { barId: string; languages: readonly { code: string }[] }) {
+  const state = useAccountLanguages(), { t } = useTranslation();
+  const associated = new Set(languages.map(language => language.code));
+  const submitted = [...new Set(state.history.filter(row => row.bar_id === barId && row.status !== 'rejected' &&
+    !associated.has(row.language_code)).map(row => row.language_code))];
+  return <View style={styles.section}>
+    <View style={styles.tags}>
+      {languages.map(language => <Text key={language.code} style={styles.tag}>{venueLanguageLabel(language.code, t)}</Text>)}
+      {submitted.map(code => <Text key={code} style={styles.tag}>{venueLanguageLabel(code, t)} · {t('Not verified')}</Text>)}
+    </View>
+    {languages.length === 0 && submitted.length === 0 && state.status === 'ready' && <Text style={styles.note}>{t('No languages reported yet.')}</Text>}
+    <AccountLanguageFeedback />
   </View>;
 }
 export function AccountLanguageHistory({ catalog, onOpenVenue }: { catalog: AccountCatalogValue; onOpenVenue: (id: UUID) => void }) {
@@ -53,7 +66,6 @@ export function AccountLanguageHistory({ catalog, onOpenVenue }: { catalog: Acco
           summary={t('{language} · {status} · {date}', { language: venueLanguageLabel(row.language_code, t), status: statuses[row.status], date: format.dateTime(row.created_at) })} />;
       })}
     </ProfileActivitySection>}
-    <PrimaryButton label={t('Refresh language suggestions')} variant="secondary" disabled={state.refreshing} onPress={() => { void state.refresh(); }} />
   </View>;
 }
 export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalogValue }) {
@@ -81,10 +93,12 @@ export function AccountLanguageModeration({ catalog }: { catalog: AccountCatalog
         </>}
       </View>;
     })}
-    <PrimaryButton label={t('Refresh language queue')} variant="secondary" disabled={state.queueRefreshing} onPress={() => { void state.refreshQueue(); }} />
   </View>;
 }
 const styles = StyleSheet.create({
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  tag: { color: theme.colors.purpleText, fontFamily: theme.fonts.bodyBold, fontSize: 10, paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs, borderRadius: theme.radii.sm, backgroundColor: theme.colors.purpleTint },
   section: { gap: theme.spacing.md }, card: { gap: theme.spacing.sm, padding: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radii.card },
   title: { color: theme.colors.text, fontFamily: theme.fonts.heading, fontSize: 17 },
   note: { color: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 12, lineHeight: 19 },

@@ -10,6 +10,7 @@ A backend foundation for the bevve plan: database schema, access rules, database
 - `supabase/migrations/004_venue_contributions.sql`: retry-safe crowd/price writes and a private own-price history RPC. Locally tested; owner confirmed hosted deployment on 2026-11-23.
 - `supabase/migrations/005_language_suggestions.sql`: private language suggestions, retry receipts and moderator approval/rejection. Owner confirmed deployment and passing hosted SQL checks on 2026-11-23.
 - `supabase/migrations/006_account_safety.sql`: retry-safe private incident submission and review, plus moderator-access RPC. Owner confirmed deployment and verification on 2026-11-23.
+- `supabase/migrations/007_saved_bars.sql`: private per-account Want to visit bookmarks, with owner-only reads/inserts/deletes and unique user/venue pairs. Apply after 006; local checks are in `supabase/tests/saved-bars.sql`.
 - `supabase/seed.sql`: three fictional venues and two standardized drinks.
 - `src/services/`: functions the future mobile app can call.
 - `src/logic/eloRanking.ts`: personal rankings from pairwise comparisons.
@@ -254,6 +255,35 @@ device location and these existing venue coordinates. No location migration or
 user-coordinate storage/API upload is required. Only real, non-demo catalog rows
 participate; seed venue coordinates stay fictional. Backend proximity queries and
 geographic indexes remain future work for a larger catalog.
+
+## Profile password reset
+
+`authService(client).resetPassword({ currentPassword, newPassword, confirmPassword })`
+resets the signed-in account's password. The shared contract in
+`shared/password-reset.ts` validates a six-character minimum, requires matching
+confirmation and a different password, reads the authenticated user from Supabase,
+then verifies their current password with a fresh sign-in before calling
+`auth.updateUser`. Supabase enforces its configured password policy and stores the
+password; no profile columns, SQL migration or service-role key are needed.
+Pass a client scoped to the current user, as with the other auth methods.
+
+This is an authenticated password change from Profile. It requires the current
+password. Email-based forgotten-password recovery uses
+`authService(client).requestPasswordRecovery(email, redirectTo)`, followed by
+`completePasswordRecovery({ newPassword, confirmPassword })` on the client
+authenticated by the verified email link. Supabase verifies ownership of that
+session; the completion method never accepts an email or account ID as authority.
+Email requests validate/trim the address, propagate delivery/rate-limit errors,
+and do not return account-existence information.
+
+Allow `mobile://recover-password` in Supabase Authentication URL Configuration
+for installed app builds. Web/Expo Go callback URLs must also be allowlisted for
+their environments; see `mobile/README.md`. The default recovery email template
+works without changes. No SQL migration is needed. The mobile auth store handles
+implicit token callbacks and PKCE code exchange and requires verified recovery
+state before exposing password completion.
+Local tests cover validation, incorrect credentials, account/session checks,
+provider failures and SDK request wiring. Hosted password writes were not run.
 
 ## References
 

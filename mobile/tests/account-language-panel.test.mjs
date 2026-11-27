@@ -18,12 +18,14 @@ function setup() {
     isModerator: false, queue: [], queueRefreshing: false, reviews: {} };
   let calls = [], harness = hookHarness(), module;
   const actions = { submit: (...args) => { calls.push(['submit', ...args]); return Promise.resolve(); },
+    submitMany: (...args) => { calls.push(['submitMany', ...args]); return Promise.resolve(); },
+    retryMany: (...args) => { calls.push(['retryMany', ...args]); return Promise.resolve(); },
     retry: (...args) => { calls.push(['retry', ...args]); return Promise.resolve(); },
     moderate: (...args) => { calls.push(['moderate', ...args]); return Promise.resolve(); },
     refresh: () => { calls.push(['refresh']); return Promise.resolve(); }, refreshQueue: () => { calls.push(['refreshQueue']); return Promise.resolve(); } };
   function load() {
     module = loadNativeModule('src/features/contributions/account-language-panel.tsx', {
-      react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
+      './optional-contribution-card':{OptionalContributionCard:'OptionalContributionCard'},react: harness.react, '@/components/primary-button': { PrimaryButton: 'PrimaryButton' }, '@/constants/theme': theme,
       '@/features/profile/profile-activity-components': { ProfileActivitySection: 'ProfileActivitySection', ProfileActivityRow: 'ProfileActivityRow' },
       '@/features/catalog/catalog-adapters': adapters, '@/features/comparisons/comparison-state': ids,
       '@/localization/language-provider': { useTranslation: () => ({ t: createTranslator('en'), format: createLocaleFormatters('en') }) },
@@ -40,22 +42,39 @@ function setup() {
 
 test('account language cards use database associations and owner pending rows and restore uncertain requests on reopen', () => {
   const ui = setup();
-  ui.render().find(node => node.props.label === 'Spoken languages').props.onPress();
+  assert.ok(ui.render().some(node => node.props.titleKey === 'Spoken languages'));
   const form = ui.render().find(node => node.type === 'SpokenLanguagesForm');
   assert.deepEqual(Array.from(form.props.languages, value => ({ ...value })), [{ code: 'en', name: 'English' }]);
-  assert.equal(form.props.pending.length, 1); form.props.onSubmit('fr');
-  assert.deepEqual(ui.calls[0], ['submit', barId, 'fr', 0]);
+  assert.equal(form.props.pending.length, 1); form.props.onSubmit(['fr','de']);
+  assert.deepEqual(ui.calls[0], ['submitMany', barId, ['fr','de'], 0]);
   ui.setState({ operations: { [barId]: { version: 0, request: { id: row.id, barId, code: 'fr' }, saving: false, error: true, saved: false } } });
-  ui.remount(); ui.render().find(node => node.props.label === 'Spoken languages').props.onPress();
+  ui.remount(); assert.ok(ui.render().some(node => node.props.titleKey === 'Spoken languages'));
   const reopened = ui.render().find(node => node.type === 'SpokenLanguagesForm');
-  assert.equal(reopened.props.initialCode, 'fr'); assert.equal(reopened.props.feedback.error, true);
-  reopened.props.feedback.retry(); assert.deepEqual(ui.calls[1], ['retry', barId, row.id]); ui.stop();
+  assert.deepEqual(Array.from(reopened.props.initialCodes), ['fr']); assert.equal(reopened.props.feedback.error, true);
+  reopened.props.feedback.retry(); assert.deepEqual(ui.calls[1], ['retryMany', barId]); ui.stop();
+});
+
+test('bar languages include submitted unverified languages, hide rejected rows, and deduplicate approved associations', () => {
+  const ui = setup();
+  ui.setState({ history: [row, { ...row, id: 'duplicate', language_code: 'it' },
+    { ...row, id: 'associated', language_code: 'en', status: 'approved' },
+    { ...row, id: 'rejected', language_code: 'fr', status: 'rejected' },
+    { ...row, id: 'other-bar', bar_id: 'other-bar', language_code: 'de' }] });
+  let nodes = ui.render('AccountVenueLanguages', { languages: [{code:'en'}] });
+  const copy = nodes.filter(node => node.type === 'Text').map(node => [node.props.children].flat().join(''));
+  assert.equal(copy.filter(value => value === 'Italian · Not verified').length, 1);
+  assert.ok(copy.includes('English'));assert.ok(!copy.some(value => /French|German|No languages/.test(value)));
+  nodes = ui.render('AccountVenueLanguages', { languages: [] });
+  assert.ok(!nodes.some(node => node.props.children === 'No languages reported yet.'));
+  ui.setState({ history: [] });
+  assert.ok(ui.render('AccountVenueLanguages', { languages: [] }).some(node => node.props.children === 'No languages reported yet.'));
+  ui.stop();
 });
 
 test('language forms require a saved impression and loading errors expose retry without a demo form', () => {
   const ui = setup(); ui.catalog.impressions = {}; assert.equal(ui.render().length, 0);
   ui.catalog.impressions = { [barId]: impression() }; ui.setState({ status: 'error', error: true });
-  ui.render().find(node => node.props.label === 'Spoken languages').props.onPress();
+  assert.ok(ui.render().some(node => node.props.titleKey === 'Spoken languages'));
   assert.ok(!ui.render().some(node => node.type === 'SpokenLanguagesForm'));
   const feedback = ui.render('AccountLanguageFeedback');
   feedback.find(node => node.props.label === 'Retry language suggestions').props.onPress(); assert.deepEqual(ui.calls[0], ['refresh']); ui.stop();

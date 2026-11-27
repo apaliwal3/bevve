@@ -9,8 +9,8 @@ export const impressionLabels: Record<Impression, PlainTranslationKey> = {
   liked: 'I liked it', fine: 'It was fine', disliked: "I didn't like it",
 };
 
-// Muted impression accents stay local to this selector; the overlay keeps its
-// existing navy/purple palette. Symbols and the selected badge supplement color.
+// Semantic impression colors supplement the ivory/blue theme with symbols and
+// a selected badge.
 const choices: Record<Impression, { color: string; symbol: string }> = {
   liked: { color: '#82b79e', symbol: '✓' },
   fine: { color: '#d6b967', symbol: '−' },

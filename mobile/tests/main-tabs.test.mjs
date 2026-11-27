@@ -14,7 +14,8 @@ import { mockVenues } from '../src/fixtures/venues.ts';
 import { mockDrinkCatalog } from '../src/fixtures/contribution-catalog.ts';
 import { elements, flattenStyle, loadNativeModule } from './helpers/native-module.mjs';
 
-const names = ['explore', 'rankings', 'profile'];
+const names = ['explore', 'drink-prices', 'rankings', 'profile'];
+const icons = ['explore', 'compare', 'rankings', 'profile'];
 const theme = loadNativeModule('src/constants/theme.ts');
 const Tabs = Object.assign(() => null, { Screen: 'TabScreen' });
 const layout = loadNativeModule('src/app/(tabs)/_layout.tsx', {
@@ -28,7 +29,7 @@ const tabRouter = TabRouter({ backBehavior: layoutProps.backBehavior });
 const tabOptions = { routeNames: names, routeGetIdList: {}, routeParamList: {} };
 function initialTabs() {
   return tabRouter.getStateForDeclaredRoutes({
-    key: 'main-tabs', type: 'tab', stale: false, routeKeySeq: 3, index: 0,
+    key: 'main-tabs', type: 'tab', stale: false, routeKeySeq: 4, index: 0,
     routeNames: names, routes: names.map((name, index) => ({ name, key: name + '-' + index })),
   }, names);
 }
@@ -47,7 +48,7 @@ function tabBar(language, state, navigateToTab, prevented = false, events = []) 
   return { tree, buttons };
 }
 
-test('one persistent navigator owns exactly three tab routes; providers, the legacy redirect and detail routes remain outside it', () => {
+test('one persistent navigator owns four tab routes; providers, the legacy redirect and contextual detail routes remain outside it', () => {
   assert.equal(layoutProps.backBehavior, 'none');
   assert.equal(layoutProps.screenOptions.animation, 'none');
   assert.equal(layoutProps.screenOptions.headerShown, false);
@@ -75,7 +76,8 @@ test('one persistent navigator owns exactly three tab routes; providers, the leg
     assert.ok(existsSync(new URL('../src/app/' + file, import.meta.url)));
     assert.equal(existsSync(new URL('../src/app/(tabs)/' + file, import.meta.url)), false);
   }
-  assert.equal(rootSource.includes('gestureEnabled: false'), false);
+  assert.ok(rootSource.includes('<Stack.Screen name="(tabs)" options={{ gestureEnabled: false, fullScreenGestureEnabled: false }} />'));
+  assert.ok(!/screenOptions=\{\{[^}]*gestureEnabled/.test(rootSource), 'Detail screens must retain their normal Back gestures.');
 });
 
 test('the real tab bar retains icons, selection and safe areas in EN/IT and selects tabs without stack links', () => {
@@ -83,16 +85,16 @@ test('the real tab bar retains icons, selection and safe areas in EN/IT and sele
     const destinations = [], events = [];
     const { tree, buttons } = tabBar(language, initialTabs(), (key) => destinations.push(key), false, events);
     assert.equal(flattenStyle(tree.props.children.props.style).paddingBottom, 34);
-    assert.equal(buttons.length, 3);
+    assert.equal(buttons.length, 4);
     buttons.forEach((button, index) => {
       assert.equal(button.props.accessibilityRole, 'tab');
-      assert.equal(button.props.accessibilityLabel, createTranslator(language)(['Explore', 'Rankings', 'Profile'][index]));
+      assert.equal(button.props.accessibilityLabel, createTranslator(language)(['Explore', 'Drink prices', 'Rankings', 'Profile'][index]));
       assert.equal(button.props.accessibilityState.selected, index === 0);
-      assert.equal([...elements(button)].find((node) => node.type === 'AppIcon').props.name, names[index]);
+      assert.equal([...elements(button)].find((node) => node.type === 'AppIcon').props.name, icons[index]);
       button.props.onPress();
     });
-    assert.deepEqual(destinations, ['rankings-1', 'profile-2']);
-    assert.equal(events.length, 3);
+    assert.deepEqual(destinations, ['drink-prices-1', 'rankings-2', 'profile-3']);
+    assert.equal(events.length, 4);
     buttons[1].props.onLongPress();
     assert.equal(events.at(-1).type, 'tabLongPress');
     const blocked = tabBar(language, initialTabs(), () => assert.fail('A prevented tab event must not navigate.'), true);
@@ -105,14 +107,14 @@ test('the real tab bar retains icons, selection and safe areas in EN/IT and sele
   }
 });
 
-test('all three tab controls are available before lazy routes have been visited', () => {
+test('all four tab controls are available before lazy routes have been visited', () => {
   const initial = initialTabs();
   const state = appendMissingPlaceholderTabRoutes({ ...initial, routes: [initial.routes[0]] },
     Object.fromEntries(names.map((name) => [name, { route: { name } }])));
   const destinations = [];
   const { buttons } = tabBar('it', state, (key) => destinations.push(key));
-  assert.equal(buttons.length, 3);
-  buttons[2].props.onPress();
+  assert.equal(buttons.length, 4);
+  buttons[3].props.onPress();
   assert.deepEqual(destinations, ['profile']);
 });
 

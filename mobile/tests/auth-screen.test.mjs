@@ -5,18 +5,18 @@ import { elements, loadNativeModule, nativeStub } from './helpers/native-module.
 import { createTranslator } from '../src/localization/translation.ts';
 import * as state from '../src/features/auth/auth-form-state.ts';
 import * as validation from '../src/features/auth/auth-validation.ts';
-import { authErrorMessage } from '../src/features/auth/auth-store.ts';
+import { authErrorDetails, authErrorMessage } from '../src/features/auth/auth-store.ts';
 
 const theme = loadNativeModule('src/constants/theme.ts');
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function setup(mode, overrides) {
+function setup(mode, overrides, globals = {}) {
   const harness = hookHarness();
   const navigations = [];
   const auth = { session: null, error: null, signIn: async () => {}, signUp: async () => 'confirm-email', ...overrides };
   const screen = loadNativeModule('src/features/auth/auth-screen.tsx', {
     react: harness.react,
     'react-native': { ...nativeStub, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' } },
-    'expo-router': { router: { replace: route => navigations.push(route) }, useFocusEffect: fn => harness.react.useEffect(fn, [fn]) },
+    'expo-router': { router: { replace: route => navigations.push(route), push: route => navigations.push(route) }, useFocusEffect: fn => harness.react.useEffect(fn, [fn]) },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/localization/language-provider': { useTranslation: () => ({ t: createTranslator('en') }) },
     '@/components/app-icon': { AppIcon: 'AppIcon' },
@@ -26,8 +26,8 @@ function setup(mode, overrides) {
     '@/components/screen-container': { ScreenContainer: 'ScreenContainer' },
     '@/constants/theme': theme,
     './auth-form-state': state, './auth-validation': validation,
-    './auth-provider': { useAuth: () => auth }, './auth-store': { authErrorMessage },
-  });
+    './auth-provider': { useAuth: () => auth }, './auth-store': { authErrorDetails, authErrorMessage },
+  }, globals);
   function render() {
     let tree;
     for (let i = 0; i < 10; i++) {
@@ -45,7 +45,7 @@ function setup(mode, overrides) {
   return { render, fill, harness, navigations };
 }
 
-test('Login sends one request on rapid taps, disables inputs, and opens Profile on success', async () => {
+test('Login sends one request on rapid taps, disables inputs, and opens Explore on success', async () => {
   let resolve;
   const pending = new Promise(done => { resolve = done; });
   const calls = [];
@@ -59,7 +59,25 @@ test('Login sends one request on rapid taps, disables inputs, and opens Profile 
   assert.equal(ui.render().find(node => node.type === 'FormInput' && node.props.label === 'Password').props.value, 'password123');
   resolve();
   await tick();
-  assert.deepEqual(ui.navigations, ['/profile']);
+  assert.deepEqual(ui.navigations, ['/explore']);
+  ui.harness.unmount();
+});
+
+test('Sign-up and sign-in both open forgotten-password recovery and clear their drafts', () => {
+  for (const mode of ['signup', 'login']) {
+    const ui = setup(mode);
+    ui.fill();
+    ui.render().find(node => node.props.accessibilityLabel === 'Forgot password?').props.onPress();
+    assert.deepEqual(ui.navigations, ['/forgot-password']);
+    assert.ok(ui.render().filter(node => node.type === 'FormInput').every(node => node.props.value === ''));
+    ui.harness.unmount();
+  }
+});
+
+test('an email recovery session does not redirect the auth screen to Explore before password reset', () => {
+  const ui = setup('login', { session: { user: { id: 'user-a' } }, recovery: 'ready' });
+  ui.render();
+  assert.deepEqual(ui.navigations, []);
   ui.harness.unmount();
 });
 
@@ -135,4 +153,18 @@ test('a late request response cannot navigate after leaving the authentication s
   resolve();
   await tick();
   assert.deepEqual(ui.navigations, []);
+});
+
+test('Signup explains email delivery restrictions and logs only safe diagnostics in development', async () => {
+  const logs = [];
+  const ui = setup('signup', { signUp: async () => {
+    throw { name: 'AuthApiError', code: 'email_address_not_authorized', status: 403, message: 'PRIVATE_SERVER_DETAIL' };
+  } }, { __DEV__: true, console: { warn: (...args) => logs.push(args) } });
+  ui.fill();
+  ui.render().find(node => node.type === 'PrimaryButton').props.onPress();
+  await tick();
+  assert.ok(ui.render().some(node => node.props.accessibilityRole === 'alert' && node.props.children === 'Confirmation emails cannot be sent to this address yet. Please contact support.'));
+  assert.equal(JSON.stringify(logs), JSON.stringify([['[auth] Request failed', { operation: 'signup', name: 'AuthApiError', code: 'email_address_not_authorized', status: 403 }]]));
+  assert.deepEqual(ui.navigations, []);
+  ui.harness.unmount();
 });

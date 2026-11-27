@@ -7,7 +7,7 @@ import { accountLanguageRepository } from './account-language-repository';
 import { createAccountLanguageStore } from './account-language-store';
 
 type Store = ReturnType<typeof createAccountLanguageStore>;
-type Value = ReturnType<Store['getSnapshot']> & Pick<Store, 'submit' | 'retry' | 'refresh' | 'refreshQueue' | 'moderate'>;
+type Value = ReturnType<Store['getSnapshot']> & Pick<Store, 'submit' | 'retry' | 'submitMany' | 'retryMany' | 'refresh' | 'refreshQueue' | 'moderate'>;
 const Context = createContext<Value | null>(null);
 export function AccountLanguagesProvider({ children }: PropsWithChildren) {
   const catalog = useVenueCatalog();
@@ -26,6 +26,7 @@ function AccountLanguages({ children, catalog }: PropsWithChildren<{ catalog: Ac
     return () => { listener.remove(); clearInterval(timer); };
   }, [store]);
   const value = useMemo(() => ({ ...snapshot, submit: store.submit, retry: store.retry, refresh: store.refresh,
+    submitMany: store.submitMany, retryMany: store.retryMany,
     refreshQueue: store.refreshQueue, moderate: store.moderate }), [snapshot, store]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
