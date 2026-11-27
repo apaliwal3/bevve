@@ -240,7 +240,7 @@ export function VenueRatingOverlay({ venue, onClose }: VenueRatingOverlayProps) 
                 <View style={styles.ratingCard}>
                   <Text style={styles.eyebrow}>{t('YOUR EXPERIENCE')}</Text>
                   {view.impression && <Text accessibilityLiveRegion="polite" style={styles.question}>{t(impressionLabels[view.impression])}</Text>}
-                  <Text style={styles.description}>{t('Saved for this demo session. Reopen + to edit your experience.')}</Text>
+                  <Text style={styles.description}>{t('Saved for this demo session.')}</Text>
                   {view.noOpponents && <Text style={styles.description}>{t('No other experienced bars are available to compare yet.')}</Text>}
                 </View>
                 <Text style={styles.description}>{t('All five contributions are optional. Fill in any cards, then save when you are done.')}</Text>

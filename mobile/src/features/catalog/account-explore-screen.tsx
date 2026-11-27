@@ -31,19 +31,17 @@ export function AccountExploreScreen({ catalog }: { catalog: AccountCatalogValue
   return <ScreenContainer edges={['top','left','right']} contentContainerStyle={styles.content} refreshing={refreshing} onRefresh={refresh}>
     <View style={styles.header}><Logo /><PrimaryButton label={t('Profile')} variant="secondary" onPress={() => router.navigate('/profile')} /></View>
     <Text accessibilityRole="header" style={styles.title}>{t('Explore venues')}</Text>
-    <Text style={styles.note}>{t('Open a venue and tap + to save your impression.')}</Text>
     {catalog.venues.some(row => row.is_demo) && <Text style={styles.note}>{t('Sample venues are labeled. Your impressions are saved to your account.')}</Text>}
     <TextInput style={styles.search} accessibilityLabel={t('Search bars or neighborhoods')} placeholder={t('Search bars or neighborhoods')}
       placeholderTextColor={theme.colors.textMuted} value={query} onChangeText={setQuery} autoCorrect={false} />
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
       {(['All','Nearby','Cheap','Quiet','Popular'] as const).map(item => <Pressable key={item} accessibilityRole="button"
-        accessibilityState={{ selected: filter === item }} onPress={() => { setFilter(item); if (item === 'Nearby') void location.enable(); }}
+        accessibilityState={{ selected: filter === item }} onPress={() => setFilter(item)}
         style={[styles.chip, filter === item && styles.selected]}><Text style={styles.chipText}>{t(item)}</Text></Pressable>)}
     </ScrollView>
-    {(filter === 'Nearby' || location.enabled) && <LocationFeedback nearby={filter === 'Nearby'} onDisable={() => { location.disable(); if (filter === 'Nearby') setFilter('All'); }} />}
+    <LocationFeedback />
     <CatalogFeedback catalog={catalog} />
     {catalog.status === 'ready' && <>
-      {showRows && <Text accessibilityLiveRegion="polite" style={styles.note}>{t('{count} venues', { count: rows.length })}</Text>}
       {showRows && rows.map(row => <View key={row.id} style={styles.venue}>
         {row.is_demo && <Text style={styles.note}>{t('Sample venue')}</Text>}
         <VenueCard venue={locatedCatalogVenue(row, location.fix, t, format)} account={catalogReadData(row, catalog.impressions[row.id])}

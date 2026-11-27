@@ -14,8 +14,9 @@ the original fictional, in-memory demo. The interface is English-only.
 - Database venue IDs, optional metadata, photographs, languages, crowd/bathroom
   summaries and latest EUR prices. Missing metadata stays unavailable.
 - Search by name/neighborhood and All, Nearby, Cheap, Quiet and Popular filters.
-  Nearby requests foreground location on tap, shows real venues within 1 km and
-  sorts closest first. Cards/details show approximate straight-line distances.
+  Foreground location starts automatically for signed-in accounts. All filters
+  and venue details show approximate distances; Nearby shows real venues within
+  1 km and sorts closest first.
 - A venue's `+` action saves/edits an impression. Profile and cards update only
   after the server confirms the write. Failures retain the draft for retry.
 - Impressions reload across sessions/devices, remain private to their owner, and
@@ -64,7 +65,9 @@ queue requires a separately written public summary for approval. Only published
 summary records appear on venue details; raw descriptions and reporter IDs never
 feed that public view. No report or review affects rankings or activity counts.
 
-Account location access starts only after selecting Nearby. Permission denial,
+Account location access starts automatically when the app is active, requesting
+foreground permission when needed. Location stays active across tabs and Explore
+filters, including All; there is no in-app stop-location control. Permission denial,
 blocked access, disabled services, imprecise/stale readings and timeouts have
 retry/settings controls. Foreground updates use device coordinates and real
 database venue coordinates. Location stays in memory on the device, clears on

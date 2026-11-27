@@ -47,8 +47,7 @@ export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }:
         </View>
 
         <ProfileActivitySection title={t('My impressions')} count={activity.counts.impressions} icon="profile"
-          hint={t('One editable impression per venue · Demo session only')}
-          emptyHint={t('Open a venue and use + to share your impression.')}>
+          hint={t('One editable impression per venue · Demo session only')}>
           {activity.impressions.map((entry) => (
             <ProfileActivityRow key={entry.venue.id} venue={entry.venue} summary={t('{area} · Your impression: {impression}', { area: entry.venue.available ? entry.venue.area : t('Neighborhood unavailable'), impression: t(impressionLabels[entry.impression]) })}
               onPress={() => onOpenVenue(entry.venue.id)} />
@@ -80,16 +79,14 @@ export function ProfileScreen({ onOpenVenue, onExplore, onRankings, onWelcome }:
               onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <ProfileActivitySection title={t("My personal rankings")} count={personal.entries.length} icon="rankings"
-          hint={t('{count} personal comparisons completed. Skips do not count. Ordering is separate from community opinions.', { count: personal.completedCount })}
-          emptyHint={t('Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.')}>
+        <ProfileActivitySection title={t("My personal rankings")} count={personal.entries.length} showCount={false} icon="rankings"
+          hint={t('{count} personal comparisons completed. Skips do not count. Ordering is separate from community opinions.', { count: personal.completedCount })}>
           {personal.entries.map((entry) => (
             <ProfileActivityRow key={entry.venue.id} venue={{ ...entry.venue, available: true }} summary={t('{area} · Personal position #{position}', { area: entry.venue.area, position: entry.position })}
               trailing={<Text style={styles.ordinal}>#{entry.position}</Text>} onPress={() => onOpenVenue(entry.venue.id)} />
           ))}
         </ProfileActivitySection>
-        <Text style={styles.note}>{t('To add impressions or resume comparisons, open a bar in Explore and tap +.')}</Text>
-        <PrimaryButton label={t('Explore bars')} accessibilityHint={t('Open Explore, choose a bar and tap + to add an impression or resume comparisons.')} onPress={onExplore} />
+        <PrimaryButton label={t('Explore bars')} onPress={onExplore} />
         <PrimaryButton label={t("View My Rankings")} variant="secondary" onPress={onRankings} />
 
         <View style={styles.settings}>

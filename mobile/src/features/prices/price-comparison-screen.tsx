@@ -64,7 +64,6 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
 
       <View style={styles.resultsHeading}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>{t("Cheapest first")}</Text>
-        <Text accessibilityLiveRegion="polite" style={styles.meta}>{t('{count} prices', { count: rows.length })}</Text>
       </View>
       {rows.length > 0 ? (
         <View style={styles.list}>
@@ -89,7 +88,6 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
         <>
           <View style={styles.resultsHeading}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>{t("No price reported")}</Text>
-            <Text style={styles.meta}>{t('{count} venues', { count: missingVenues.length })}</Text>
           </View>
           <View style={styles.list}>
             {missingVenues.map((venue, index) => (
@@ -100,7 +98,7 @@ export function PriceComparisonScreen({ catalog, drink, rows, missingVenues, bac
           </View>
         </>
       )}
-      <Text style={styles.note}>{account ? t('Prices are community-reported observations, not verified offers.') : t("Community-reported, not verified. Observation dates are shown when available. Open a venue and use + to report a price.")}</Text>
+      <Text style={styles.note}>{account ? t('Prices are community-reported observations, not verified offers.') : t("Community-reported, not verified. Observation dates are shown when available.")}</Text>
     </ScreenContainer>
   );
 }

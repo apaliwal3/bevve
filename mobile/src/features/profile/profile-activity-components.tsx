@@ -8,10 +8,10 @@ import { BevveTheme as theme } from '@/constants/theme';
 import type { ProfileVenue } from './profile-activity';
 
 type ActivitySectionProps = PropsWithChildren<{
-  title: string; count: number; icon: AppIconName | 'euro'; hint?: string; emptyHint: string;
+  title: string; count: number; showCount?: boolean; icon: AppIconName | 'euro'; hint?: string; emptyHint?: string;
 }>;
 
-export function ProfileActivitySection({ title, count, icon, hint, emptyHint, children }: ActivitySectionProps) {
+export function ProfileActivitySection({ title, count, showCount = true, icon, hint, emptyHint, children }: ActivitySectionProps) {
   const { t, format } = useTranslation();
   return (
     <View style={styles.section}>
@@ -22,13 +22,13 @@ export function ProfileActivitySection({ title, count, icon, hint, emptyHint, ch
             : <AppIcon name={icon} size={17} color={theme.colors.purpleLight} />}
         </View>
         <Text accessibilityRole="header" style={styles.title}>{title}</Text>
-        <Text style={styles.count}>{format.number(count)}</Text>
+        {showCount && <Text style={styles.count}>{format.number(count)}</Text>}
       </View>
       {hint && <Text style={styles.hint}>{hint}</Text>}
       {count === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>{t("No activity yet")}</Text>
-          <Text style={styles.hint}>{emptyHint}</Text>
+          {emptyHint && <Text style={styles.hint}>{emptyHint}</Text>}
         </View>
       ) : <View style={styles.rows}>{children}</View>}
     </View>

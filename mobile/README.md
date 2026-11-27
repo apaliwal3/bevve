@@ -109,12 +109,13 @@ fallback to guest fixtures. Public summaries and exact-serving EUR prices are
 read from the database. Real venues use eligible community aggregates; sample
 venues never display purported real community percentages. All/Cheap/Quiet/Popular
 filters use catalog metadata and reported summaries. Nearby and real distances
-use optional foreground device location, as described below.
+use automatic foreground device location, as described below.
 
 ### Nearby and device location
 
-In signed-in Explore, tap **Nearby** to enable foreground location. No permission
-request, permission check or GPS subscription runs automatically at account startup.
+Signed-in accounts automatically start foreground location when the app becomes
+active, requesting permission if needed. The same location session stays active
+across tabs and Explore filters, so **All** shows distances without visiting Nearby.
 Nearby shows real database venues within 1 km, sorted by unrounded straight-line
 distance, then name/ID for ties. Search still applies. Cards and venue details show
 approximate metric distances from the same device fix. Sample venues (`is_demo`)
@@ -130,10 +131,11 @@ background location, foreground services, Always access and motion tracking disa
 
 The account-scoped store watches foreground changes (balanced accuracy, 25 m
 movement threshold), stops and clears coordinates when backgrounded, and rechecks
-existing permission on return without prompting automatically. Brief inactive
-events from system permission dialogs do not cancel the request. **Stop using
-location** clears the point/subscription and returns Nearby to All. Sign-out or
-account changes destroy local location state; a new session requires opting in again.
+existing permission on return. A denied request is not repeated on every foreground
+transition; permission and settings actions remain available for recovery. Brief
+inactive events from system permission dialogs do not cancel the request. There
+is no stop-location button. Sign-out or account changes destroy local location
+state; the next account session starts location automatically.
 Coordinates are neither persisted nor sent to Supabase. Existing venue latitude/
 longitude columns supply destination coordinates; no new migration is required.
 
@@ -143,7 +145,8 @@ denied/blocked permission, disabled services, insufficient accuracy, stale fixes
 native failures and timeouts have explicit recovery states. Precise-location and
 blocked-permission states provide settings access. Coarse/unknown readings never
 supply invented distances. A previously accepted point expires after two minutes
-without a fresh acceptable update. Until a fix is available, Nearby shows the
+without a fresh acceptable update, automatically restarting acquisition while the
+app is active to refresh stationary readings. Until a fix is available, Nearby shows the
 location state instead of claiming zero venues. Other filters remain usable.
 
 Local tests exercise geographic boundaries, filtering/order, native adapter/provider
@@ -151,7 +154,9 @@ wiring, permission recovery, timers, cleanup, account isolation and UI states. N
 configuration introspection checks permission declarations without generating native
 folders. Physical-device verification remains pending: test Allow Once/While Using,
 denial, permanent blocking/settings return, approximate/precise access, services off,
-indoors timeout, movement, background/foreground, Stop, restart and account switching.
+indoors timeout, movement, stationary refresh, background/foreground, restart and
+account switching. Confirm All shows real distances on first entry and after
+visiting Nearby, with no stop-location control.
 Use a real `is_demo = false` venue with correct coordinates; the fictional seed
 venues are deliberately excluded. Check real devices in Expo Go and rebuilt custom
 binaries, including permission text and larger text/safe-area behavior.

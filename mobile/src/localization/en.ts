@@ -1,5 +1,11 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  "Community-reported, not verified. Observation dates are shown when available.": "Community-reported, not verified. Observation dates are shown when available.",
+  "Saved for this demo session.": "Saved for this demo session.",
+  "Your location shows distances to venues and finds bars nearby.": "Your location shows distances to venues and finds bars nearby.",
+  "Location access was denied. Allow location to show distances and use Nearby.": "Location access was denied. Allow location to show distances and use Nearby.",
+  "A more precise location is needed to show distances. Enable precise location in settings, then retry.": "A more precise location is needed to show distances. Enable precise location in settings, then retry.",
+  "Your location is out of date. Pull down to refresh distances.": "Your location is out of date. Pull down to refresh distances.",
   "Complete the sections you started before saving.": "Complete the sections you started before saving.",
   "Some details could not be saved. Retry to finish saving your changes.": "Some details could not be saved. Retry to finish saving your changes.",
   "Saving…": "Saving…",

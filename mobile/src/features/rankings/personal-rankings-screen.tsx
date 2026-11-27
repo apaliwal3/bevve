@@ -34,9 +34,8 @@ export function PersonalRankingsScreen({ onExplore, onOpenVenue, onProfile }: Pe
         </View>
 
         <View style={styles.tasteCard}>
-          <View accessible accessibilityLabel={t('{count} bars ranked', { count: entries.length })} style={[styles.orb, rankingBadgeSize(fontScale)]}>
-            <Text style={styles.orbCount}>{entries.length}</Text>
-            <Text numberOfLines={1} style={styles.orbLabel}>{t("RANKED")}</Text>
+          <View accessible={false} style={[styles.orb, rankingBadgeSize(fontScale)]}>
+            <AppIcon name="rankings" size={28} color={theme.colors.purpleLight} />
           </View>
           <View style={styles.tasteCopy}>
             <Text style={styles.sectionLabel}>{t("YOUR NIGHTLIFE DNA")}</Text>
@@ -63,11 +62,9 @@ export function PersonalRankingsScreen({ onExplore, onOpenVenue, onProfile }: Pe
           <View style={styles.empty}>
             <AppIcon name="rankings" size={32} color={theme.colors.purpleLight} />
             <Text style={styles.emptyTitle}>{t("Your ranking starts with a choice")}</Text>
-            <Text style={styles.description}>{t('Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.')}</Text>
           </View>
         )}
-        <PrimaryButton label={t('Explore bars')} accessibilityHint={t('Open Explore, choose a bar and tap + to add an impression or resume comparisons.')} onPress={onExplore} />
-        <Text style={styles.note}>{t('To add impressions or resume comparisons, open a bar in Explore and tap +.')}</Text>
+        <PrimaryButton label={t('Explore bars')} onPress={onExplore} />
         <Text style={styles.note}>{t("Only bars you have compared appear here. Every choice helps refine your personal order.")}</Text>
         <Text style={styles.note}>{t("DEMO SESSION · Rankings reset on a full app reload.")}</Text>
       </ScreenContainer>
@@ -150,18 +147,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: theme.colors.purpleBorder,
     backgroundColor: theme.colors.purple
-  },
-  orbCount: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.brand,
-    fontSize: 22
-  },
-  orbLabel: {
-    color: theme.colors.text,
-    fontFamily: theme.fonts.bodyBold,
-    fontSize: 8,
-    letterSpacing: 1,
-    textAlign: 'center'
   },
   tasteCopy: {
     flex: 1,

@@ -83,7 +83,7 @@ export function AccountProfileScreen({ catalog }: { catalog: AccountCatalogValue
       <PrimaryButton label={t('My Rankings')} variant="secondary" onPress={() => router.navigate('/rankings')} />
     </>}
     {catalog.status === 'ready' && <ProfileActivitySection title={t('My impressions')} count={activity.counts.impressions}
-      icon="profile" hint={t('One editable impression per venue, saved to your account.')} emptyHint={t('Open a venue and use + to share your impression.')}>
+      icon="profile" hint={t('One editable impression per venue, saved to your account.')}>
       {activity.impressions.map(entry => <ProfileActivityRow key={entry.venue.id} venue={entry.venue}
         summary={summary(entry.venue.id, t('Your impression: {impression} · Updated {date}', { impression: t(impressionLabels[entry.impression]), date: format.dateTime(entry.updatedAt) }))}
         onPress={() => router.push(venueFromProfileHref(entry.venue.id))} />)}
@@ -137,7 +137,6 @@ export function AccountRankingsScreen({ catalog }: { catalog: AccountCatalogValu
         {catalog.venues.find(row => row.id === entry.venue.id)?.is_demo && <Text style={styles.note}>{t('Sample venue')}</Text>}
         <RankedVenueRow entry={entry} onPress={() => router.push(venueFromRankingsHref(entry.venue.id))} />
       </View>)}
-      {entries.length === 0 && <Text style={styles.note}>{t('Open a bar in Explore and tap + to save your impression. Comparisons with bars you have experienced build your ranking.')}</Text>}
     </>}
     <PrimaryButton label={t('My impressions')} onPress={() => router.navigate('/profile')} />
     <PrimaryButton label={t('Explore venues')} variant="secondary" onPress={() => router.navigate('/explore')} />

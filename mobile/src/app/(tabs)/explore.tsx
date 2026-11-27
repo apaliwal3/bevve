@@ -119,7 +119,6 @@ export function DemoExploreScreen() {
       <View style={styles.sectionHeader}>
         <View style={styles.sectionCopy}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>{filter === 'All' ? t("Happening now") : t(filter)}</Text>
-          <Text accessibilityLiveRegion="polite" style={styles.resultCount}>{t('{count} places for your night', { count: venues.length })}</Text>
         </View>
         <Pressable accessibilityRole="button" onPress={resetFilters} style={styles.viewAll}>
           <Text style={styles.viewAllLabel}>{t("View all")}</Text>
@@ -350,12 +349,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontFamily: theme.fonts.heading,
     fontSize: 19
-  },
-  resultCount: {
-    color: theme.colors.textMuted,
-    fontFamily: theme.fonts.body,
-    fontSize: 11,
-    marginTop: theme.spacing.xs
   },
   viewAll: {
     minHeight: 44,
