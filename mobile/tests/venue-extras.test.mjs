@@ -171,8 +171,11 @@ test('pending languages stay separate from associated venue languages and leave 
 
 test('Cancel resets only the unsaved language selection, retaining saved pending suggestions', () => {
   const state = suggest(initialVenueExtrasState, suggestion(1));
-  const selected = languageDraftReducer(null, { type: 'select', code: 'pt' });
-  assert.equal(languageDraftReducer(selected, { type: 'reset' }), null);
+  const selected = languageDraftReducer([], { type: 'select', code: 'pt' });
+  const multiple = languageDraftReducer(selected, { type: 'select', code: 'fr' });
+  assert.deepEqual(multiple, ['pt', 'fr']);
+  assert.deepEqual(languageDraftReducer(multiple, { type: 'select', code: 'pt' }), ['fr']);
+  assert.deepEqual(languageDraftReducer(multiple, { type: 'reset' }), []);
   assert.equal(state.languageSuggestions.length, 1);
   assert.equal(state.languageSuggestions[0].language_code, 'fr');
 });

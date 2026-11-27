@@ -76,7 +76,8 @@ test('one persistent navigator owns four tab routes; providers, the legacy redir
     assert.ok(existsSync(new URL('../src/app/' + file, import.meta.url)));
     assert.equal(existsSync(new URL('../src/app/(tabs)/' + file, import.meta.url)), false);
   }
-  assert.equal(rootSource.includes('gestureEnabled: false'), false);
+  assert.ok(rootSource.includes('<Stack.Screen name="(tabs)" options={{ gestureEnabled: false, fullScreenGestureEnabled: false }} />'));
+  assert.ok(!/screenOptions=\{\{[^}]*gestureEnabled/.test(rootSource), 'Detail screens must retain their normal Back gestures.');
 });
 
 test('the real tab bar retains icons, selection and safe areas in EN/IT and selects tabs without stack links', () => {

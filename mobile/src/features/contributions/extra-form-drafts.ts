@@ -14,10 +14,11 @@ export function priceDraftReducer(draft: PriceDraft, action:
   }
 }
 
-export function languageDraftReducer(_draft: VenueLanguageCode | null, action:
+export function languageDraftReducer(draft: readonly VenueLanguageCode[], action:
   | { type: 'select'; code: VenueLanguageCode }
-  | { type: 'reset' }): VenueLanguageCode | null {
-  return action.type === 'select' ? action.code : null;
+  | { type: 'reset' }): readonly VenueLanguageCode[] {
+  if (action.type === 'reset') return [];
+  return draft.includes(action.code) ? draft.filter(code => code !== action.code) : [...draft, action.code];
 }
 
 export type IncidentDraft = { category: IncidentCategory | null; date: string; description: string };

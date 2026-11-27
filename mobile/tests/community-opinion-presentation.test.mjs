@@ -70,37 +70,41 @@ test('presentation distinguishes an absent community source from a genuinely mea
   assert.deepEqual(communityOpinionView([record(1, 'liked', { source: 'demo' })], venue.id), { status: 'empty', count: 0 });
 });
 
-test('one eligible opinion presents its real 100% or 0% and count without any threshold', () => {
+test('one eligible opinion distinguishes liked, okay and disliked without any threshold', () => {
   for (const impression of ['liked', 'fine', 'disliked']) {
     assert.deepEqual(communityOpinionView([record(1, impression)], venue.id), {
-      status: 'ready', count: 1, percentage: impression === 'liked' ? 100 : 0,
+      status: 'ready', count: 1, sentiment: impression,
     });
   }
 });
 
-test('display rounds the distinct-user percentage after taking latest edits and retaining all three categories', () => {
+test('the dominant opinion follows latest edits and tied categories produce mixed opinions', () => {
   const records = [record(1), record(2), record(3, 'disliked'), record(3, 'fine', { updated_at: '2026-11-18T20:01:00Z' })];
-  assert.deepEqual(communityOpinionView(records, venue.id), { status: 'ready', count: 3, percentage: 67 });
+  assert.deepEqual(communityOpinionView(records, venue.id), { status: 'ready', count: 3, sentiment: 'liked' });
   assert.deepEqual(communityOpinionView([...records, record(2, 'disliked', { updated_at: '2026-11-18T20:02:00Z' })], venue.id), {
-    status: 'ready', count: 3, percentage: 33,
+    status: 'ready', count: 3, sentiment: 'mixed',
   });
 });
 
-test('English and Italian summaries visibly and accessibly pair every percentage with its opinion count', () => {
+test('English and Italian summaries show sentiment text and counts without percentages or a distribution bar', () => {
   for (const language of ['en', 'it']) {
     const { t, summary } = ui(language);
-    for (const [records, percentage, count] of [[[], null, 0], [[record(1)], 100, 1], [[record(1, 'fine')], 0, 1], [[record(1), record(2, 'disliked')], 50, 2]]) {
+    for (const [records, label, count] of [[[], null, 0], [[record(1)], 'Mostly liked', 1],
+      [[record(1, 'fine')], 'Mostly okay', 1], [[record(1, 'disliked')], 'Mostly disliked', 1],
+      [[record(1), record(2, 'disliked')], 'Mixed opinions', 2]]) {
       const opinion = communityOpinionView(records, venue.id);
       for (const compact of [false, true]) {
         const tree = summary.CommunityOpinionSummary({ opinion, compact });
         assert.equal(tree.props.accessible, true);
-        assert.equal(tree.props.accessibilityLabel, percentage === null ? t('No opinions yet') : t('{percentage}% liked it · {count} opinions', { percentage, count }));
+        assert.equal(tree.props.accessibilityLabel, label === null ? t('No opinions yet') : t(label) + ' · ' + t('{count} opinions', { count }));
         const visible = textValues(tree);
         assert.ok(visible.includes(t('Community opinion')));
         if (count) {
-          assert.ok(visible.includes(t('{percentage}% liked it', { percentage })));
+          assert.ok(visible.includes(t(label)));
           assert.ok(visible.includes(t('{count} opinions', { count })));
         } else assert.ok(visible.includes(t('No opinions yet')));
+        assert.ok(!visible.some(value => String(value).includes('%')));
+        assert.equal([...elements(tree)].filter(node => node.type === 'View').length, 1);
       }
     }
   }
@@ -172,13 +176,13 @@ test('Profile renders the current saved impression once, without stars, in both 
 test('account venue cards and details override all demo metrics and use the account impression editor', () => {
   const { card, details } = ui('en','liked');
   let opened=0;
-  const account={ isDemo:false,community:{status:'ready',percentage:25,count:4},ownImpression:'fine',
+  const account={ isDemo:false,community:{status:'ready',sentiment:'fine',count:4},ownImpression:'fine',
     crowd:{score:1,report_count:3,newest_report_at:'2026-11-22T18:00:00Z',classification:'quiet'},
     bathrooms:null,drinks:[],startingPriceCents:0 };
   const cardRoot=card.VenueCard({venue,account,onPress(){}});
   const cardTree=[...elements(cardRoot)].find(node=>node.type==='Pressable');
   assert.ok(cardTree.props.accessibilityLabel.includes('It was fine'));
-  assert.ok(cardTree.props.accessibilityLabel.includes('25%'));
+  assert.ok(cardTree.props.accessibilityLabel.includes('Mostly okay'));
   assert.ok(!textValues(cardTree).some(value=>String(value).includes('Saved to your account')));
   assert.ok([...elements(cardTree)].some(node=>node.props.accessibilityRole==='image'&&node.props.accessibilityLabel.includes('It was fine')));
   assert.ok(!textValues(cardTree).some(value=>String(value).includes('Demo session')));
@@ -189,6 +193,28 @@ test('account venue cards and details override all demo metrics and use the acco
   assert.ok(textValues(tree).includes('Saved to your account'));
   assert.ok(!textValues(tree).some(value=>String(value).includes('Fictional demo snapshot')));
   assert.ok(!textValues(tree).some(value=>String(value).includes('Demo session')));
+});
+
+test('submitted guest languages appear on the bar with Not verified and replace the empty message', () => {
+  const { details, contributions } = ui('en');
+  contributions.useVenueExtras = () => ({ drinks: [], pendingLanguages: [
+    { id:'fr',language_code:'fr' }, { id:'de',language_code:'de' }, { id:'duplicate',language_code:'fr' },
+  ] });
+  const tree = details.BarDetailsScreen({venue,details:{...mockVenueDetails[venue.id],languages:[]},onBack(){},onComparePrices(){}});
+  const text = [...elements(tree)].filter(node=>node.type==='Text').map(node=>[node.props.children].flat().join(''));
+  assert.equal(text.filter(value=>value==='French · Not verified').length,1);
+  assert.ok(text.includes('German · Not verified'));
+  assert.ok(!text.includes('No languages reported yet.'));
+});
+
+test('signed-in bar details use the account language slot instead of a contradictory empty message', () => {
+  const { details } = ui('en');
+  const slot={type:'AccountVenueLanguages',props:{children:'French · Not verified'}};
+  const account={isDemo:false,community:{status:'empty',count:0},ownImpression:null,
+    crowd:{score:null,report_count:0,newest_report_at:null,classification:null},bathrooms:null,drinks:[],startingPriceCents:null};
+  const tree=details.BarDetailsScreen({venue,details:{...mockVenueDetails[venue.id],languages:[]},account,accountLanguages:slot,onBack(){},onComparePrices(){}});
+  assert.equal([...elements(tree)].filter(node=>node===slot).length,1);
+  assert.ok(!textValues(tree).includes('No languages reported yet.'));
 });
 
 test('account venue safety uses its public summary slot and cannot display guest demonstration notes', () => {

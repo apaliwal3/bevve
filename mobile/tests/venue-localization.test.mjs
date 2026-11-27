@@ -98,14 +98,14 @@ test('language changes leave active price, venue-language and private incident d
   const store = createLanguageStore({ persistent: true, getItem: async () => 'en', setItem: async () => {} });
   await store.initialize();
   const price = Object.freeze(priceDraftReducer({ drinkId: mockDrinkCatalog[0].id, euros: '' }, { type: 'price', euros: '6,50' }));
-  const suggested = languageDraftReducer(null, { type: 'select', code: 'fr' });
+  const suggested = languageDraftReducer([], { type: 'select', code: 'fr' });
   const incident = Object.freeze(incidentDraftReducer({ category: 'Harassment', description: '', date: '2026-11-15' }, { type: 'description', description: 'Private user-entered text {name}' }));
   const snapshot = JSON.stringify({ price, suggested, incident });
   for (const language of ['it', 'en', 'it']) {
     await store.select(language);
     const t = createTranslator(language);
     assert.ok(t(incident.category).length > 0);
-    assert.ok(venueLanguageLabel(suggested, t).length > 0);
+    assert.ok(suggested.every(code => venueLanguageLabel(code, t).length > 0));
     assert.equal(JSON.stringify({ price, suggested, incident }), snapshot);
   }
   assert.equal(parseEuroPrice(price.euros).value, 650);

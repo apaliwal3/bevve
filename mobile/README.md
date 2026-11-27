@@ -127,7 +127,7 @@ not see the first account's private saved answers.
 Loading and failures have explicit states, with refresh/retry controls and no
 fallback to guest fixtures. Public summaries and exact-serving EUR prices are
 read from the database. Real venues use eligible community aggregates; sample
-venues never display purported real community percentages. All/Cheap/Quiet/Popular
+venues never display purported real community opinions. All/Cheap/Quiet/Popular
 filters use catalog metadata and reported summaries. Nearby and real distances
 use automatic foreground device location, as described below.
 
@@ -257,9 +257,14 @@ passed on 2026-11-23. Migrations 001–005 are deployed and must not be rerun. D
 API and physical-device verification outcomes have not been recorded.
 
 After saving an impression, open **Spoken languages** in the venue's `+` editor.
-Approved associations come only from the database. New suggestions remain private
-to the author and moderators, separate from approved associations. The form keeps
-uncertain details while navigating and retries the same request ID. Settings shows
+Select any number of languages, then use **Save and finish**. Confirmed suggestions
+appear immediately on your bar page with **Not verified** beside each language;
+the empty-language message appears only when there are no associated or submitted
+languages. Guest submissions appear in the demo session too.
+Approved associations come only from the database. Account suggestions remain
+visible to their author and moderators, separate from approved public associations.
+Multi-language saves retain confirmed choices and retry the same request ID for an
+uncertain write before continuing with the remaining choices. Settings shows
 all owned Pending, Approved and Rejected rows; they do not enter update counts or
 rankings. Pending operations reset on restart/sign-out; confirmed history restores.
 Language loading/retry states are independent of crowd, bathroom and price forms.
@@ -419,15 +424,16 @@ Backend code is outside the mobile lint scope.
   contextual links from Bar Details and their Back navigation.
 - Bathroom categories and crowd reports retain their separate five-point scales.
 
-The pure community-opinion helper supports genuine data: each distinct
-user's latest eligible impression counts once, and `liked / total * 100` includes
-fine and disliked in the denominator. There is no minimum opinion threshold.
-Real zero opinions displays **No opinions yet**; any positive count displays a
-rounded liked percentage and the distinct opinion count, including 0% or 100%
-for one opinion. Demo impressions and retired star fixtures are excluded. The
-guest demo has no real multi-user source, so it displays availability rather
-than a fabricated percentage or a measured-zero claim. Signed-in real venues use
-the database aggregate; sample venues remain excluded.
+The community-opinion summary counts each distinct user's latest eligible
+impression once. It displays **Mostly liked**, **Mostly okay**, or **Mostly
+disliked** for the category with the most opinions, and **Mixed opinions** when
+the leading categories tie. The existing opinion count remains visible; there
+is no percentage or distribution bar. There is no minimum opinion threshold.
+Real zero opinions displays **No opinions yet**. Demo impressions and retired
+star fixtures are excluded. The guest demo has no real multi-user source, so it
+displays availability rather than an invented sentiment or measured-zero claim.
+Signed-in real venues use the database category counts; sample venues remain
+excluded.
 
 ### Physical iPhone checks for Stage 9C-1
 

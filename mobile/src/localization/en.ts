@@ -1,5 +1,18 @@
 // English source-text keys are checked at every translation call.
 export const en = {
+  'Select one or more languages': 'Select one or more languages',
+  'Select spoken languages': 'Select spoken languages',
+  'Suggest languages': 'Suggest languages',
+  'Submitted languages appear on the bar page as not verified until reviewed.': 'Submitted languages appear on the bar page as not verified until reviewed.',
+  'Language suggestions saved to your account.': 'Language suggestions saved to your account.',
+  'Language suggestions saved for this demo session.': 'Language suggestions saved for this demo session.',
+  'Unconfirmed languages: {languages}': 'Unconfirmed languages: {languages}',
+  'Crowd': 'Crowd',
+  'Prices from': 'Prices from',
+  'Mostly liked': 'Mostly liked',
+  'Mostly okay': 'Mostly okay',
+  'Mostly disliked': 'Mostly disliked',
+  'Mixed opinions': 'Mixed opinions',
   'Map of bars': 'Map of bars',
   'No bars to show on the map': 'No bars to show on the map',
   'Sample location': 'Sample location',
